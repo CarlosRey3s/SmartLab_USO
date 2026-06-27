@@ -1,0 +1,155 @@
+:root {
+  --verde: #22806B;
+  --verde-oscuro: #1B5E52;
+  --verde-hover: #29967E;
+  --dorado: #FACB4B;
+  --rosado: #AD868A;
+  --blanco: #FFFFFF;
+  --gris: #F4F6F8;
+  --texto: #333;
+  --borde-acordeon: #C7B3B5; /* Tono grisáceo/rosado del borde original */
+}
+
+/* ===== CONTENEDOR GENERAL ===== */
+.student-dashboard {
+  flex: 1;
+  padding: 24px;
+  background: #EAEAEA; /* Fondo gris claro de la sección interna */
+  border-radius: 16px 16px 0 0;
+  margin: 10px;
+  font-family: Arial, sans-serif;
+}
+
+.section-main-title {
+  font-size: 18px;
+  color: #2c2c2c;
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-weight: bold;
+}
+
+/* ===== BLOQUES DE CATEGORÍA ===== */
+.category-block {
+  margin-bottom: 30px;
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.category-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: bold;
+  color: #222;
+  letter-spacing: 0.5px;
+}
+
+/* Cuadrado verde al lado del título */
+.checkbox-icon {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--verde);
+  border-radius: 6px;
+  background: var(--blanco);
+  display: inline-block;
+}
+
+/* ===== ACORDEONES (LISTA) ===== */
+.accordion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.accordion-item {
+  background: #F5F5F5;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+/* Estado Cerrado */
+.accordion-item.closed {
+  border: 1.5px solid var(--borde-acordeon);
+}
+
+/* Estado Abierto (Borde e indicador Dorado) */
+.accordion-item.open {
+  border: 2px solid var(--dorado);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+}
+
+/* Encabezado del Acordeón */
+.accordion-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: #F5F5F5;
+}
+
+.summary-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* Iconos circulares (Microscopio / Carpeta) */
+.icon-lab {
+  font-size: 16px;
+  opacity: 0.7;
+}
+
+.label-type {
+  font-size: 14px;
+  color: #444;
+  padding-right: 15px;
+  border-right: 1px solid #ccc; /* Línea divisoria vertical interna */
+}
+
+.label-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+}
+
+/* Flechas arriba/abajo */
+.arrow-icon {
+  font-size: 14px;
+  color: #666;
+}
+
+/* ===== CONTENIDO DESPLEGADO ===== */
+.accordion-content {
+  background: #F5F5F5;
+  padding: 0 20px 20px 54px; /* Alineado con el inicio del texto superior */
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.info-group h4 {
+  margin: 0 0 6px 0;
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+}
+
+.info-group p {
+  margin: 3px 0;
+  font-size: 13.5px;
+  color: #555;
+}
+
+.details-section {
+  margin-top: 5px;
+}
+
+.status-active {
+  color: #2b2b2b;
+  font-weight: 500;
+}

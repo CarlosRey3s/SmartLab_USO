@@ -1,0 +1,174 @@
+:root {
+  --verde: #22806B;
+  --verde-oscuro: #1B5E52;
+  --dorado: #FACB4B;
+  --rosado: #AD868A;
+  --gris: #F4F6F8;
+  --texto: #333;
+  --blanco: #fff;
+  --borde: #E5E7EB;
+}
+
+/* CONTAINER */
+.docente-container {
+  padding: 24px;
+  background: var(--gris);
+  min-height: 100vh;
+}
+
+/* HEADER */
+.docente-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.docente-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.docente-subtitle {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* GRID PRINCIPAL */
+.docente-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+/* CARD BASE */
+.docente-card {
+  background: var(--blanco);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* PANELS */
+.panel {
+  min-height: 420px;
+}
+
+.panel h3 {
+  margin: 0 0 16px;
+  color: var(--texto);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* ITEMS (NUEVO ESTILO MODERNO) */
+.item {
+  padding: 14px;
+  border-radius: 12px;
+  background: #ffffff;
+  margin-bottom: 12px;
+  border: 1px solid #e5e7eb;
+  transition: 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* TEXTO */
+.item strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--texto);
+}
+
+.item p {
+  margin: 3px 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.item span {
+  font-size: 13px;
+  color: var(--texto);
+}
+
+/* TIME */
+.time {
+  display: block;
+  font-weight: 700;
+  color: var(--verde);
+  margin-bottom: 6px;
+}
+
+/* VARIACIONES (FONDO COMPLETO SUAVE) */
+.highlight {
+  background: rgba(34, 128, 107, 0.08);
+  border: 1px solid rgba(34, 128, 107, 0.25);
+}
+
+.warning {
+  background: rgba(250, 203, 75, 0.12);
+  border: 1px solid rgba(250, 203, 75, 0.35);
+}
+
+.info {
+  background: rgba(173, 134, 138, 0.12);
+  border: 1px solid rgba(173, 134, 138, 0.35);
+}
+
+/* OPCIONAL: BARRA LATERAL ULTRA SUAVE (SI QUIERES MÁS PRO) */
+.item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 4px;
+  opacity: 0;
+  transition: 0.2s;
+}
+
+.highlight::before {
+  background: var(--verde);
+  opacity: 1;
+}
+
+.warning::before {
+  background: var(--dorado);
+  opacity: 1;
+}
+
+.info::before {
+  background: var(--rosado);
+  opacity: 1;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1100px) {
+  .docente-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .docente-container {
+    padding: 16px;
+  }
+
+  .docente-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+}

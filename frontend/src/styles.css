@@ -1,0 +1,142 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #e6e6e6;
+}
+
+/* Layout */
+.container {
+  display: flex;
+  height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 230px;
+  background: #2f2f2f;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.sidebar .menu {
+  padding: 20px;
+}
+
+.sidebar .menu h3 {
+  margin-bottom: 20px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  padding: 12px;
+  border-radius: 5px;
+  margin-bottom: 5px;
+  cursor: pointer;
+}
+
+.sidebar li.active {
+  background: #444;
+}
+
+.sidebar li:hover {
+  background: #555;
+}
+
+.sidebar-bottom {
+  padding: 15px;
+  background: #262626;
+  font-size: 14px;
+}
+
+/* Content */
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Navbar */
+.navbar {
+  background: #dcdcdc;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Search centered */
+.search-box {
+  background: #cfcfcf;
+  border-radius: 20px;
+  padding: 5px 15px;
+  width: 200px;
+  border: none;
+  outline: none;
+}
+
+/* Main */
+.main {
+  display: flex;
+  padding: 20px;
+  gap: 20px;
+}
+
+/* Schedule */
+.schedule {
+  flex: 2;
+  background: #eae6e6;
+  border: 3px solid #1e88ff;
+  border-radius: 15px;
+  padding: 20px;
+}
+
+.schedule h3 {
+  margin-bottom: 10px;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  background: #cfcfcf;
+  padding: 5px;
+  border-radius: 20px;
+}
+
+.tab {
+  padding: 5px 12px;
+  border-radius: 15px;
+  cursor: pointer;
+}
+
+.tab.active {
+  background: #9e9e9e;
+}
+
+/* Right Panel */
+.right-panel {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card {
+  background: #dcdcdc;
+  padding: 15px;
+  border-radius: 15px;
+}
+
+.card p {
+  margin: 5px 0;
+}
+
+.red {
+  color: red;
+}

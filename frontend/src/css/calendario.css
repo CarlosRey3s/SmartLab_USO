@@ -1,0 +1,529 @@
+.calendar-page-wrapper {
+  display: flex;
+  height: 100%;
+  gap: 1.5rem;
+}
+.calendar-main-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  padding: 1.5rem;
+}
+/* Toolbar Personalizada */
+.calendar-toolbar-custom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+.toolbar-left, .toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.nav-arrows {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.25rem;
+}
+.btn-hoy {
+  background-color: #0f766e;
+  color: white;
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+.btn-hoy:hover { background-color: #fcd34d; 
+color:#060606;
+}
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+}
+.toolbar-label {
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: #0f766e;
+  margin: 0;
+  text-transform: capitalize;
+}
+/* Botones de Vista (Semana/Mes) */
+.btn-view, .btn-view-icon {
+  border: none;
+  background-color: #f3f4f6;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-view {
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+.btn-view-icon {
+  padding: 0.6rem;
+  border-radius: 50%;
+  display: flex;
+}
+.btn-view.active, .btn-view-icon.active {
+  background-color: #fcd34d;
+  color: #111827;
+}
+/* MENU DERECHO DEL CALENDARIO */
+.calendar-sidebar-right {
+  width: 256px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.btn-crear {
+  position: relative;
+  width: 70%;
+  background-color: #fcd34d; /* Tu amarillo base */
+  color: #111827; /* Texto oscuro para contraste */
+  padding: 0.97rem;
+  /* Ponemos un borde transparente fijo para que el botón no "salte" al hacer hover */
+  border: 1.5px solid transparent; 
+  border-radius: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  /* Sombra sutil cuando está amarillo */
+  box-shadow: 0 4px 6px -1px rgba(250, 203, 75, 0.3),
+              0 2px 4px -1px rgba(250, 203, 75, 0.2);
+}
+
+.btn-crear:hover {
+  background-color: #ffffff; /* Pasa a ser como una tarjeta blanca */
+  color: var(--c-verde); /* Tu texto verde */
+  border: 1.5px solid #e5e7eb; /* Borde gris clarito como en la imagen 2 */
+  
+  /* EL TRUCO ESTRELLA: 
+     1. Un inset shadow para la barra amarilla gruesa a la izquierda
+     2. Un shadow normal muy suave para que el botón flote un poco */
+  box-shadow: inset 6px 0 0 0 #fcd34d, 
+              0 4px 6px -1px rgba(0, 0, 0, 0.05);
+
+}.mini-calendar-placeholder {
+  background-color: #1f2937;
+  color: white;
+  height: 160px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mis-laboratorios-card {
+  background-color: #0f766e;
+  color: white;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.card-header {
+  padding: 0.75rem;
+  border-bottom: 1px solid #0d9488;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+.card-body {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+.btn-exportar {
+  width: 100%;
+  background-color: #AD868A;
+  color: white;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: auto;
+  cursor: pointer;
+}
+/* ── Estilos para el Dropdown de Vistas ── */
+.dropdown-container {
+  /* Esto es el "ancla". Le dice al menú que flote en base a este botón */
+  position: relative; 
+  display: inline-block;
+}
+.dropdown-menu {
+  /* ¡LA MAGIA DE FLOTAR! position: absolute lo saca del flujo normal para que no empuje nada */
+  position: absolute;
+  top: calc(100% + 8px); /* Se coloca justo 8px debajo del botón */
+  right: 0; /* Se alinea a la derecha del botón */
+  background-color: #ffffff; /* FONDO SÓLIDO BLANCO OBLIGATORIO */
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15); /* Sombra elegante */
+  display: flex;
+  flex-direction: column; 
+  width: 140px;
+  z-index: 9999; 
+}
+.dropdown-item {
+  width: 100%;
+  display: block;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  background-color: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: #374151;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+/* Redondear las esquinas solo en el primero y el último */
+.dropdown-item:first-child {
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+.dropdown-item:last-child {
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+.dropdown-item:hover {
+  background-color: #f3f4f6;
+}
+.dropdown-item.active {
+  background-color: #fcd34d;
+  color: #112718;
+}
+/* ── 1. LA CABECERA (DÍAS Y NÚMEROS) ── */
+.rbc-header {
+  border: none !important; 
+  border-bottom: none !important; 
+  padding: 8px 0 !important;
+  height: auto !important; 
+  min-height: 60px; 
+  overflow: visible !important; 
+}
+.rbc-time-header, 
+.rbc-time-header-content,
+.rbc-row {
+  overflow: visible !important;
+}
+.rbc-time-header {
+  border-bottom: 1px solid #e5e7eb !important;
+}
+/* ── 1.5 ELIMINAR LA FILA DE "TODO EL DÍA" ── */
+/* Ocultamos la celda blanca gigante */
+.rbc-allday-cell {
+  display: none !important;
+}
+.rbc-time-header > .rbc-row:nth-child(2) {
+  display: none !important;
+}
+.custom-header-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.custom-header-cell .dia-texto {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: #70757a; 
+  letter-spacing: 0.5px;
+}
+.custom-header-cell .dia-numero {
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: #3c4043;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%; 
+}
+.custom-header-cell.hoy .dia-texto {
+  color: #AD868A; 
+}
+.custom-header-cell.hoy .dia-numero {
+  background-color: #AD868A;
+  color: white;
+}
+
+/* ── 2. LA COLUMNA DE LAS HORAS ── */
+/* Quitamos los bordes de la caja contenedora de las horas */
+.rbc-time-gutter .rbc-timeslot-group {
+  border: none !important;
+}
+.rbc-time-content > * + * > * {
+  border-left: 1px solid #e5e7eb !important;
+}
+.rbc-time-gutter {
+  border-right: none !important; 
+}
+.rbc-label {
+  font-size: 0.75rem;
+  color: #70757a;
+  padding: 0 8px 0 0;
+}
+.rbc-time-gutter .rbc-label {
+  position: relative;
+  top: -10px; 
+  background-color: white;
+}
+/* Quitamos la primera hora de la lista para que no choque con la esquina del calendario (opcional, pero se ve más limpio) */
+.rbc-time-gutter .rbc-timeslot-group:first-child .rbc-label {
+  display: none;
+}
+/*Vista del mes */
+.rbc-month-view {
+  border: none !important;
+  border-top: 1px solid #e5e7eb !important;
+}
+/* Líneas horizontales finas */
+.rbc-month-row {
+  border-bottom: 1px solid #e5e7eb !important;
+  border-top: none !important;
+}
+
+/* Líneas verticales finas (excepto la primera para que no choque con el borde izquierdo) */
+.rbc-day-bg {
+  border-left: 1px solid #e5e7eb !important;
+}
+.rbc-day-bg:first-child {
+  border-left: none !important;
+}
+/* Centramos el contenedor original del número y le damos aire arriba */
+.rbc-date-cell {
+  text-align: center !important;
+  padding: 8px 0 2px 0 !important;
+}
+/* ── Estilos de nuestro nuevo número (CustomDateHeader) ── */
+.custom-date-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.75rem; /* Número pequeño y elegante */
+  font-weight: 500;
+  color: #3c4043; /* Gris oscuro Google */
+}
+/* La cajita invisible alrededor del número que se volverá círculo si es hoy */
+.custom-date-header span {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+/* Día de hoy: Círculo Azul */
+.custom-date-header.hoy span {
+  background-color: #AD868A;;
+  color: white;
+}
+/* Días de otros meses (Ej. 30 y 31 del mes pasado) se ponen gris claro */
+.custom-date-header.off-range {
+  color: #70757a;
+  opacity: 0.5;
+}
+/* Fondo ligeramente gris para los días que no son de este mes (Opcional, muy al estilo Google) */
+.rbc-off-range-bg {
+  background-color: #f8f9fa !important;
+}
+/*ESTILOS DE LOS EVENTOS DEL CALENDARIO*/
+/* QUITAMOS LOS ESTILOS DE BLOQUE SOLIDO QUE TRAE LA LIBRERIA*/
+.rbc-event {
+  padding: 0 !important;
+  background: none;
+  border: none;
+  border-radius: 4px !important;
+  box-shadow: none;
+}
+/* Evitamos que el evento se ponga azul por defecto al hacer clic */
+.rbc-event:focus, .rbc-event.rbc-selected {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.3) !important; /* Tu verde #0f766e con transparencia */
+}
+/*estilos internos del componente CustomEvent*/
+.custom-event-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 4px 8px; /* Le damos el "aire" necesario al texto */
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.event-time {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #4b5563;
+  margin-top: 2px;
+}
+.event-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* Agrega "..." si no cabe */
+  width: 100%;
+}
+/* Oculta la hora doble por defecto de la librería */
+.rbc-event-label {
+  display: none !important;
+}
+/* ── EL TRUCO PARA LA VISTA DE MES (Imagen 1) ── */
+/* En el mes las cajas son bajitas, así que pasamos a formato de fila (Row) */
+.rbc-month-view .custom-event-content {
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 6px;
+  gap: 6px;
+}
+
+.rbc-month-view .event-title {
+  font-size: 0.75rem;
+}
+
+.rbc-month-view .event-time {
+  font-size: 0.65rem;
+  margin-top: 0;
+  font-weight: 600;
+  flex-shrink: 0; /* Asegura que la hora nunca se aplaste aunque el título sea largo */
+}
+
+
+/* =======================================================
+   ESTILOS DEL MINI CALENDARIO (Panel Derecho)
+   ======================================================= */
+.mini-calendario-container {
+  background-color: #ffffff;
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb; 
+}
+.mini-calendario-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0.5rem 0.5rem 0.5rem;
+}
+.mini-calendario-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #3c4043;
+}
+.mini-calendario-nav {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.btn-icon-mini {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  color: #5f6368;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.btn-icon-mini:hover {
+  background-color: #f1f3f4;
+}
+
+/* Letras de la semana (D L M...) */
+.mini-calendario-dias-semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  margin-bottom: 0.25rem;
+}
+
+.dia-semana-letra {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: #70757a;
+}
+
+/* La Cuadrícula */
+.mini-calendario-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  row-gap: 2px;
+}
+
+.mini-dia-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  height: 28px; /* Altura compacta */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin: 0 auto;
+  width: 28px;
+  transition: background-color 0.1s;
+}
+
+.mini-dia-btn:hover:not(.dia-seleccionado) {
+  background-color: #f1f3f4;
+}
+
+/* AQUÍ CONTROLAMOS EL TAMAÑO PEQUEÑO DE LOS NÚMEROS */
+.numero-dia {
+  font-size: 0.75rem; /* Números pequeños y legibles */
+  color: #3c4043;
+}
+
+/* Estados de los días */
+.dia-fuera-mes .numero-dia {
+  color: #70757a;
+  opacity: 0.4;
+}
+
+.dia-hoy {
+  background-color: #f1f3f4; /* Fondo gris muy suave para hoy */
+}
+.dia-hoy .numero-dia {
+  color: #AD868A; /* Color de tu diseño para hoy */
+  font-weight: 600;
+}
+
+.dia-seleccionado {
+  background-color: #e8eaed; /* Gris oscuro o el color primario que prefieras */
+}
+
+/* Si quieres que el día seleccionado sea un círculo del color de tu diseño (ej. #AD868A o #0f766e) */
+.dia-seleccionado {
+  background-color: #AD868A; 
+}
+.dia-seleccionado .numero-dia {
+  color: #ffffff;
+  font-weight: 500;
+}
