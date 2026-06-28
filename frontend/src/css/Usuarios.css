@@ -1,0 +1,500 @@
+/* src/css/Usuarios.css */
+
+.usuarios-container {
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Tarjetas Superiores */
+.top-cards-wrapper {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  align-items: flex-start;
+}
+
+.metric-card {
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  min-width: 200px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  gap: 1rem;
+}
+
+.metric-card.active-users {
+  background-color: #FACB4B;
+}
+
+.card-icon-container {
+  color: #22806B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.metric-card.active-users .card-icon-container {
+  color: #22806B;
+}
+
+.card-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-title {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.metric-card.active-users .card-title {
+  color: #7a5c00;
+}
+
+.card-number {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1;
+}
+
+.metric-card.active-users .card-number {
+  color: #1a2e2a;
+}
+
+.add-user-btn {
+  margin-left: auto;
+  background-color: #FACB4B;
+  color: #1a2e2a;
+  border: none;
+  border-radius: 20px;
+  padding: 0.6rem 1.25rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  box-shadow: 0 2px 8px rgba(250, 203, 75, 0.3);
+}
+
+.add-user-btn:hover {
+  opacity: 0.9;
+}
+
+/* Filtros y Búsqueda */
+.filters-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.tabs-container {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  background-color: #22806B;
+  color: #fff;
+}
+
+.tab-btn:hover:not(.active) {
+  color: #1f2937;
+  background-color: #eef0f3;
+}
+
+.search-container-users {
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  border-radius: 20px;
+  padding: 0.4rem 1rem;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+  width: 250px;
+}
+
+.search-container-users input {
+  border: none;
+  outline: none;
+  margin-left: 0.5rem;
+  width: 100%;
+  font-size: 0.85rem;
+  color: #1f2937;
+}
+
+/* Acciones en lote */
+.bulk-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.bulk-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #f1f3f5;
+  border: none;
+  padding: 0.4rem 1rem;
+  border-radius: 16px;
+  color: #4b5563;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-weight: 500;
+}
+
+.bulk-btn:hover {
+  background: #e2e8f0;
+}
+
+.bulk-btn.active {
+  background: #AD868A;
+  color: #fff;
+}
+
+/* Popover de Cambiar Rol */
+.role-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 105px; /* Ajustar según posición del botón */
+  background: #eedddd; /* Color mauve muy claro según diseño */
+  border-radius: 12px;
+  width: 260px;
+  padding: 1rem;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  z-index: 100;
+}
+
+.role-popover-title {
+  color: #a4767a;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 0.75rem;
+  text-align: left;
+}
+
+.role-options {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.role-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.5rem;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(164, 118, 122, 0.2);
+  transition: background 0.2s;
+}
+
+.role-option:last-child {
+  border-bottom: none;
+}
+
+.role-option:hover, .role-option.selected {
+  background: rgba(255,255,255,0.3);
+  border-radius: 6px;
+}
+
+.role-option-icon {
+  color: #a4767a;
+}
+
+.role-option-text {
+  color: #1f2937;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.role-popover-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.role-btn-confirm {
+  background: #FACB4B;
+  color: #fff;
+  border: none;
+  padding: 0.35rem 0.8rem;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.role-btn-cancel {
+  background: #a4767a;
+  color: #fff;
+  border: none;
+  padding: 0.35rem 0.8rem;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.selected-info {
+  margin-left: auto;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Tabla de Usuarios */
+.table-container {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  overflow-x: auto;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.users-table th, .users-table td {
+  padding: 1rem 1.5rem;
+  text-align: left;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.875rem;
+}
+
+.users-table th {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.users-table td {
+  color: #4b5563;
+}
+
+/* Checkbox estilización */
+.checkbox-cell {
+  width: 40px;
+}
+
+.users-table input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #FACB4B;
+  cursor: pointer;
+}
+
+/* Columna de nombre y avatar */
+.name-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #eef0f3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+.name-text {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+/* Etiqueta de estado */
+.status-badge {
+  background-color: #22806B;
+  color: #fff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Botones de acción (editar, eliminar) */
+.actions-cell {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.action-icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.action-icon-btn.edit:hover {
+  color: #3b82f6;
+}
+
+.action-icon-btn.delete:hover {
+  color: #ef4444;
+}
+
+.action-icon-btn.delete {
+  color: #fca5a5;
+}
+
+/* Modal Agregar Usuario */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #ffffff;
+  border-radius: 24px;
+  width: 90%;
+  max-width: 550px;
+  padding: 2.5rem;
+  position: relative;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #22806B;
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.2rem;
+}
+
+.modal-subtitle {
+  font-size: 0.9rem;
+  color: #111827;
+  margin-bottom: 1.5rem;
+}
+
+.form-section-title {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  letter-spacing: 0.05em;
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.05em;
+}
+
+.form-input, .form-select {
+  padding: 0.6rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #4b5563;
+  outline: none;
+  background: #ffffff;
+}
+
+.form-input:focus, .form-select:focus {
+  border-color: #22806B;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2.5rem;
+}
+
+.modal-footer-text {
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-modal-cancel {
+  background-color: #e5e7eb;
+  color: #111827;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 20px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-modal-save {
+  background-color: #22806B;
+  color: #ffffff;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 20px;
+  font-weight: 500;
+  cursor: pointer;
+}
+

@@ -9,6 +9,7 @@ import {
   LogOut,
   ChevronLeft,
   MessageSquare,
+  Users,
 } from 'lucide-react';
 import '../../index.css';
 
@@ -23,11 +24,10 @@ const menuItems = [
   { name: 'Dashboard',             path: '/dashboard',          icon: LayoutDashboard },
   { name: 'Dashboard Docente', path: '/docente/dashboard', icon: LayoutDashboard, role: 'docente' },
   { name: 'Reservar',              path: '/reservas',           icon: BookOpen        },
-  { name: 'Mis Evaluaciones',      path: '/evaluaciones',       icon: ClipboardList   },
-  { name: 'Gestión Evaluaciones',  path: '/admin-evaluaciones', icon: ClipboardList   },
   { name: 'Calendario',            path: '/calendario',         icon: Calendar        },
   { name: 'Inventario',            path: '/inventario',         icon: Package         },
   { name: 'Dashboard Admin',       path: '/admin/dashboard',    icon: ShieldCheck     },
+  { name: 'Usuario',               path: '/admin/usuarios',     icon: Users           },
   { name: 'Buzón Sugerencias',     path: '/buzon-sugerencias',  icon: MessageSquare         },
 ];
 
