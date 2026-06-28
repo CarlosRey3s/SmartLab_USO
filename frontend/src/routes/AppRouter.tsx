@@ -25,7 +25,8 @@ export const AppRouter = () => {
     <Router>
       <Routes>
 
-        <Route path="/login" element={<Login />} />
+        {/* Login desactivado, redirigir directo al sistema */}
+        <Route path="/login" element={<Navigate to="/admin/dashboard" replace />} />
 
         {/* PROTEGIDAS */}
         <Route element={<ProtectedRoute />}>

@@ -24,14 +24,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Recuperar sesión persistente
-    const savedUser = localStorage.getItem('uso_user');
-    const savedToken = localStorage.getItem('uso_token');
-
-    if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
-      setToken(savedToken);
-    }
+    // LOGIN DESACTIVADO TEMPORALMENTE (Autenticación forzada)
+    setUser({
+      id: 1,
+      nombres: 'Admin',
+      apellidos: 'Temporal',
+      rol: 'admin',
+      correo: 'admin@uso.edu.sv'
+    });
+    setToken('token-desactivado');
     setLoading(false);
   }, []);
 
