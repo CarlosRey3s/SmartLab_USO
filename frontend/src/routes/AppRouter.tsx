@@ -16,6 +16,8 @@ import DocenteDashboard from "../pages/docente/DocenteDashboard";
 import {
   CalendarioView,
   InventarioView,
+  EspacioView,
+  ReportesView,
   DashboardAdmin,
   Usuarios
 } from '../pages/admin';
@@ -25,32 +27,38 @@ export const AppRouter = () => {
     <Router>
       <Routes>
 
-        {/* Login desactivado, redirigir directo al sistema */}
-        <Route path="/login" element={<Navigate to="/admin/dashboard" replace />} />
+        {/* Login activo */}
+        <Route path="/login" element={<Login />} />
 
         {/* PROTEGIDAS */}
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<MainLayout />}>
 
             {/* ================= ESTUDIANTE ================= */}
-            <Route index element={<Dashboard />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="reservas" element={<Reservar />} />
+            <Route element={<ProtectedRoute allowedRoles={['estudiante']} />}>
+              <Route index element={<Dashboard />} />
+              <Route path="dashboard" element={<Dashboard />} />
+            </Route>
             <Route path="buzon-sugerencias" element={<BuzonSugerencias />} />
 
             {/* ================= DOCENTE ================= */}
-            <Route element={<ProtectedRoute allowedRoles={['docente', 'admin']} />}>
+            <Route element={<ProtectedRoute allowedRoles={['docente', 'administrador', 'coordinador']} />}>
               <Route path="docente/dashboard" element={<DocenteDashboard />} />
-              <Route path="docente/reservas" element={<Reservar />} />
             </Route>
 
             {/* ================= ADMIN ================= */}
-            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+            <Route element={<ProtectedRoute allowedRoles={['administrador', 'coordinador']} />}>
               <Route path="admin/dashboard" element={<DashboardAdmin />} />
               <Route path="admin/usuarios" element={<Usuarios />} />
-              <Route path="calendario" element={<CalendarioView />} />
               <Route path="inventario" element={<InventarioView />} />
+              <Route path="espacio" element={<EspacioView />} />
+              <Route path="reportes" element={<ReportesView />} />
               <Route path="admin/buzon-sugerencias" element={<BuzonSugerencias />} />
+            </Route>
+
+            {/* ================= COMPARTIDAS ================= */}
+            <Route element={<ProtectedRoute allowedRoles={['administrador', 'coordinador', 'docente', 'estudiante']} />}>
+              <Route path="calendario" element={<CalendarioView />} />
             </Route>
 
           </Route>

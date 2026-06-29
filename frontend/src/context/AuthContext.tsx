@@ -4,7 +4,7 @@ interface User {
   id: number;
   nombres: string;
   apellidos: string;
-  rol: 'admin' | 'estudiante' | 'docente';
+  rol: 'administrador' | 'estudiante' | 'docente' | 'coordinador';
   correo: string;
 }
 
@@ -24,15 +24,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // LOGIN DESACTIVADO TEMPORALMENTE (Autenticación forzada)
-    setUser({
-      id: 1,
-      nombres: 'Admin',
-      apellidos: 'Temporal',
-      rol: 'admin',
-      correo: 'admin@uso.edu.sv'
-    });
-    setToken('token-desactivado');
+    // Restaurando la lógica real de sesión
+    const storedUser = localStorage.getItem('uso_user');
+    const storedToken = localStorage.getItem('uso_token');
+
+    if (storedUser && storedToken) {
+      setUser(JSON.parse(storedUser));
+      setToken(storedToken);
+    }
     setLoading(false);
   }, []);
 

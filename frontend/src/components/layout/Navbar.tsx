@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Menu, Bell, Search } from 'lucide-react';
+import { Menu, Bell, Search, LogOut } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 // import '../../css/Navbar.css'; // <-- Descomenta y ajusta esta ruta cuando crees el CSS
 
 interface NavbarProps {
@@ -8,6 +10,11 @@ interface NavbarProps {
 
 export const Navbar = ({ onToggleMenu }: NavbarProps) => {
   const location = useLocation();
+  const { user } = useAuth();
+  const [showDropdown, setShowDropdown] = useState(false);
+  
+  const fullName = user ? `${user.nombres} ${user.apellidos}` : 'Usuario';
+  const initials = user ? user.nombres.charAt(0).toUpperCase() : 'U';
 
   const getTitle = () => {
     const path = location.pathname;
@@ -21,6 +28,12 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
     if (path === '/realizar-evaluacion') return 'Realizando Evaluación';
      if (path === '/admin/dashboard') return 'Dashboard Admin';
     return 'Proyecto USO';
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('uso_user');
+    localStorage.removeItem('uso_token');
+    window.location.href = '/login';
   };
 
   return (
@@ -47,12 +60,55 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
       </div>
 
       {/* Lado Derecho */}
-      <div className="navbar-right">
-        <div className="user-info-navbar">
-          <span className="user-greeting">Hola, Astrid</span>
-          {/* Usamos tu amarillo para el avatar */}
-          <div className="user-avatar-navbar">A</div>
+      <div className="navbar-right" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+        <div className="user-info-navbar" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span className="user-greeting">Hola, {fullName}</span>
+          {/* Avatar clickeable */}
+          <div 
+            className="user-avatar-navbar" 
+            onClick={() => setShowDropdown(!showDropdown)}
+            style={{ cursor: 'pointer' }}
+            title="Opciones de usuario"
+          >
+            {initials}
+          </div>
+          
+          {/* Menú Desplegable */}
+          {showDropdown && (
+            <div style={{
+              position: 'absolute',
+              top: '110%',
+              right: '0',
+              backgroundColor: 'white',
+              border: '1px solid #eee',
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              padding: '8px 0',
+              zIndex: 50,
+              minWidth: '150px'
+            }}>
+              <button 
+                onClick={handleLogout}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: '100%',
+                  padding: '8px 16px',
+                  border: 'none',
+                  background: 'none',
+                  cursor: 'pointer',
+                  color: '#ef4444',
+                  fontSize: '14px',
+                  gap: '8px'
+                }}
+              >
+                <LogOut size={16} />
+                Cerrar Sesión
+              </button>
+            </div>
+          )}
         </div>
+
         <button className="icon-button notification-button">
           <Bell size={20} strokeWidth={2} />
           {/* Un pequeño puntito de notificación para darle realismo */}

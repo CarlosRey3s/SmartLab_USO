@@ -1,9 +1,9 @@
 import React from 'react';
 
-export const ReportesView = () => {
+export const EspacioView = () => {
   return (
     <div style={{ padding: '20px' }}>
-      <h1>Reportes y Estadísticas (R & E)</h1>
+      <h1>Gestión de Espacios (Laboratorios)</h1>
       <p>Esta vista se encuentra en construcción.</p>
     </div>
   );

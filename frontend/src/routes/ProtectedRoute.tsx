@@ -22,13 +22,7 @@ return <Navigate to="/dashboard" replace />;
 };*/
 
 export const ProtectedRoute = ({ allowedRoles }: { allowedRoles?: string[] }) => {
-  
-  // 1. COMENTA TU LÓGICA REAL TEMPORALMENTE
-  // const { isAuthenticated, user } = useAuth(); 
-
-  // 2. AGREGA ESTAS DOS LÍNEAS PARA FORZAR EL ACCESO:
-  const isAuthenticated = true; 
-  const user = { role: 'admin' }; // Pon 'admin' para que te deje ver todo, o 'estudiante'
+  const { isAuthenticated, user } = useAuth(); 
 
   // Si no está autenticado, lo manda al login
   if (!isAuthenticated) {
@@ -36,7 +30,7 @@ export const ProtectedRoute = ({ allowedRoles }: { allowedRoles?: string[] }) =>
   }
 
   // Si la ruta requiere un rol específico y el usuario no lo tiene
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
+  if (allowedRoles && user && !allowedRoles.includes(user.rol)) {
     return <Navigate to="/dashboard" replace />; // O a una página de "No autorizado"
   }
 

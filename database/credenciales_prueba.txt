@@ -1,0 +1,14 @@
+======================================================
+CREDENCIALES DE PRUEBA TEMPORALES (SUPER ADMINISTRADOR)
+======================================================
+
+Para poder ingresar al dashboard temporalmente y crear los usuarios oficiales en la base de datos, utilizar las siguientes credenciales:
+
+Correo electrónico: admin@prueba.com
+Contraseña:       admin123
+Rol:              Administrador
+
+Nota para el equipo:
+Este usuario está programado de forma temporal en el código del servidor (auth.service.js) para facilitar
+las pruebas. Una vez que los usuarios oficiales sean creados desde el menú "Usuarios", 
+se debe eliminar este usuario temporal del código.

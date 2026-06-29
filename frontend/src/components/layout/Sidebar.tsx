@@ -10,6 +10,8 @@ import {
   ChevronLeft,
   MessageSquare,
   Users,
+  Layers,
+  FileBarChart
 } from 'lucide-react';
 import '../../index.css';
 
@@ -21,21 +23,30 @@ interface SidebarProps {
 }
 
 const menuItems = [
-  { name: 'Dashboard',             path: '/dashboard',          icon: LayoutDashboard },
-  { name: 'Dashboard Docente', path: '/docente/dashboard', icon: LayoutDashboard, role: 'docente' },
-  { name: 'Reservar',              path: '/reservas',           icon: BookOpen        },
-  { name: 'Calendario',            path: '/calendario',         icon: Calendar        },
-  { name: 'Inventario',            path: '/inventario',         icon: Package         },
-  { name: 'Dashboard Admin',       path: '/admin/dashboard',    icon: ShieldCheck     },
-  { name: 'Usuario',               path: '/admin/usuarios',     icon: Users           },
-  { name: 'Buzón Sugerencias',     path: '/buzon-sugerencias',  icon: MessageSquare         },
+  // DASHBOARDS (Siempre primero)
+  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['estudiante'] },
+  { name: 'Dashboard', path: '/docente/dashboard', icon: LayoutDashboard, roles: ['docente'] },
+  { name: 'Dashboard', path: '/admin/dashboard', icon: ShieldCheck, roles: ['administrador', 'coordinador'] },
+
+  // CALENDARIO (Segundo)
+  { name: 'Calendario', path: '/calendario', icon: Calendar, roles: ['administrador', 'coordinador', 'docente', 'estudiante'] },
+
+  // MÓDULOS DE ADMINISTRACIÓN
+  { name: 'Inventario', path: '/inventario', icon: Package, roles: ['administrador', 'coordinador'] },
+  { name: 'Espacio', path: '/espacio', icon: Layers, roles: ['administrador', 'coordinador'] },
+  { name: 'R & E', path: '/reportes', icon: FileBarChart, roles: ['administrador', 'coordinador'] },
+  { name: 'Usuarios', path: '/admin/usuarios', icon: Users, roles: ['administrador'] },
+
+  // SUGERENCIAS (Último)
+  { name: 'Sugerencias', path: '/buzon-sugerencias', icon: MessageSquare, roles: ['estudiante'] },
+  { name: 'Buzón Sugerencias', path: '/admin/buzon-sugerencias', icon: MessageSquare, roles: ['administrador', 'coordinador'] },
 ];
 
 export const Sidebar = ({
   isOpen,
   onToggle,
-  userName  = 'Astrid',
-  userRole  = 'Administrador',
+  userName = 'Astrid',
+  userRole = 'Administrador',
 }: SidebarProps) => {
   const location = useLocation();
 
@@ -84,50 +95,37 @@ export const Sidebar = ({
       {/* ── Navigation ── */}
       <nav className="sb__nav" aria-label="Menú principal">
         <ul className="sb__list">
-          {menuItems.map((item) => {
-            const active = isActive(item.path);
-            const Icon   = item.icon;
+          {menuItems
+            .filter(item => item.roles.includes(userRole.toLowerCase()))
+            .map((item) => {
+              const active = isActive(item.path);
+              const Icon = item.icon;
 
-            return (
-              <li key={item.name} className="sb__item">
-                <Link
-                  to={item.path}
-                  className={`sb__link${active ? ' sb__link--active' : ''}`}
-                  aria-current={active ? 'page' : undefined}
-                >
-                  {/* Active indicator bar */}
-                  {active && <span className="sb__indicator" />}
+              return (
+                <li key={item.name} className="sb__item">
+                  <Link
+                    to={item.path}
+                    className={`sb__link${active ? ' sb__link--active' : ''}`}
+                    aria-current={active ? 'page' : undefined}
+                  >
+                    {/* Active indicator bar */}
+                    {active && <span className="sb__indicator" />}
 
-                  <span className="sb__icon">
-                    <Icon size={18} strokeWidth={active ? 2.2 : 1.8} />
-                  </span>
+                    <span className="sb__icon">
+                      <Icon size={18} strokeWidth={active ? 2.2 : 1.8} />
+                    </span>
 
-                  <span className="sb__label">{item.name}</span>
+                    <span className="sb__label">{item.name}</span>
 
-                  {/* Active dot badge */}
-                  {active && <span className="sb__dot" />}
-                </Link>
-              </li>
-            );
-          })}
+                    {/* Active dot badge */}
+                    {active && <span className="sb__dot" />}
+                  </Link>
+                </li>
+              );
+            })}
         </ul>
       </nav>
 
-      {/* ── Bottom user section ── */}
-      <div className="sb__bottom">
-        <div className="sb__divider" />
-
-        <div className="sb__user">
-          <div className="sb__user-avatar">{initials}</div>
-          <div className="sb__user-info">
-            <span className="sb__user-name">Hola, {userName}</span>
-            <span className="sb__user-role">{userRole}</span>
-          </div>
-          <button className="sb__logout" aria-label="Cerrar sesión" title="Cerrar sesión">
-            <LogOut size={15} />
-          </button>
-        </div>
-      </div>
     </aside>
   );
 };

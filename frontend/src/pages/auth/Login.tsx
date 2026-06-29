@@ -187,18 +187,24 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const data = await authService.login(email, password, role);
+      // Llamada real al backend sin importar el rol gráfico que haya seleccionado
+      const data = await authService.login(email, password);
       authLogin(data.user, data.token);
       
-      // Redirigir según el rol
-      if (data.user.rol === 'admin') {
-        navigate('/calendario'); // O el dashboard de admin
+      // Redirigir según el rol real de la BD
+      if (data.user.rol === 'administrador') {
+        navigate('/admin/dashboard');
+      } else if (data.user.rol === 'coordinador') {
+        navigate('/admin/dashboard'); // Asumiendo que va al mismo, puedes cambiarlo luego
+      } else if (data.user.rol === 'docente') {
+        navigate('/docente/dashboard');
       } else {
+        // estudiante
         navigate('/dashboard');
       }
     } catch (error: any) {
       console.error('Error en login:', error);
-      setServerError(error.response?.data?.message || 'Error al conectar con el servidor');
+      setServerError(error.message || 'Error al conectar con el servidor');
     } finally {
       setLoading(false);
     }

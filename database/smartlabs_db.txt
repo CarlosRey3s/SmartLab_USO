@@ -1,0 +1,167 @@
+-- ===========================================================================
+-- SCRIPT DE BASE DE DATOS: PLATAFORMA SMARTLABS (USO)
+-- MOTOR: PostgreSQL (v13 o superior)
+-- DISEÑO: Normalizado en 3NF con Class Table Inheritance y Asignación de Roles
+-- ===========================================================================
+
+-- Habilitar extensión para generación automática de UUIDs
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ===========================================================================
+-- 1. CREACIÓN DE TIPOS ENUM (Control estricto de catálogos y dominios)
+-- ===========================================================================
+CREATE TYPE rol_usuario_enum AS ENUM ('estudiante', 'docente', 'coordinador', 'administrador');
+CREATE TYPE estado_usuario_enum AS ENUM ('activo', 'inactivo');
+CREATE TYPE estado_lab_enum AS ENUM ('disponible', 'en_mantenimiento', 'clausurado');
+CREATE TYPE modo_reserva_enum AS ENUM ('por_estacion', 'espacio_completo');
+CREATE TYPE estado_estacion_enum AS ENUM ('disponible', 'no_disponible'); 
+CREATE TYPE tipo_actividad_enum AS ENUM ('clase', 'reserva', 'mantenimiento');
+CREATE TYPE estado_reserva_enum AS ENUM ('pendiente', 'aprobada', 'cancelada', 'completada');
+CREATE TYPE tipo_movimiento_enum AS ENUM ('ingreso', 'egreso', 'ajuste');
+CREATE TYPE estado_sugerencia_enum AS ENUM ('pendiente', 'en_revisión', 'atendida', 'archivada');
+
+-- ===========================================================================
+-- 2. TABLAS BASE DE ENTIDADES
+-- ===========================================================================
+
+-- Tabla: usuarios
+CREATE TABLE usuarios (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nombre VARCHAR(100) NOT NULL,
+    apellido VARCHAR(100) NOT NULL,
+    expediente VARCHAR(20) UNIQUE NOT NULL, 
+    correo VARCHAR(150) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    rol rol_usuario_enum NOT NULL,
+    estado estado_usuario_enum NOT NULL DEFAULT 'activo',
+    fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla: laboratorios (Ahora con asignación de coordinador)
+CREATE TABLE laboratorios (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nombre VARCHAR(100) NOT NULL UNIQUE,
+    descripcion TEXT,
+    edificio VARCHAR(100) NOT NULL, -- NUEVO: Nombre o bloque del edificio
+    piso VARCHAR(50) NOT NULL,      -- NUEVO: Nivel o piso (Ej: 'Planta Baja', 'Nivel 2')
+    aula VARCHAR(50) NOT NULL,      -- NUEVO: Número o código del local
+    estado estado_lab_enum NOT NULL DEFAULT 'disponible',
+    modo_reserva modo_reserva_enum NOT NULL DEFAULT 'por_estacion', 
+    coordinador_id UUID REFERENCES usuarios(id) ON DELETE SET NULL, 
+    fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla: estaciones_trabajo
+CREATE TABLE estaciones_trabajo (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    laboratorio_id UUID NOT NULL REFERENCES laboratorios(id) ON DELETE CASCADE,
+    nombre VARCHAR(50) NOT NULL,
+    capacidad INT NOT NULL CHECK (capacidad > 0),
+    estado estado_estacion_enum NOT NULL DEFAULT 'disponible',
+    CONSTRAINT unique_estacion_por_laboratorio UNIQUE (laboratorio_id, nombre)
+);
+
+-- ===========================================================================
+-- 3. BLOQUE DE CALENDARIO Y AGENDA (Class Table Inheritance 1:1)
+-- ===========================================================================
+
+-- [TABLA MADRE]: actividades
+CREATE TABLE actividades (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    laboratorio_id UUID NOT NULL REFERENCES laboratorios(id) ON DELETE RESTRICT,
+    tipo tipo_actividad_enum NOT NULL,
+    fecha_hora_inicio TIMESTAMP WITH TIME ZONE NOT NULL,
+    fecha_hora_fin TIMESTAMP WITH TIME ZONE NOT NULL,
+    recurrencia VARCHAR(100) DEFAULT NULL, 
+    fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Restricción de integridad: Fin siempre después del Inicio
+    CONSTRAINT check_fechas_coherentes CHECK (fecha_hora_fin > fecha_hora_inicio)
+);
+
+-- [TABLA HIJA 1]: clases_academicas
+CREATE TABLE clases_academicas (
+    actividad_id UUID PRIMARY KEY REFERENCES actividades(id) ON DELETE CASCADE,
+    materia VARCHAR(150) NOT NULL,
+    docente_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
+    num_estudiantes INT NOT NULL CHECK (num_estudiantes > 0)
+);
+
+-- [TABLA HIJA 2]: reservas_estudiantes
+CREATE TABLE reservas_estudiantes (
+    actividad_id UUID PRIMARY KEY REFERENCES actividades(id) ON DELETE CASCADE,
+    usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
+    estacion_id UUID REFERENCES estaciones_trabajo(id) ON DELETE SET NULL, 
+    titulo VARCHAR(150) NOT NULL,
+    nota_adicional TEXT,
+    estado_reserva estado_reserva_enum NOT NULL DEFAULT 'pendiente'
+);
+
+-- [TABLA HIJA 3]: mantenimientos
+CREATE TABLE mantenimientos (
+    actividad_id UUID PRIMARY KEY REFERENCES actividades(id) ON DELETE CASCADE,
+    tecnico_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
+    descripcion_ti TEXT NOT NULL
+);
+
+-- ===========================================================================
+-- 4. BLOQUE DE INVENTARIO Y SEGUIMIENTO CONTROLADO
+-- ===========================================================================
+
+-- Tabla: item_inventario
+CREATE TABLE item_inventario (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    laboratorio_id UUID NOT NULL REFERENCES laboratorios(id) ON DELETE RESTRICT,
+    nombre VARCHAR(150) NOT NULL,
+    codigo_interno VARCHAR(50) UNIQUE NOT NULL,
+    numero_cas VARCHAR(50) DEFAULT NULL,        
+    categoria VARCHAR(100) NOT NULL,            
+    ubicacion_fisica VARCHAR(255),               
+    unidad_medida VARCHAR(50) NOT NULL,         
+    tipo_control VARCHAR(50) NOT NULL,          
+    cantidad_actual INT NOT NULL DEFAULT 0 CHECK (cantidad_actual >= 0),
+    stock_minimo INT NOT NULL DEFAULT 0 CHECK (stock_minimo >= 0),
+    imagen_url VARCHAR(255) DEFAULT NULL        
+);
+
+-- Tabla: movimiento_inventario
+CREATE TABLE movimiento_inventario (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    item_id UUID NOT NULL REFERENCES item_inventario(id) ON DELETE CASCADE,
+    usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT, 
+    tipo_movimiento tipo_movimiento_enum NOT NULL,
+    cantidad INT NOT NULL CHECK (cantidad > 0),
+    fecha_movimiento TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    observaciones TEXT
+);
+
+-- Tabla Intermedia: reserva_items
+CREATE TABLE reserva_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    actividad_id UUID NOT NULL REFERENCES actividades(id) ON DELETE CASCADE,
+    item_id UUID NOT NULL REFERENCES item_inventario(id) ON DELETE RESTRICT,
+    cantidad_solicitada INT NOT NULL CHECK (cantidad_solicitada > 0),
+    CONSTRAINT unique_item_por_actividad UNIQUE (actividad_id, item_id)
+);
+
+-- ===========================================================================
+-- 5. MÓDULO: BUZÓN DE COMENTARIOS Y SUGERENCIAS
+-- ===========================================================================
+
+CREATE TABLE buzon_sugerencias (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE, 
+    laboratorio_id UUID REFERENCES laboratorios(id) ON DELETE SET NULL, 
+    titulo VARCHAR(150) NOT NULL,
+    comentario TEXT NOT NULL,
+    estado_gestion estado_sugerencia_enum NOT NULL DEFAULT 'pendiente',
+    respuesta_coordinador TEXT DEFAULT NULL, 
+    fecha_envio TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ===========================================================================
+-- INDEXACIÓN ESTRATÉGICA
+-- ===========================================================================
+CREATE INDEX idx_actividades_fechas ON actividades (fecha_hora_inicio, fecha_hora_fin);
+CREATE INDEX idx_actividades_lab ON actividades (laboratorio_id);
+CREATE INDEX idx_sugerencias_estado ON buzon_sugerencias (estado_gestion);

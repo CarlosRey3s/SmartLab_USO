@@ -1,9 +1,7 @@
-import { Pool } from 'pg';
-import dotenv from 'dotenv';
+const { Pool } = require('pg');
+require('dotenv').config();
 
-dotenv.config();
-
-export const pool = new Pool({
+const pool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
   database: process.env.DB_NAME,
@@ -11,11 +9,9 @@ export const pool = new Pool({
   port: parseInt(process.env.DB_PORT || '5432'),
 });
 
-pool.on('connect', () => {
-  console.log('🔗 Conexión a la base de datos PostgreSQL establecida');
-});
-
 pool.on('error', (err) => {
   console.error('❌ Error inesperado en el cliente de la base de datos', err);
   process.exit(-1);
 });
+
+module.exports = { pool };
