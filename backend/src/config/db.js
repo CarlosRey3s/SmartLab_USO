@@ -23,4 +23,4 @@ pool.on('error', (err) => {
 });
 
 // Exportamos el pool para poder usarlo en nuestros controladores y modelos
-module.exports = pool;
+module.exports = { pool };
