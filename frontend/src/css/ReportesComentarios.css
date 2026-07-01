@@ -6,7 +6,7 @@
 /* HEADER */
 .reports-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start; /* Alinea los botones al inicio izquierdo */
   align-items: center;
   margin-bottom: 24px;
 }
