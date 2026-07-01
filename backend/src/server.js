@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const { pool } = require('./config/db');
+const db = require('./config/db');
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -23,7 +23,7 @@ app.use('/api/calendario', calendarioRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {
-    const result = await pool.query('SELECT NOW()');
+    const result = await db.query('SELECT NOW()');
     res.json({
       status: 'success',
       message: 'API funcionando correctamente',
@@ -37,10 +37,10 @@ app.get('/api/health', async (req, res) => {
 
 app.listen(port, async () => {
   console.log(`🚀 Servidor backend corriendo en http://localhost:${port}`);
-  
+
   // Probar la conexión a la base de datos al arrancar
   try {
-    await pool.query('SELECT 1');
+    await db.query('SELECT 1');
     console.log('✅ Conexión a la base de datos exitosa.');
   } catch (err) {
     console.error('❌ Error al conectar con la base de datos:', err);
