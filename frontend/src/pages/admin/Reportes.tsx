@@ -37,10 +37,8 @@ export const ReportesView: React.FC = () => {
   return (
     <div className="reports-container">
       
-      {/* ================= HEADER ================= */}
+      {/* ================= HEADER CONTENIENDO ÚNICAMENTE LAS PESTAÑAS ================= */}
       <div className="reports-header">
-        <h2>Reportes y comentarios</h2>
-
         <div className="tabs">
           <button 
             className={`tab ${activeTab === "uso" ? "active" : ""}`}

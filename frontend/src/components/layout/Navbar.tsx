@@ -26,7 +26,9 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
     if (path === '/admin-evaluaciones') return 'Gestión de Evaluaciones';
     if (path === '/docente/dashboard') return 'Dashboard Docente';
     if (path === '/realizar-evaluacion') return 'Realizando Evaluación';
-     if (path === '/admin/dashboard') return 'Dashboard Admin';
+    if (path === '/admin/dashboard') return 'Dashboard Admin';
+    if (path === '/reportes' || path === '/reportes-comentarios') return 'Reportes y Comentarios';
+
     return 'Proyecto USO';
   };
 
