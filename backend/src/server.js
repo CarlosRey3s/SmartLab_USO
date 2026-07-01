@@ -1,8 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const db = require('./config/db');
-
+const { pool: db } = require('./config/db');
+console.log('DEBUG - tipo de db:', typeof db, '- tiene query?', typeof db.query);
 const app = express();
 const port = process.env.PORT || 4000;
 
