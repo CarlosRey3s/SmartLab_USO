@@ -30,7 +30,40 @@ const crearItem = async (req, res) => {
   }
 };
 
+// Obtener movimientos de un item específico
+const getMovimientosPorItem = async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const movimientos = await inventarioService.obtenerMovimientosPorItem(itemId);
+    res.json({
+      status: 'success',
+      data: movimientos
+    });
+  } catch (error) {
+    console.error('Error al obtener los movimientos:', error);
+    res.status(500).json({ status: 'error', message: 'Error interno del servidor al obtener movimientos' });
+  }
+};
+
+// Crear un nuevo movimiento de inventario (ingreso, egreso, ajuste)
+const crearMovimiento = async (req, res) => {
+  try {
+    const nuevoMovimiento = await inventarioService.crearMovimientoInventario(req.body);
+    
+    res.status(201).json({
+      status: 'success',
+      message: 'Movimiento registrado exitosamente',
+      data: nuevoMovimiento
+    });
+  } catch (error) {
+    console.error('Error al registrar movimiento:', error);
+    res.status(500).json({ status: 'error', message: 'Error interno del servidor al registrar movimiento' });
+  }
+};
+
 module.exports = {
   getInventario,
-  crearItem
+  crearItem,
+  getMovimientosPorItem,
+  crearMovimiento
 };

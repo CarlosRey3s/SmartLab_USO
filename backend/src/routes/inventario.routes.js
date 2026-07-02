@@ -8,4 +8,8 @@ router.get('/', inventarioController.getInventario);
 // Definir la ruta POST /api/inventario
 router.post('/', inventarioController.crearItem);
 
+// Rutas para movimientos de inventario
+router.get('/movimientos/:itemId', inventarioController.getMovimientosPorItem);
+router.post('/movimientos', inventarioController.crearMovimiento);
+
 module.exports = router;
