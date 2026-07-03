@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 // 1. Importamos el controlador
-const actividadesController = require('../controllers/actividadesController.js');
+const actividadesController = require('../controllers/actividades.controller.js');
 
 // 2. Importamos el middleware (¡Asegúrate de que en el archivo de origen se llame exactamente igual y se exporte en un objeto!)
 const { validarActividades } = require('../middlewares/validarActividades.js');
