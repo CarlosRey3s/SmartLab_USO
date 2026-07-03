@@ -43,7 +43,114 @@ const crearItemInventario = async (itemData) => {
   return result.rows[0];
 };
 
+// Obtener los movimientos de un item específico
+const obtenerMovimientosPorItem = async (itemId) => {
+  const query = `
+    SELECT 
+      m.id, m.item_id, m.usuario_id, m.tipo_movimiento, m.cantidad, 
+      m.fecha_movimiento, m.observaciones,
+      u.nombre AS usuario_nombre, u.apellido AS usuario_apellido
+    FROM movimiento_inventario m
+    JOIN usuarios u ON m.usuario_id = u.id
+    WHERE m.item_id = $1
+    ORDER BY m.fecha_movimiento DESC
+  `;
+  
+  const result = await pool.query(query, [itemId]);
+  return result.rows;
+};
+
+// Registrar un movimiento y actualizar el stock
+const crearMovimientoInventario = async (movimientoData) => {
+  const { item_id, usuario_id, tipo_movimiento, cantidad, observaciones } = movimientoData;
+  
+  // Usar transacción para asegurar que el movimiento y la actualización del stock ocurran juntos
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    // 1. Registrar el movimiento
+    const queryMovimiento = `
+      INSERT INTO movimiento_inventario (item_id, usuario_id, tipo_movimiento, cantidad, observaciones)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *;
+    `;
+    const resultMovimiento = await client.query(queryMovimiento, [
+      item_id, usuario_id, tipo_movimiento, cantidad, observaciones
+    ]);
+    
+    const nuevoMovimiento = resultMovimiento.rows[0];
+    
+    // 2. Actualizar la cantidad en el item de inventario dependiendo del tipo
+    let queryActualizarStock = '';
+    
+    if (tipo_movimiento === 'ingreso' || tipo_movimiento === 'ajuste') {
+      queryActualizarStock = `
+        UPDATE item_inventario 
+        SET cantidad_actual = cantidad_actual + $1 
+        WHERE id = $2
+      `;
+    } else if (tipo_movimiento === 'egreso') {
+      queryActualizarStock = `
+        UPDATE item_inventario 
+        SET cantidad_actual = cantidad_actual - $1 
+        WHERE id = $2
+      `;
+    }
+    
+    await client.query(queryActualizarStock, [cantidad, item_id]);
+    
+    await client.query('COMMIT');
+    return nuevoMovimiento;
+    
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+// Actualizar un item en el inventario
+const actualizarItemInventario = async (id, itemData) => {
+  const { 
+    laboratorio_id, nombre, codigo_interno, numero_cas, categoria, 
+    ubicacion_fisica, unidad_medida, tipo_control, cantidad_actual, 
+    stock_minimo, imagen_url 
+  } = itemData;
+
+  const query = `
+    UPDATE item_inventario 
+    SET laboratorio_id = $1, nombre = $2, codigo_interno = $3, numero_cas = $4, 
+        categoria = $5, ubicacion_fisica = $6, unidad_medida = $7, tipo_control = $8, 
+        cantidad_actual = $9, stock_minimo = $10, imagen_url = $11
+    WHERE id = $12
+    RETURNING *;
+  `;
+
+  const values = [
+    laboratorio_id, nombre, codigo_interno, numero_cas, categoria, 
+    ubicacion_fisica, unidad_medida, tipo_control, cantidad_actual || 0, 
+    stock_minimo || 0, imagen_url, id
+  ];
+
+  const result = await pool.query(query, values);
+  return result.rows[0];
+};
+
+// Eliminar un item en el inventario
+const eliminarItemInventario = async (id) => {
+  const query = 'DELETE FROM item_inventario WHERE id = $1 RETURNING id;';
+  const result = await pool.query(query, [id]);
+  return result.rows[0];
+};
+
 module.exports = {
   obtenerTodoElInventario,
-  crearItemInventario
+  crearItemInventario,
+  actualizarItemInventario,
+  eliminarItemInventario,
+  obtenerMovimientosPorItem,
+  crearMovimientoInventario
 };

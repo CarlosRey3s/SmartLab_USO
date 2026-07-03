@@ -14,6 +14,7 @@ const authRoutes = require('./routes/auth.routes');
 const usuarioRoutes = require('./routes/usuario.routes');
 const inventarioRoutes = require('./routes/inventario.routes');
 const calendarioRoutes = require('./routes/calendario.routes');
+const laboratorioRoutes = require('./routes/laboratorio.routes');
 
 // 1. Importamos el nuevo router - Calendario (actividades)
 const actividadesRoutes = require('./routes/actividadesRoutes');
@@ -24,6 +25,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/inventario', inventarioRoutes);
 app.use('/api/calendario', calendarioRoutes);
+app.use('/api/laboratorios', laboratorioRoutes);
 app.use('/api/actividades', actividadesRoutes); // 2. Montamos las nuevas rutas
 
 app.get('/api/health', async (req, res) => {

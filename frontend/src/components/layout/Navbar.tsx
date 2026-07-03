@@ -28,6 +28,8 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
     if (path === '/realizar-evaluacion') return 'Realizando Evaluación';
     if (path === '/admin/dashboard') return 'Dashboard Admin';
     if (path === '/reportes' || path === '/reportes-comentarios') return 'Reportes y Comentarios';
+    if (path.includes('/usuarios') || path === '/admin/usuarios') return 'Usuarios';
+    if (path.includes('/espacio') || path === '/admin/espacio') return 'Espacio';
 
     return 'Proyecto USO';
   };

@@ -45,11 +45,15 @@ CREATE TABLE laboratorios (
     edificio VARCHAR(100) NOT NULL, -- NUEVO: Nombre o bloque del edificio
     piso VARCHAR(50) NOT NULL,      -- NUEVO: Nivel o piso (Ej: 'Planta Baja', 'Nivel 2')
     aula VARCHAR(50) NOT NULL,      -- NUEVO: Número o código del local
+    capacidad_maxima INT NOT NULL DEFAULT 0, -- NUEVO: Capacidad total si es espacio completo o suma de estaciones
     estado estado_lab_enum NOT NULL DEFAULT 'disponible',
     modo_reserva modo_reserva_enum NOT NULL DEFAULT 'por_estacion', 
     coordinador_id UUID REFERENCES usuarios(id) ON DELETE SET NULL, 
     fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+-- por si no quieres borrar los datos utiliza este comando 
+-- ALTER TABLE laboratorios ADD COLUMN capacidad_maxima INT NOT NULL DEFAULT 0; para agregarlo
+
 
 -- Tabla: estaciones_trabajo
 CREATE TABLE estaciones_trabajo (
