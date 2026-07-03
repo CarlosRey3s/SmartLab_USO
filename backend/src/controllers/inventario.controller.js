@@ -61,9 +61,55 @@ const crearMovimiento = async (req, res) => {
   }
 };
 
+// Actualizar un item del inventario
+const updateItem = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const itemActualizado = await inventarioService.actualizarItemInventario(id, req.body);
+    
+    if (!itemActualizado) {
+      return res.status(404).json({ status: 'error', message: 'Item no encontrado' });
+    }
+
+    res.json({
+      status: 'success',
+      message: 'Item actualizado exitosamente',
+      data: itemActualizado
+    });
+  } catch (error) {
+    console.error('Error al actualizar item de inventario:', error);
+    res.status(500).json({ status: 'error', message: 'Error interno del servidor al actualizar item' });
+  }
+};
+
+// Eliminar un item del inventario
+const deleteItem = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const itemEliminado = await inventarioService.eliminarItemInventario(id);
+    
+    if (!itemEliminado) {
+      return res.status(404).json({ status: 'error', message: 'Item no encontrado' });
+    }
+
+    res.json({
+      status: 'success',
+      message: 'Item eliminado exitosamente'
+    });
+  } catch (error) {
+    console.error('Error al eliminar item de inventario:', error);
+    if (error.code === '23503') { // foreign key violation
+      return res.status(400).json({ status: 'error', message: 'No se puede eliminar el ítem porque tiene movimientos asociados' });
+    }
+    res.status(500).json({ status: 'error', message: 'Error interno del servidor al eliminar item' });
+  }
+};
+
 module.exports = {
   getInventario,
   crearItem,
+  updateItem,
+  deleteItem,
   getMovimientosPorItem,
   crearMovimiento
 };

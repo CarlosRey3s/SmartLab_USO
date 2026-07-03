@@ -186,20 +186,29 @@
 
 .dropdown-item {
   width: 100%;
-  padding: 8px 12px;
+  padding: 10px 14px;
   border: none;
   background: none;
   text-align: left;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #444;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .dropdown-item:hover {
-  background: #f5f5f5;
+  background: #f0fdf4;
+  color: #219653;
 }
 
 .dropdown-item.delete {
   color: #d32f2f;
+}
+
+.dropdown-item.delete:hover {
+  background: #fef2f2;
+  color: #c62828;
 }
 
 /* Celda centralizada para cuando no hay datos */
@@ -210,4 +219,187 @@
   font-size: 16px;
   font-weight: 500;
   background-color: transparent;
+}
+
+/* ================= MODAL AGREGAR ITEM ================= */
+.add-item-modal {
+  width: 100%;
+  max-width: 650px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background-color: white;
+  border-radius: 12px;
+  padding: 32px 40px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.add-item-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 24px 0;
+}
+
+.form-section {
+  margin-bottom: 28px;
+}
+
+.section-title {
+  font-size: 14px;
+  color: #888;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.type-selector-container {
+  display: flex;
+  gap: 16px;
+}
+
+.type-card {
+  flex: 1;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+}
+
+.type-card.active {
+  border-color: #219653;
+  box-shadow: 0 0 0 1px #219653;
+}
+
+.type-card.active .type-icon {
+  color: #219653;
+}
+
+.type-icon {
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.type-name {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.type-desc {
+  font-size: 12px;
+  color: #888;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-grid.cols-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.form-input {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333;
+}
+
+.form-input::placeholder {
+  color: #bbb;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #219653;
+}
+
+.select-input {
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.textarea-input {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.image-upload-area {
+  border: 1px dashed #ddd;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  background: #fafafa;
+  color: #ccc;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.image-upload-area:hover {
+  background: #f0f0f0;
+}
+
+.actions-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: none;
+}
+
+.btn-cancel-modal {
+  padding: 10px 24px;
+  border-radius: 20px;
+  border: none;
+  background-color: #e2e8f0;
+  color: #333;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-cancel-modal:hover {
+  background-color: #cbd5e1;
+}
+
+.btn-save-modal {
+  padding: 10px 24px;
+  border-radius: 20px;
+  border: none;
+  background-color: #219653;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-save-modal:hover {
+  background-color: #1e874b;
 }

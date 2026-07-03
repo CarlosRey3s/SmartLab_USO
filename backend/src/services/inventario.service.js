@@ -112,9 +112,45 @@ const crearMovimientoInventario = async (movimientoData) => {
   }
 };
 
+// Actualizar un item en el inventario
+const actualizarItemInventario = async (id, itemData) => {
+  const { 
+    laboratorio_id, nombre, codigo_interno, numero_cas, categoria, 
+    ubicacion_fisica, unidad_medida, tipo_control, cantidad_actual, 
+    stock_minimo, imagen_url 
+  } = itemData;
+
+  const query = `
+    UPDATE item_inventario 
+    SET laboratorio_id = $1, nombre = $2, codigo_interno = $3, numero_cas = $4, 
+        categoria = $5, ubicacion_fisica = $6, unidad_medida = $7, tipo_control = $8, 
+        cantidad_actual = $9, stock_minimo = $10, imagen_url = $11
+    WHERE id = $12
+    RETURNING *;
+  `;
+
+  const values = [
+    laboratorio_id, nombre, codigo_interno, numero_cas, categoria, 
+    ubicacion_fisica, unidad_medida, tipo_control, cantidad_actual || 0, 
+    stock_minimo || 0, imagen_url, id
+  ];
+
+  const result = await pool.query(query, values);
+  return result.rows[0];
+};
+
+// Eliminar un item en el inventario
+const eliminarItemInventario = async (id) => {
+  const query = 'DELETE FROM item_inventario WHERE id = $1 RETURNING id;';
+  const result = await pool.query(query, [id]);
+  return result.rows[0];
+};
+
 module.exports = {
   obtenerTodoElInventario,
   crearItemInventario,
+  actualizarItemInventario,
+  eliminarItemInventario,
   obtenerMovimientosPorItem,
   crearMovimientoInventario
 };
