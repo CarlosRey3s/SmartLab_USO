@@ -4,9 +4,6 @@
 -- DISEÑO: Normalizado en 3NF con Class Table Inheritance y Asignación de Roles
 -- ===========================================================================
 
--- Habilitar extensión para generación automática de UUIDs
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- ===========================================================================
 -- 1. CREACIÓN DE TIPOS ENUM (Control estricto de catálogos y dominios)
 -- ===========================================================================
@@ -26,7 +23,7 @@ CREATE TYPE estado_sugerencia_enum AS ENUM ('pendiente', 'en_revisión', 'atendi
 
 -- Tabla: usuarios
 CREATE TABLE usuarios (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id SERIAL PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     apellido VARCHAR(100) NOT NULL,
     expediente VARCHAR(20) UNIQUE NOT NULL, 
@@ -39,7 +36,7 @@ CREATE TABLE usuarios (
 
 -- Tabla: laboratorios (Ahora con asignación de coordinador)
 CREATE TABLE laboratorios (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id SERIAL PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL UNIQUE,
     descripcion TEXT,
     edificio VARCHAR(100) NOT NULL, -- NUEVO: Nombre o bloque del edificio
@@ -48,17 +45,14 @@ CREATE TABLE laboratorios (
     capacidad_maxima INT NOT NULL DEFAULT 0, -- NUEVO: Capacidad total si es espacio completo o suma de estaciones
     estado estado_lab_enum NOT NULL DEFAULT 'disponible',
     modo_reserva modo_reserva_enum NOT NULL DEFAULT 'por_estacion', 
-    coordinador_id UUID REFERENCES usuarios(id) ON DELETE SET NULL, 
+    coordinador_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL, 
     fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
--- por si no quieres borrar los datos utiliza este comando 
--- ALTER TABLE laboratorios ADD COLUMN capacidad_maxima INT NOT NULL DEFAULT 0; para agregarlo
-
 
 -- Tabla: estaciones_trabajo
 CREATE TABLE estaciones_trabajo (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    laboratorio_id UUID NOT NULL REFERENCES laboratorios(id) ON DELETE CASCADE,
+    id SERIAL PRIMARY KEY,
+    laboratorio_id INTEGER NOT NULL REFERENCES laboratorios(id) ON DELETE CASCADE,
     nombre VARCHAR(50) NOT NULL,
     capacidad INT NOT NULL CHECK (capacidad > 0),
     estado estado_estacion_enum NOT NULL DEFAULT 'disponible',
@@ -71,8 +65,8 @@ CREATE TABLE estaciones_trabajo (
 
 -- [TABLA MADRE]: actividades
 CREATE TABLE actividades (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    laboratorio_id UUID NOT NULL REFERENCES laboratorios(id) ON DELETE RESTRICT,
+    id SERIAL PRIMARY KEY,
+    laboratorio_id INTEGER NOT NULL REFERENCES laboratorios(id) ON DELETE RESTRICT,
     tipo tipo_actividad_enum NOT NULL,
     fecha_hora_inicio TIMESTAMP WITH TIME ZONE NOT NULL,
     fecha_hora_fin TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -85,17 +79,17 @@ CREATE TABLE actividades (
 
 -- [TABLA HIJA 1]: clases_academicas
 CREATE TABLE clases_academicas (
-    actividad_id UUID PRIMARY KEY REFERENCES actividades(id) ON DELETE CASCADE,
+    actividad_id INTEGER PRIMARY KEY REFERENCES actividades(id) ON DELETE CASCADE,
     materia VARCHAR(150) NOT NULL,
-    docente_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
+    docente_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
     num_estudiantes INT NOT NULL CHECK (num_estudiantes > 0)
 );
 
 -- [TABLA HIJA 2]: reservas_estudiantes
 CREATE TABLE reservas_estudiantes (
-    actividad_id UUID PRIMARY KEY REFERENCES actividades(id) ON DELETE CASCADE,
-    usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
-    estacion_id UUID REFERENCES estaciones_trabajo(id) ON DELETE SET NULL, 
+    actividad_id INTEGER PRIMARY KEY REFERENCES actividades(id) ON DELETE CASCADE,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
+    estacion_id INTEGER REFERENCES estaciones_trabajo(id) ON DELETE SET NULL, 
     titulo VARCHAR(150) NOT NULL,
     nota_adicional TEXT,
     estado_reserva estado_reserva_enum NOT NULL DEFAULT 'pendiente'
@@ -103,8 +97,8 @@ CREATE TABLE reservas_estudiantes (
 
 -- [TABLA HIJA 3]: mantenimientos
 CREATE TABLE mantenimientos (
-    actividad_id UUID PRIMARY KEY REFERENCES actividades(id) ON DELETE CASCADE,
-    tecnico_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
+    actividad_id INTEGER PRIMARY KEY REFERENCES actividades(id) ON DELETE CASCADE,
+    tecnico_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
     descripcion_ti TEXT NOT NULL
 );
 
@@ -114,8 +108,8 @@ CREATE TABLE mantenimientos (
 
 -- Tabla: item_inventario
 CREATE TABLE item_inventario (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    laboratorio_id UUID NOT NULL REFERENCES laboratorios(id) ON DELETE RESTRICT,
+    id SERIAL PRIMARY KEY,
+    laboratorio_id INTEGER NOT NULL REFERENCES laboratorios(id) ON DELETE RESTRICT,
     nombre VARCHAR(150) NOT NULL,
     codigo_interno VARCHAR(50) UNIQUE NOT NULL,
     numero_cas VARCHAR(50) DEFAULT NULL,        
@@ -130,9 +124,9 @@ CREATE TABLE item_inventario (
 
 -- Tabla: movimiento_inventario
 CREATE TABLE movimiento_inventario (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    item_id UUID NOT NULL REFERENCES item_inventario(id) ON DELETE CASCADE,
-    usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT, 
+    id SERIAL PRIMARY KEY,
+    item_id INTEGER NOT NULL REFERENCES item_inventario(id) ON DELETE CASCADE,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT, 
     tipo_movimiento tipo_movimiento_enum NOT NULL,
     cantidad INT NOT NULL CHECK (cantidad > 0),
     fecha_movimiento TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -141,9 +135,9 @@ CREATE TABLE movimiento_inventario (
 
 -- Tabla Intermedia: reserva_items
 CREATE TABLE reserva_items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    actividad_id UUID NOT NULL REFERENCES actividades(id) ON DELETE CASCADE,
-    item_id UUID NOT NULL REFERENCES item_inventario(id) ON DELETE RESTRICT,
+    id SERIAL PRIMARY KEY,
+    actividad_id INTEGER NOT NULL REFERENCES actividades(id) ON DELETE CASCADE,
+    item_id INTEGER NOT NULL REFERENCES item_inventario(id) ON DELETE RESTRICT,
     cantidad_solicitada INT NOT NULL CHECK (cantidad_solicitada > 0),
     CONSTRAINT unique_item_por_actividad UNIQUE (actividad_id, item_id)
 );
@@ -153,9 +147,9 @@ CREATE TABLE reserva_items (
 -- ===========================================================================
 
 CREATE TABLE buzon_sugerencias (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE, 
-    laboratorio_id UUID REFERENCES laboratorios(id) ON DELETE SET NULL, 
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE, 
+    laboratorio_id INTEGER REFERENCES laboratorios(id) ON DELETE SET NULL, 
     titulo VARCHAR(150) NOT NULL,
     comentario TEXT NOT NULL,
     estado_gestion estado_sugerencia_enum NOT NULL DEFAULT 'pendiente',
