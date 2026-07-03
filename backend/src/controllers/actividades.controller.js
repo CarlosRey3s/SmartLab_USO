@@ -60,5 +60,34 @@ const obtenerTodasLasActividades = async (req, res) => {
         });
     }
 };
+
+const actualizarActividad = async (req, res) => {
+    try {
+
+        const idactividad = req.params.id; // extraer el id de la URL
+        const idAdminLogueado = "a0000000-0000-0000-0000-000000000001"; // Cambiar cuando se tenga el middleware de autenticación implementado
+        const datosModal = req.body; // extraer los datos del cuerpo de la solicitud
+
+        // Llamar al servicio para actualizar la actividad
+        const resultado = await actividadesService.actualizarActividad(idactividad, datosModal, idAdminLogueado);
+
+        res.status(200).json({
+            success: true,
+            message: 'Actividad actualizada exitosamente',
+            data: resultado // Devolvemos el resultado del servicio
+        });
+
+    } catch (error) {
+        console.error('Error al actualizar la actividad:', error);
+        const statusCode = error.message.includes('ocupado') ? 400 : 500;
+        res.status(statusCode).json({
+            success: false,
+            message: 'Error al actualizar la actividad',
+            error: error.message
+        });
+    }
+}
+
+
 // Exportamos el controlador
-module.exports = { crearActividad, obtenerTodasLasActividades };
+module.exports = { crearActividad, obtenerTodasLasActividades, actualizarActividad };

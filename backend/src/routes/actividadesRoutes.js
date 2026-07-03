@@ -21,4 +21,5 @@ const dummyAuth = (req, res, next) => {
 // 4. Definimos la ruta limpia. Si sigue marcando TypeError, el problema está adentro de validarActividades.js
 router.post('/', dummyAuth, validarActividades, actividadesController.crearActividad);
 router.get('/', actividadesController.obtenerTodasLasActividades);
+router.put('/:id', dummyAuth, validarActividades, actividadesController.actualizarActividad);
 module.exports = router;
