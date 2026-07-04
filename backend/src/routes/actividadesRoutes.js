@@ -22,4 +22,5 @@ const dummyAuth = (req, res, next) => {
 router.post('/', dummyAuth, validarActividades, actividadesController.crearActividad);
 router.get('/', actividadesController.obtenerTodasLasActividades);
 router.put('/:id', dummyAuth, validarActividades, actividadesController.actualizarActividad);
+router.delete('/:id', dummyAuth, actividadesController.eliminarActividad);
 module.exports = router;
