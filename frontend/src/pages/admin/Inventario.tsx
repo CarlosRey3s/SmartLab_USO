@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal, Plus, MoreVertical } from 'lucide-react';
+import { Search, SlidersHorizontal, Plus, MoreVertical, CheckCircle } from 'lucide-react';
 import '../../css/inventario.css';
 import '../../css/usuarios.css';
 import { AgregarItemModal } from '../../components/shared/AgregarItemModal';
 import { inventarioService } from '../../services/inventario.service';
+import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
+import { customToast } from '../../components/custom-toast/CustomToast';
 
 interface InventoryItem {
   id: string;
@@ -27,6 +29,10 @@ export const InventarioView: React.FC = () => {
   const [reportStatusFilter, setReportStatusFilter] = useState('Todos los Estados');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editData, setEditData] = useState<InventoryItem | undefined>(undefined);
+  
+  // Estado para modal de confirmación de eliminación
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
   // Datos de la pestaña Inventario traídos de la base de datos
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -54,17 +60,24 @@ export const InventarioView: React.FC = () => {
     setActiveMenu(null);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar este ítem del inventario?')) return;
-    
+  const handleDelete = (id: string) => {
+    setItemToDelete(id);
+    setIsDeleteModalOpen(true);
+    setActiveMenu(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
     try {
-      await inventarioService.eliminarItem(id);
+      await inventarioService.eliminarItem(itemToDelete);
+      customToast.success("Ítem eliminado", "El ítem se ha eliminado exitosamente");
       cargarInventario();
     } catch (error: any) {
       console.error('Error al eliminar:', error);
-      alert(error.message || 'Error al eliminar el ítem');
+      customToast.error("Error", error.message || 'Error al eliminar el ítem');
     }
-    setActiveMenu(null);
+    setIsDeleteModalOpen(false);
+    setItemToDelete(null);
   };
 
   const openAddModal = () => {
@@ -72,8 +85,58 @@ export const InventarioView: React.FC = () => {
     setIsAddModalOpen(true);
   };
 
-  // Estado para la tabla de Reportes de Inventario
-  const [reportes] = useState<any[]>([]); 
+  // Estado para la tabla de Reportes de Inventario (Ejemplos estáticos)
+  const [reportes] = useState<any[]>([
+    {
+      id: 1,
+      item_nombre: 'Microscopio Binocular',
+      item_codigo: 'MIC-001',
+      tipo_problema: 'Dañado',
+      descripcion: 'La lente del ocular derecho está rayada y no permite enfocar bien.',
+      cantidad: 1,
+      usuario_nombre: 'Carlos',
+      usuario_apellido: 'Martínez',
+      fecha_reporte: '2026-07-01T10:30:00Z',
+      estado: 'Pendiente'
+    },
+    {
+      id: 2,
+      item_nombre: 'Reactivo Ácido Clorhídrico',
+      item_codigo: 'R-HCL-500',
+      tipo_problema: 'Agotado',
+      descripcion: 'Se acabó el envase de 500ml durante la práctica de la mañana.',
+      cantidad: 0,
+      usuario_nombre: 'Ana',
+      usuario_apellido: 'López',
+      fecha_reporte: '2026-07-02T14:15:00Z',
+      estado: 'Resuelto'
+    },
+    {
+      id: 3,
+      item_nombre: 'Osciloscopio Digital',
+      item_codigo: 'OSC-042',
+      tipo_problema: 'Préstamo',
+      descripcion: 'Préstamo para proyecto de electrónica analógica.',
+      cantidad: 1,
+      usuario_nombre: 'Luis',
+      usuario_apellido: 'García',
+      fecha_reporte: '2026-07-03T09:00:00Z',
+      estado: 'Entregado'
+    }
+  ]);
+
+  const getReportStatusBadgeClass = (status: string) => {
+    switch (status) {
+      case 'Disponible': return 'badge-success';
+      case 'Agotado': return 'badge-danger';
+      case 'En Mantenimiento': return 'badge-warning';
+      case 'Pendiente': return 'badge-warning';
+      case 'Resuelto': return 'badge-success';
+      case 'Devuelto': return 'badge-success';
+      case 'Entregado': return 'badge-info';
+      default: return 'badge-info';
+    }
+  };
 
   return (
     <div className="inventario-container">
@@ -205,7 +268,7 @@ export const InventarioView: React.FC = () => {
                 <th>ÍTEM AFECTADO</th>
                 <th>PROBLEMA</th>
                 <th>CANT.</th>
-                <th>REPORTED POR</th>
+                <th>REPORTADO POR</th>
                 <th>FECHA</th>
                 <th>ESTADO</th>
                 <th>ACCIÓN</th>
@@ -214,21 +277,75 @@ export const InventarioView: React.FC = () => {
             <tbody>
               {reportes.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="no-reports-cell">
-                    No hay reportes para mostrar
-                  </td>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '20px' }}>No hay reportes para mostrar</td>
                 </tr>
               ) : (
                 reportes.map((reporte) => (
                   <tr key={reporte.id}>
-                    <td>{reporte.id}</td>
-                    <td className="item-name-cell">{reporte.item}</td>
-                    <td>{reporte.problema}</td>
-                    <td>{reporte.cantidad}</td>
-                    <td>{reporte.reportedBy}</td>
-                    <td>{reporte.fecha}</td>
-                    <td>{reporte.estado}</td>
-                    <td>{/* Acciones */}</td>
+                    <td>#{reporte.id}</td>
+                    <td>
+                      <div className="item-cell" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div className="item-info" style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span className="item-name" style={{ fontWeight: '500' }}>{reporte.item_nombre || 'Desconocido'}</span>
+                          <span className="item-code" style={{ fontSize: '12px', color: '#64748B' }}>Cód: {reporte.item_codigo || 'N/A'}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <strong>{reporte.tipo_problema}</strong>
+                        <span style={{ fontSize: '12px', color: '#64748B', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={reporte.descripcion}>
+                          {reporte.descripcion}
+                        </span>
+                      </div>
+                    </td>
+                    <td><span style={{ fontWeight: 'bold' }}>{reporte.cantidad}</span></td>
+                    <td>{reporte.usuario_nombre ? `${reporte.usuario_nombre} ${reporte.usuario_apellido}` : 'Sistema'}</td>
+                    <td>{new Date(reporte.fecha_reporte).toLocaleDateString()}</td>
+                    <td>
+                      <span className={`badge ${getReportStatusBadgeClass(reporte.estado)}`}>
+                        {reporte.estado}
+                      </span>
+                    </td>
+                    <td>
+                      {reporte.tipo_problema === 'Préstamo' ? (
+                        <>
+                          {reporte.estado === 'Pendiente' && (
+                            <button 
+                              style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}
+                            >
+                              <CheckCircle size={14} /> Entregar
+                            </button>
+                          )}
+                          {reporte.estado === 'Entregado' && (
+                            <button 
+                              style={{ background: '#10b981', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}
+                            >
+                              <CheckCircle size={14} /> Marcar Devuelto
+                            </button>
+                          )}
+                          {reporte.estado === 'Devuelto' && (
+                            <span style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}>
+                              <CheckCircle size={14} /> Devuelto
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {reporte.estado === 'Pendiente' ? (
+                            <button 
+                              style={{ background: '#10b981', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}
+                            >
+                              <CheckCircle size={14} /> Resolver
+                            </button>
+                          ) : (
+                            <span style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}>
+                              <CheckCircle size={14} /> Resuelto
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
@@ -242,6 +359,20 @@ export const InventarioView: React.FC = () => {
         onClose={() => setIsAddModalOpen(false)} 
         onSuccess={cargarInventario}
         editData={editData}
+      />
+
+      <ConfirmModal 
+        isOpen={isDeleteModalOpen}
+        title="Eliminar ítem del inventario"
+        message="¿Estás seguro de que deseas eliminar este ítem del inventario? Esta acción no se puede deshacer y borrará permanentemente sus datos."
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        type="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setIsDeleteModalOpen(false);
+          setItemToDelete(null);
+        }}
       />
     </div>
   );

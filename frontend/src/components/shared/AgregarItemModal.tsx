@@ -3,6 +3,8 @@ import { Calendar, Monitor, FlaskConical, X } from 'lucide-react';
 import { inventarioService } from '../../services/inventario.service';
 import { laboratoriosService } from '../../services/laboratorios.service';
 import type { Laboratorio } from '../../types/laboratorio.types';
+import { customToast, CustomToastProvider } from '../custom-toast/CustomToast';
+import { ConfirmModal } from '../confirm-modal/ConfirmModal';
 import '../../css/inventario.css';
 
 interface AgregarItemModalProps {
@@ -16,6 +18,7 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onCl
   const [tipoItem, setTipoItem] = useState<'general' | 'instrumentacion'>('general');
   const [loading, setLoading] = useState(false);
   const [laboratorios, setLaboratorios] = useState<Laboratorio[]>([]);
+  const [isConfirmUpdateOpen, setIsConfirmUpdateOpen] = useState(false);
 
   // Estados del formulario
   const [nombre, setNombre] = useState('');
@@ -71,12 +74,20 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onCl
     setUnidadMedida('Unidad');
   };
 
-  const handleGuardar = async () => {
+  const handleGuardar = () => {
     if (!nombre || !codigoInterno || !categoria || !laboratorioId) {
-      alert("Por favor, complete los campos obligatorios.");
+      customToast.error("Atención", "Por favor, complete los campos obligatorios.");
       return;
     }
 
+    if (editData) {
+      setIsConfirmUpdateOpen(true);
+    } else {
+      executeGuardar();
+    }
+  };
+
+  const executeGuardar = async () => {
     setLoading(true);
     try {
       const payload = {
@@ -95,30 +106,42 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onCl
 
       if (editData) {
         await inventarioService.actualizarItem(editData.id, payload);
-        alert("Ítem actualizado exitosamente");
+        customToast.success("¡Éxito!", "Ítem actualizado exitosamente");
       } else {
         await inventarioService.crearItem(payload);
-        alert("Ítem guardado exitosamente");
+        customToast.success("¡Éxito!", "Ítem guardado exitosamente");
       }
       
       limpiarFormulario();
       onClose();
       if (onSuccess) onSuccess();
     } catch (error: any) {
-      alert(error.message || "Error al guardar el ítem");
+      customToast.error("Error", error.message || "Error al guardar el ítem");
     } finally {
       setLoading(false);
+      setIsConfirmUpdateOpen(false);
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="modal-overlay">
-      <div className="modal-content add-item-modal">
-        <h2 className="add-item-title">{editData ? 'Editar ítem del inventario' : 'Agregar ítem al inventario'}</h2>
-        
-        <div className="add-item-body">
+    <>
+      <CustomToastProvider />
+      <ConfirmModal 
+        isOpen={isConfirmUpdateOpen}
+        title="Actualizar información"
+        message="¿Estás seguro que deseas actualizar esta información?"
+        confirmText="Actualizar"
+        cancelText="Cancelar"
+        type="info"
+        onConfirm={executeGuardar}
+        onCancel={() => setIsConfirmUpdateOpen(false)}
+      />
+      {isOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content add-item-modal">
+            <h2 className="add-item-title">{editData ? 'Editar ítem del inventario' : 'Agregar ítem al inventario'}</h2>
+            
+            <div className="add-item-body">
           {/* Tipo de ítem */}
           <div className="form-section">
             <h3 className="section-title">Tipo de ítem</h3>
@@ -296,5 +319,7 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onCl
         </div>
       </div>
     </div>
+      )}
+    </>
   );
 };

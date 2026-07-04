@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Minus, Plus, Trash2 } from 'lucide-react';
+import { ConfirmModal } from '../confirm-modal/ConfirmModal';
 import '../../css/espacios.css';
 
 interface AgregarEspacioModalProps {
@@ -27,6 +28,7 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isConfirmUpdateOpen, setIsConfirmUpdateOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -89,7 +91,7 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
     setEstaciones(nuevas);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     setError('');
     
     if (!nombre || !edificio || !piso || !aula) {
@@ -102,6 +104,14 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
       return;
     }
 
+    if (editData) {
+      setIsConfirmUpdateOpen(true);
+    } else {
+      executeSave();
+    }
+  };
+
+  const executeSave = async () => {
     setLoading(true);
     try {
       const payload = {
@@ -139,12 +149,24 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
       setError(err.message);
     } finally {
       setLoading(false);
+      setIsConfirmUpdateOpen(false);
     }
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content espacio-modal">
+    <>
+      <ConfirmModal 
+        isOpen={isConfirmUpdateOpen}
+        title="Actualizar información"
+        message="¿Estás seguro que deseas actualizar esta información?"
+        confirmText="Actualizar"
+        cancelText="Cancelar"
+        type="info"
+        onConfirm={executeSave}
+        onCancel={() => setIsConfirmUpdateOpen(false)}
+      />
+      <div className="modal-overlay">
+        <div className="modal-content espacio-modal">
         {/* Header */}
         <div className="modal-header">
           <div>
@@ -334,7 +356,8 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
             </button>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
