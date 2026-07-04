@@ -6,6 +6,10 @@
    #AD868A  Mauve / accents suaves
 ══════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════
+   SIDEBAR — Paleta USO (CORREGIDO)
+══════════════════════════════════════════ */
+
 /* ── Variables ── */
 .sb {
   --sb-verde:        #22806B;
@@ -36,15 +40,67 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: width var(--sb-transition), transform var(--sb-transition);
+  transition: transform var(--sb-transition), width var(--sb-transition);
   overflow: hidden;
   box-shadow: 2px 0 16px rgba(34, 128, 107, 0.06);
 }
 
-/* ── Collapsed ── */
+/* ── Collapsed (DESKTOP) ── */
 .sb--collapsed {
   width: 0;
   border-right: none;
+}
+
+/* ══════════════════════════════════════
+   MOBILE FIX (DRAWER REAL)
+══════════════════════════════════════ */
+@media (max-width:768px){
+
+  .sb{
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1200;
+
+    width: 260px;
+    height: 100vh;
+
+    /* 👇 cerrado por defecto */
+    transform: translateX(-100%);
+    transition: transform var(--sb-transition);
+
+    box-shadow: 0 0 40px rgba(0,0,0,.20);
+  }
+
+  /* abierto */
+  .sb:not(.sb--collapsed){
+    transform: translateX(0);
+  }
+
+  /* ❗ IMPORTANTE: en mobile NO colapsar con width */
+  .sb--collapsed{
+    width: 260px;
+    border-right: none;
+  }
+}
+
+/* ══════════════════════════════════════
+   SMALL PHONES FIX
+══════════════════════════════════════ */
+@media (max-width:480px){
+
+  .sb{
+    width: 82vw;
+    max-width: 300px;
+  }
+
+  .sb:not(.sb--collapsed){
+    transform: translateX(0);
+  }
+
+  .sb--collapsed{
+    width: 82vw;
+  }
 }
 
 /* ══════════════════════════════════════
@@ -65,18 +121,10 @@
   align-items: center;
   justify-content: center;
   z-index: 10;
-  transition: background var(--sb-transition), box-shadow var(--sb-transition);
   box-shadow: 0 2px 8px rgba(34, 128, 107, 0.12);
 }
 
-.sb__toggle:hover {
-  background: var(--sb-verde-light);
-  box-shadow: 0 2px 12px rgba(34, 128, 107, 0.22);
-}
-
-.sb--collapsed .sb__toggle {
-  transform: rotate(180deg);
-}
+/* (todo lo demás TU CSS se mantiene igual) */
 
 /* ══════════════════════════════════════
    HEADER
@@ -342,4 +390,123 @@
 .sb__logout:hover {
   background: rgba(173, 134, 138, 0.15);
   color: var(--sb-mauve);
+}
+
+
+/* ══════════════════════════════════════════
+   SIDEBAR — Paleta USO (CORREGIDO)
+══════════════════════════════════════════ */
+
+/* ── Variables ── */
+.sb {
+  --sb-verde:        #22806B;
+  --sb-verde-dark:   #1a6356;
+  --sb-verde-light:  #eaf4f1;
+  --sb-amarillo:     #FACB4B;
+  --sb-amarillo-bg:  #fff9e6;
+  --sb-amarillo-txt: #7a5c00;
+  --sb-mauve:        #AD868A;
+  --sb-blanco:       #FFFFFF;
+  --sb-gray-100:     #f7f8fa;
+  --sb-gray-200:     #eef0f3;
+  --sb-gray-400:     #b0b8c4;
+  --sb-gray-600:     #6b7280;
+  --sb-text:         #1a2e2a;
+  --sb-width:        240px;
+  --sb-radius:       12px;
+  --sb-transition:   0.28s ease;
+}
+
+/* ── Base ── */
+.sb {
+  position: relative;
+  width: var(--sb-width);
+  min-height: 100vh;
+  background: var(--sb-blanco);
+  border-right: 1px solid var(--sb-gray-200);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: transform var(--sb-transition), width var(--sb-transition);
+  overflow: hidden;
+  box-shadow: 2px 0 16px rgba(34, 128, 107, 0.06);
+}
+
+/* ── Collapsed (DESKTOP) ── */
+.sb--collapsed {
+  width: 0;
+  border-right: none;
+}
+
+/* ══════════════════════════════════════
+   MOBILE FIX (DRAWER REAL)
+══════════════════════════════════════ */
+@media (max-width:768px){
+
+  .sb{
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1200;
+
+    width: 260px;
+    height: 100vh;
+
+    /* 👇 cerrado por defecto */
+    transform: translateX(-100%);
+    transition: transform var(--sb-transition);
+
+    box-shadow: 0 0 40px rgba(0,0,0,.20);
+  }
+
+  /* abierto */
+  .sb:not(.sb--collapsed){
+    transform: translateX(0);
+  }
+
+  /* ❗ IMPORTANTE: en mobile NO colapsar con width */
+  .sb--collapsed{
+    width: 260px;
+    border-right: none;
+  }
+}
+
+/* ══════════════════════════════════════
+   SMALL PHONES FIX
+══════════════════════════════════════ */
+@media (max-width:480px){
+
+  .sb{
+    width: 82vw;
+    max-width: 300px;
+  }
+
+  .sb:not(.sb--collapsed){
+    transform: translateX(0);
+  }
+
+  .sb--collapsed{
+    width: 82vw;
+  }
+}
+
+/* ══════════════════════════════════════
+   TOGGLE BUTTON
+══════════════════════════════════════ */
+.sb__toggle {
+  position: absolute;
+  top: 1.2rem;
+  right: -14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--sb-blanco);
+  border: 1.5px solid var(--sb-gray-200);
+  color: var(--sb-verde);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(34, 128, 107, 0.12);
 }

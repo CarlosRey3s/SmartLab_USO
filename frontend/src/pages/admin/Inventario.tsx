@@ -258,6 +258,101 @@ export const InventarioView: React.FC = () => {
         </div>
       )}
 
+      {/* ================= TARJETAS PARA MÓVIL ================= */}
+{activeTab === "inventario" && (
+  <div className="inventory-cards">
+
+    {items.length === 0 ? (
+      <div className="inventory-card empty">
+        No hay ítems en el inventario
+      </div>
+    ) : (
+      items.map((item) => (
+        <div className="inventory-card" key={item.id}>
+
+          <div className="card-header">
+
+            <div>
+              <h3>{item.nombre}</h3>
+              <span>{item.codigo_interno}</span>
+            </div>
+
+            <div className="action-menu-container">
+
+              <button
+                className="action-button"
+                onClick={() =>
+                  setActiveMenu(activeMenu === item.id ? null : item.id)
+                }
+              >
+                <MoreVertical size={18}/>
+              </button>
+
+              {activeMenu === item.id && (
+                <div className="actions-dropdown">
+                  <button
+                    className="dropdown-item"
+                    onClick={() => handleEdit(item)}
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    className="dropdown-item delete"
+                    onClick={() => handleDelete(item.id)}
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              )}
+
+            </div>
+
+          </div>
+
+          <div className="card-info">
+
+            <div>
+              <span>Categoría</span>
+              <strong>{item.categoria}</strong>
+            </div>
+
+            <div>
+              <span>Stock</span>
+              <strong>{item.cantidad_actual} {item.unidad_medida}</strong>
+            </div>
+
+            <div>
+              <span>Ubicación</span>
+              <strong>{item.ubicacion_fisica || "N/A"}</strong>
+            </div>
+
+            <div>
+              <span>Laboratorio</span>
+              <strong>{item.laboratorio_id.substring(0,8)}...</strong>
+            </div>
+
+            <div className="estado-item">
+              <span>Estado</span>
+
+              <strong>
+                {item.cantidad_actual > item.stock_minimo
+                  ? "🟢 Disponible"
+                  : item.cantidad_actual === 0
+                  ? "🔴 Agotado"
+                  : "🟡 Bajo Stock"}
+              </strong>
+            </div>
+
+          </div>
+
+        </div>
+      ))
+    )}
+
+  </div>
+)}
+
       {/* VISTA 2: TABLA DE REPORTES DE DAÑOS/INCIDENCIAS */}
       {activeTab === 'reportes' && (
         <div className="table-container" style={{ overflow: 'visible' }}>
