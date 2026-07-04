@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
@@ -6,8 +6,21 @@ import { useAuth } from '../../context/AuthContext';
 
 export const MainLayout = () => {
   const { user } = useAuth();
-  //creamos el estado (por defecto, abierto)
-  const[isSidebarOpen,setIsSidebarOpen] = useState(true);
+  // Inicializar estado dependiendo del tamaño de la pantalla
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 768) {
+        setIsSidebarOpen(false);
+      } else {
+        setIsSidebarOpen(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   //funcion para alternar el estado
   const toggleSidebar = () => {
