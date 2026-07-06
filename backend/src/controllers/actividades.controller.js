@@ -7,7 +7,7 @@ const crearActividad = async (req, res) => {
         //const idAdminLogueado = req.usuario.id;
         //Cambiarlo cuando se tenga el middleware de autenticación implementado. Por ahora, lo dejamos hardcodeado para pruebas.
         // Y tambien cuando se trabaje con el login de usuatio y la interfaz.
-        const idAdminLogueado = "a0000000-0000-0000-0000-000000000001";
+        const idAdminLogueado = "1";
 
         console.log("ID del usuario logueado en el controlador:", idAdminLogueado);
         // o si viene del request:

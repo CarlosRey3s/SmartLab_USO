@@ -1,29 +1,53 @@
 // ✅ Como debe quedar (Extrayendo el pool y renombrándolo a db)
 const { pool: db } = require('../config/db');
 
-/*
- * Función interna para verificar si el laboratorio ya está ocupado
+/**
+ * Función interna para verificar detalladamente los solapamientos de horarios y reglas de infraestructura.
  */
 const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, finDatetime, tipoNuevaActividad, datosModal, idActividadExcluir = null) => {
-
-    // 1 verificar si el laboratorio esta en mantenimiento o clausurado fisicamente
-    const queryEstadoLab = 'SELECT estado FROM laboratorios WHERE id = $1';
+    
+    // 1. Obtener estado Y modo de reserva del laboratorio
+    const queryEstadoLab = `SELECT estado, modo_reserva FROM laboratorios WHERE id = $1`;
     const resEstadoLab = await client.query(queryEstadoLab, [laboratorio_id]);
-
+    
     if (resEstadoLab.rows.length === 0) {
-        throw new Error('El laboratorio especificado no existe.');
+        throw new Error('El laboratorio seleccionado no existe.');
     }
+    
+    const { estado: estadoActualLab, modo_reserva: modoReservaLab } = resEstadoLab.rows[0];
 
-    const estadoActualLab = resEstadoLab.rows[0].estado;
+    // Validaciones físicas del estado
     if (estadoActualLab === 'clausurado') {
-        throw new Error('No se puede programar ninguna actividad porque el laboratorio esta Clausurado.');
+        throw new Error('No se puede programar ninguna actividad porque el laboratorio está CLAUSURADO.');
     }
-    if (estadoActualLab === 'mantenimiento' && tipoNuevaActividad !== 'mantenimiento') {
-        throw new Error('El laboratorio esta bajo mantenimiento. No se permiten clases ni reservas hasta nuevo aviso.');
+    if (estadoActualLab === 'en_mantenimiento' && tipoNuevaActividad !== 'mantenimiento') {
+        throw new Error('El laboratorio está bajo mantenimiento físico. No se permiten clases ni reservas.');
     }
 
-    // 2 Consulta base para detectar solapamiento de tiempos en el mismo laboratorio.
-    // Si estamos editando (PUT) excluimos la actividad actual para que no choque consigo misma.
+    // 1.5 [NUEVO] Validar congruencia de la estación de trabajo si es una reserva
+    let estacionNueva = datosModal.estacion || null;
+
+    if (tipoNuevaActividad === 'reserva') {
+        if(modoReservaLab === 'espacio_completo'){
+            datosModal.estacion = null; // No se requiere estación específica
+            estacionNueva = null;
+        }
+        else if(modoReservaLab === 'por_estacion'){
+            if(!estacionNueva){
+                throw new Error('Este laboratorio requiere reservar por estacion de trabajo. Por favor, selecciona una estación específica.');
+            }
+            // verificar que la estacion exista  y pertenezca fisicamente al laboratorio
+           const checkEstacion = await client.query(
+                `SELECT id FROM estaciones_trabajo WHERE id = $1 AND laboratorio_id = $2`, 
+                [estacionNueva, laboratorio_id]
+            );
+            if(checkEstacion.rows.length === 0){
+                throw new Error('La estación de trabajo seleccionada no existe o no pertenece al laboratorio seleccionado.');
+            }
+        }
+    }
+
+    // 2. Consulta de choques en el mismo laboratorio
     let queryChoques = `
         SELECT a.id, a.tipo, re.estacion_id
         FROM actividades a
@@ -32,41 +56,43 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
           AND a.fecha_hora_inicio < $2 
           AND a.fecha_hora_fin > $3
     `;
+    
     const parametros = [laboratorio_id, finDatetime, inicioDatetime];
-
+    
     if (idActividadExcluir) {
-        queryChoques += ' AND a.id != $4';
+        queryChoques += ` AND a.id != $4`;
         parametros.push(idActividadExcluir);
     }
 
-    const resChoque = await client.query(queryChoques, parametros);
-    // CORRECCIÓN: Nombre de variable corregido (quitada la doble 't')
-    const actividadesConflictivas = resChoque.rows;
+    const resChoques = await client.query(queryChoques, parametros);
+    const actividadesConflictivas = resChoques.rows;
 
-    // Si no hay actividades en ese rango de tiempo, el horario es libre
-    if (actividadesConflictivas.length === 0) {
-        return;
-    }
+    if (actividadesConflictivas.length === 0) return; // Todo libre
 
-    // 3 Evaluar si hay conflictos segun las reglas de negocio especificadas 
+    // 3. Evaluar conflictos según el modo de reserva
     if (tipoNuevaActividad === 'clase' || tipoNuevaActividad === 'mantenimiento') {
-        // regla 1 y 2 clase o mantenimiento requieren bloqueo Absoluto. No importa que haya.
-        throw new Error(`El laboratorio ya está ocupado en este horario por otra actividad de tipo ${tipoNuevaActividad}.`);
-    } else if (tipoNuevaActividad === 'reserva') {
-        // regla: Una nueva reserva de estudiante no puede chocar con Clases, Mantenimientos o la misma Estacion
-        const estacionNueva = datosModal.estacion;
-
-        for (const actividad of actividadesConflictivas) {
-            if (actividad.tipo === 'clase') {
-                throw new Error(`No puedes reservar en este horario porque el laboratorio estara ocupado por una Clase Academica. ${actividad.id}`);
+        const actEx = actividadesConflictivas[0];
+        let tipoAmigable = actEx.tipo === 'clase' ? 'una Clase Académica' : 
+                           (actEx.tipo === 'mantenimiento' ? 'un Mantenimiento Preventivo' : 'una Reserva de Estudiante');
+        throw new Error(`El laboratorio ya está ocupado en este horario por ${tipoAmigable}.`);
+    } 
+    
+    else if (tipoNuevaActividad === 'reserva') {
+        for (const act of actividadesConflictivas) {
+            if (act.tipo === 'clase') {
+                throw new Error('No puedes reservar porque el laboratorio estará ocupado por una Clase Académica.');
             }
-            if (actividad.tipo === 'mantenimiento') {
-                throw new Error(`No puedes reservar en este horario porque el laboratorio estara ocupado por un Mantenimiento. ${actividad.id}`);
+            if (act.tipo === 'mantenimiento') {
+                throw new Error('No puedes reservar porque el laboratorio estará bajo Mantenimiento.');
             }
-            if (actividad.tipo === 'reserva') {
-                // Multiples reservas simultaneas permitidas SOLO si usan distintas estaciones
-                if (actividad.estacion_id === estacionNueva && estacionNueva !== null) {
-                    throw new Error(`La estacion de trabajo seleccionada ya esta reservada por otro estudiante en este horario.`);
+            if (act.tipo === 'reserva') {
+                // [NUEVO] Si el laboratorio es de espacio completo, 1 sola reserva bloquea todo.
+                if (modoReservaLab === 'espacio_completo') {
+                    throw new Error('El laboratorio ya ha sido reservado en su totalidad por otro usuario en este horario.');
+                }
+                // Si es por estación, bloqueamos solo si intentan usar la misma PC
+                if (modoReservaLab === 'por_estacion' && act.estacion_id === estacionNueva) {
+                    throw new Error('La estación de trabajo seleccionada ya está reservada por otro estudiante en este horario.');
                 }
             }
         }
