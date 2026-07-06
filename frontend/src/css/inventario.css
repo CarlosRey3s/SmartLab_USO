@@ -403,3 +403,180 @@
 .btn-save-modal:hover {
   background-color: #1e874b;
 }
+
+/*=========================
+TARJETAS RESPONSIVE
+=========================*/
+
+.inventory-cards{
+    display:none;
+}
+
+.inventory-card{
+    background:#fff;
+    border-radius:16px;
+    padding:18px;
+    margin-bottom:18px;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+    position:relative;
+}
+
+.inventory-card.empty{
+    text-align:center;
+    padding:40px;
+}
+
+.card-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:18px;
+}
+
+.card-header h3{
+    margin:0;
+    font-size:18px;
+    color:#333;
+}
+
+.card-header span{
+    color:#777;
+    font-size:13px;
+}
+
+.card-info{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+}
+
+.card-info div{
+    display:flex;
+    flex-direction:column;
+}
+
+.card-info span{
+    font-size:12px;
+    color:#888;
+    margin-bottom:4px;
+}
+
+.card-info strong{
+    font-size:14px;
+    color:#333;
+    font-weight:600;
+}
+
+.estado-item strong{
+    color:#219653;
+}
+
+/*=========================
+MÓVIL
+=========================*/
+
+@media(max-width:768px){
+
+    .table-container{
+        display:none;
+    }
+
+    .inventory-cards{
+        display:block;
+    }
+
+    .inventario-controls{
+        flex-direction:column;
+        align-items:stretch;
+    }
+
+    .search-inventory{
+        width:100%;
+    }
+
+    .btn-filter,
+    .btn-add-item,
+    .select-report-status{
+        width:100%;
+        justify-content:center;
+    }
+
+    .card-info{
+        grid-template-columns:1fr;
+    }
+
+}
+
+/*=========================================
+TABLET Y MÓVIL
+=========================================*/
+
+@media (max-width:1200px){
+
+    /* Oculta la tabla */
+    .table-container{
+        display:none;
+    }
+
+    /* Muestra las tarjetas */
+    .inventory-cards{
+        display:grid;
+        grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+        gap:20px;
+    }
+
+    /* Controles */
+    .inventario-controls{
+        flex-wrap:wrap;
+        gap:12px;
+    }
+
+    .search-inventory{
+        flex:1;
+        min-width:260px;
+    }
+
+    .btn-filter{
+        margin-left:0;
+    }
+
+}
+
+/*=========================================
+CELULARES
+=========================================*/
+
+@media (max-width:768px){
+
+    .inventario-container{
+        padding:16px;
+    }
+
+    .inventario-controls{
+        flex-direction:column;
+        align-items:stretch;
+    }
+
+    .search-inventory{
+        width:100%;
+        min-width:unset;
+    }
+
+    .btn-filter,
+    .btn-add-item,
+    .select-report-status{
+        width:100%;
+        justify-content:center;
+    }
+
+    .inventory-cards{
+        display:flex;
+        flex-direction:column;
+        gap:16px;
+    }
+
+    .card-info{
+        grid-template-columns:1fr;
+    }
+
+}

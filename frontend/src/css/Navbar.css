@@ -1,0 +1,460 @@
+/* ==========================================
+   NAVBAR - USO
+========================================== */
+
+:root{
+  --nav-verde:#22806B;
+  --nav-verde-dark:#1a6356;
+  --nav-verde-light:#EAF4F1;
+  --nav-amarillo:#FACB4B;
+  --nav-text:#1f2937;
+  --nav-gray:#6b7280;
+  --nav-border:#e5e7eb;
+  --nav-white:#ffffff;
+}
+
+/* ==========================================
+   CONTENEDOR
+========================================== */
+
+.navbar{
+    height:70px;
+    background:var(--nav-white);
+
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    padding:0 24px;
+
+    border-bottom:1px solid var(--nav-border);
+
+    position:sticky;
+    top:0;
+
+    z-index:900;
+}
+
+/* ==========================================
+   IZQUIERDA
+========================================== */
+
+.navbar-left{
+    display:flex;
+    align-items:center;
+    gap:18px;
+}
+
+.navbar-title{
+    margin:0;
+    font-size:1.35rem;
+    font-weight:700;
+    color:var(--nav-text);
+}
+
+/* ==========================================
+   CENTRO
+========================================== */
+
+.navbar-center{
+    flex:1;
+
+    display:flex;
+    justify-content:center;
+
+    padding:0 32px;
+}
+
+.search-container{
+
+    position:relative;
+
+    width:100%;
+    max-width:500px;
+}
+
+.search-icon{
+
+    position:absolute;
+
+    left:14px;
+    top:50%;
+
+    transform:translateY(-50%);
+
+    color:var(--nav-gray);
+}
+
+.search-input-navbar{
+
+    width:100%;
+
+    height:42px;
+
+    border:1px solid var(--nav-border);
+
+    border-radius:12px;
+
+    outline:none;
+
+    padding:0 16px 0 42px;
+
+    font-size:.92rem;
+
+    transition:.25s;
+}
+
+.search-input-navbar:focus{
+
+    border-color:var(--nav-verde);
+
+    box-shadow:0 0 0 4px rgba(34,128,107,.12);
+
+}
+
+/* ==========================================
+   DERECHA
+========================================== */
+
+.navbar-right{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:15px;
+
+}
+
+.user-info-navbar{
+
+    position:relative;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+}
+
+.user-greeting{
+
+    font-size:.92rem;
+
+    color:var(--nav-text);
+
+    font-weight:500;
+
+}
+
+.user-avatar-navbar{
+
+    width:42px;
+
+    height:42px;
+
+    border-radius:50%;
+
+    background:linear-gradient(
+        135deg,
+        var(--nav-verde),
+        var(--nav-verde-dark)
+    );
+
+    color:white;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    user-select:none;
+
+    transition:.25s;
+
+}
+
+.user-avatar-navbar:hover{
+
+    transform:scale(1.05);
+
+}
+
+/* ==========================================
+   BOTONES
+========================================== */
+
+.icon-button{
+
+    width:42px;
+
+    height:42px;
+
+    border:none;
+
+    background:transparent;
+
+    border-radius:12px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+    color:var(--nav-text);
+
+}
+
+.icon-button:hover{
+
+    background:var(--nav-verde-light);
+
+    color:var(--nav-verde);
+
+}
+
+/* ==========================================
+   NOTIFICACIÓN
+========================================== */
+
+.notification-button{
+
+    position:relative;
+
+}
+
+.notification-badge{
+
+    position:absolute;
+
+    width:8px;
+
+    height:8px;
+
+    border-radius:50%;
+
+    background:#ef4444;
+
+    top:10px;
+
+    right:10px;
+
+}
+
+/* ==========================================
+   DROPDOWN
+========================================== */
+
+.navbar-dropdown{
+
+    position:absolute;
+
+    top:110%;
+
+    right:0;
+
+    background:white;
+
+    border-radius:12px;
+
+    border:1px solid var(--nav-border);
+
+    min-width:180px;
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,.10);
+
+    overflow:hidden;
+
+    z-index:100;
+
+}
+
+.logout-button{
+
+    width:100%;
+
+    border:none;
+
+    background:none;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:12px 16px;
+
+    cursor:pointer;
+
+    color:#ef4444;
+
+    font-size:.9rem;
+
+    transition:.2s;
+
+}
+
+.logout-button:hover{
+
+    background:#fff5f5;
+
+}
+
+/* ==========================================
+   RESPONSIVE
+========================================== */
+
+/* ---------- TABLET ---------- */
+
+@media (max-width: 992px) {
+
+    .navbar{
+        padding: 0 16px;
+    }
+
+    .navbar-center{ 
+        padding: 0 16px;
+    }
+
+    .search-container{
+        max-width: 350px;
+    }
+
+    .navbar-title{
+        font-size: 1.1rem;
+    }
+
+    .user-greeting{
+        display: none;
+    }
+
+}
+
+
+/* ---------- MOBILE ---------- */
+
+@media (max-width: 768px) {
+
+    .navbar{
+
+        display: grid;
+
+        grid-template-columns: auto 1fr auto;
+
+        grid-template-areas:
+            "left title right"
+            "search search search";
+
+        align-items: center;
+
+        height: auto;
+
+        padding: 12px 16px;
+
+        row-gap: 12px;
+    }
+
+    .navbar-left{
+        grid-area: left;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .navbar-title{
+        grid-area: title;
+
+        font-size: 1rem;
+
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .navbar-center{
+        grid-area: search;
+
+        width: 100%;
+
+        padding: 0;
+    }
+
+    .navbar-right{
+        grid-area: right;
+
+        justify-self: end;
+
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .search-container{
+        width: 100%;
+        max-width: none;
+    }
+
+    .search-input-navbar{
+        width: 100%;
+    }
+
+    .user-greeting{
+        display: none;
+    }
+
+}
+
+
+/* ---------- TELÉFONOS PEQUEÑOS ---------- */
+
+@media (max-width: 480px) {
+
+    .navbar{
+        padding: 10px;
+    }
+
+    .navbar-title{
+
+        font-size: .95rem;
+
+        max-width: 140px;
+
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .search-input-navbar{
+        height: 40px;
+        font-size: .85rem;
+    }
+
+    .user-avatar-navbar{
+        width: 36px;
+        height: 36px;
+        font-size: .9rem;
+    }
+
+    .icon-button{
+        width: 36px;
+        height: 36px;
+    }
+
+    .notification-button{
+        display: none;
+    }
+
+}
