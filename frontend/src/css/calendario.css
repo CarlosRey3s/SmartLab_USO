@@ -3,6 +3,7 @@
   height: 100%;
   gap: 1.5rem;
 }
+
 .calendar-main-container {
   flex: 1;
   display: flex;
@@ -12,6 +13,7 @@
   border: 1px solid #e5e7eb;
   padding: 1.5rem;
 }
+
 /* Toolbar Personalizada */
 .calendar-toolbar-custom {
   display: flex;
@@ -19,17 +21,21 @@
   align-items: center;
   margin-bottom: 1.5rem;
 }
-.toolbar-left, .toolbar-right {
+
+.toolbar-left,
+.toolbar-right {
   display: flex;
   align-items: center;
   gap: 1rem;
 }
+
 .nav-arrows {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 0.25rem;
 }
+
 .btn-hoy {
   background-color: #0f766e;
   color: white;
@@ -39,9 +45,12 @@
   cursor: pointer;
   font-weight: 500;
 }
-.btn-hoy:hover { background-color: #fcd34d; 
-color:#060606;
+
+.btn-hoy:hover {
+  background-color: #fcd34d;
+  color: #060606;
 }
+
 .btn-icon {
   background: none;
   border: none;
@@ -50,6 +59,7 @@ color:#060606;
   display: flex;
   align-items: center;
 }
+
 .toolbar-label {
   font-size: 1.5rem;
   font-weight: 300;
@@ -57,27 +67,34 @@ color:#060606;
   margin: 0;
   text-transform: capitalize;
 }
+
 /* Botones de Vista (Semana/Mes) */
-.btn-view, .btn-view-icon {
+.btn-view,
+.btn-view-icon {
   border: none;
   background-color: #f3f4f6;
   cursor: pointer;
   transition: all 0.2s ease;
 }
+
 .btn-view {
   padding: 0.5rem 1.25rem;
   border-radius: 9999px;
   font-weight: 500;
 }
+
 .btn-view-icon {
   padding: 0.6rem;
   border-radius: 50%;
   display: flex;
 }
-.btn-view.active, .btn-view-icon.active {
+
+.btn-view.active,
+.btn-view-icon.active {
   background-color: #fcd34d;
   color: #111827;
 }
+
 /* MENU DERECHO DEL CALENDARIO */
 .calendar-sidebar-right {
   width: 256px;
@@ -85,14 +102,17 @@ color:#060606;
   flex-direction: column;
   gap: 1rem;
 }
+
 .btn-crear {
   position: relative;
   width: 70%;
-  background-color: #fcd34d; /* Tu amarillo base */
-  color: #111827; /* Texto oscuro para contraste */
+  background-color: #fcd34d;
+  /* Tu amarillo base */
+  color: #111827;
+  /* Texto oscuro para contraste */
   padding: 0.97rem;
   /* Ponemos un borde transparente fijo para que el botón no "salte" al hacer hover */
-  border: 1.5px solid transparent; 
+  border: 1.5px solid transparent;
   border-radius: 12px;
   font-weight: 600;
   display: flex;
@@ -101,24 +121,29 @@ color:#060606;
   gap: 0.5rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  
+
   /* Sombra sutil cuando está amarillo */
   box-shadow: 0 4px 6px -1px rgba(250, 203, 75, 0.3),
-              0 2px 4px -1px rgba(250, 203, 75, 0.2);
+    0 2px 4px -1px rgba(250, 203, 75, 0.2);
 }
 
 .btn-crear:hover {
-  background-color: #ffffff; /* Pasa a ser como una tarjeta blanca */
-  color: var(--c-verde); /* Tu texto verde */
-  border: 1.5px solid #e5e7eb; /* Borde gris clarito como en la imagen 2 */
-  
+  background-color: #ffffff;
+  /* Pasa a ser como una tarjeta blanca */
+  color: var(--c-verde);
+  /* Tu texto verde */
+  border: 1.5px solid #e5e7eb;
+  /* Borde gris clarito como en la imagen 2 */
+
   /* EL TRUCO ESTRELLA: 
      1. Un inset shadow para la barra amarilla gruesa a la izquierda
      2. Un shadow normal muy suave para que el botón flote un poco */
-  box-shadow: inset 6px 0 0 0 #fcd34d, 
-              0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 6px 0 0 0 #fcd34d,
+    0 4px 6px -1px rgba(0, 0, 0, 0.05);
 
-}.mini-calendar-placeholder {
+}
+
+.mini-calendar-placeholder {
   background-color: #1f2937;
   color: white;
   height: 160px;
@@ -127,12 +152,14 @@ color:#060606;
   align-items: center;
   justify-content: center;
 }
+
 .mis-laboratorios-card {
   background-color: #0f766e;
   color: white;
   border-radius: 6px;
   overflow: hidden;
 }
+
 .card-header {
   padding: 0.75rem;
   border-bottom: 1px solid #0d9488;
@@ -141,6 +168,7 @@ color:#060606;
   gap: 0.5rem;
   font-weight: 500;
 }
+
 .card-body {
   padding: 0.75rem;
   display: flex;
@@ -148,6 +176,7 @@ color:#060606;
   gap: 0.5rem;
   font-size: 0.875rem;
 }
+
 .btn-exportar {
   width: 100%;
   background-color: #AD868A;
@@ -163,26 +192,33 @@ color:#060606;
   margin-top: auto;
   cursor: pointer;
 }
+
 /* ── Estilos para el Dropdown de Vistas ── */
 .dropdown-container {
   /* Esto es el "ancla". Le dice al menú que flote en base a este botón */
-  position: relative; 
+  position: relative;
   display: inline-block;
 }
+
 .dropdown-menu {
   /* ¡LA MAGIA DE FLOTAR! position: absolute lo saca del flujo normal para que no empuje nada */
   position: absolute;
-  top: calc(100% + 8px); /* Se coloca justo 8px debajo del botón */
-  right: 0; /* Se alinea a la derecha del botón */
-  background-color: #ffffff; /* FONDO SÓLIDO BLANCO OBLIGATORIO */
+  top: calc(100% + 8px);
+  /* Se coloca justo 8px debajo del botón */
+  right: 0;
+  /* Se alinea a la derecha del botón */
+  background-color: #ffffff;
+  /* FONDO SÓLIDO BLANCO OBLIGATORIO */
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15); /* Sombra elegante */
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+  /* Sombra elegante */
   display: flex;
-  flex-direction: column; 
+  flex-direction: column;
   width: 140px;
-  z-index: 9999; 
+  z-index: 9999;
 }
+
 .dropdown-item {
   width: 100%;
   display: block;
@@ -196,59 +232,71 @@ color:#060606;
   font-size: 0.95rem;
   transition: all 0.2s ease;
 }
+
 /* Redondear las esquinas solo en el primero y el último */
 .dropdown-item:first-child {
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
 }
+
 .dropdown-item:last-child {
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
 }
+
 .dropdown-item:hover {
   background-color: #f3f4f6;
 }
+
 .dropdown-item.active {
   background-color: #fcd34d;
   color: #112718;
 }
+
 /* ── 1. LA CABECERA (DÍAS Y NÚMEROS) ── */
 .rbc-header {
-  border: none !important; 
-  border-bottom: none !important; 
+  border: none !important;
+  border-bottom: none !important;
   padding: 8px 0 !important;
-  height: auto !important; 
-  min-height: 60px; 
-  overflow: visible !important; 
+  height: auto !important;
+  min-height: 60px;
+  overflow: visible !important;
 }
-.rbc-time-header, 
+
+.rbc-time-header,
 .rbc-time-header-content,
 .rbc-row {
   overflow: visible !important;
 }
+
 .rbc-time-header {
   border-bottom: 1px solid #e5e7eb !important;
 }
+
 /* ── 1.5 ELIMINAR LA FILA DE "TODO EL DÍA" ── */
 /* Ocultamos la celda blanca gigante */
 .rbc-allday-cell {
   display: none !important;
 }
-.rbc-time-header > .rbc-row:nth-child(2) {
+
+.rbc-time-header>.rbc-row:nth-child(2) {
   display: none !important;
 }
+
 .custom-header-cell {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
 }
+
 .custom-header-cell .dia-texto {
   font-size: 0.65rem;
   font-weight: 500;
-  color: #70757a; 
+  color: #70757a;
   letter-spacing: 0.5px;
 }
+
 .custom-header-cell .dia-numero {
   font-size: 1.25rem;
   font-weight: 400;
@@ -258,11 +306,13 @@ color:#060606;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%; 
+  border-radius: 50%;
 }
+
 .custom-header-cell.hoy .dia-texto {
-  color: #AD868A; 
+  color: #AD868A;
 }
+
 .custom-header-cell.hoy .dia-numero {
   background-color: #AD868A;
   color: white;
@@ -273,31 +323,38 @@ color:#060606;
 .rbc-time-gutter .rbc-timeslot-group {
   border: none !important;
 }
-.rbc-time-content > * + * > * {
+
+.rbc-time-content>*+*>* {
   border-left: 1px solid #e5e7eb !important;
 }
+
 .rbc-time-gutter {
-  border-right: none !important; 
+  border-right: none !important;
 }
+
 .rbc-label {
   font-size: 0.75rem;
   color: #70757a;
   padding: 0 8px 0 0;
 }
+
 .rbc-time-gutter .rbc-label {
   position: relative;
-  top: -10px; 
+  top: -10px;
   background-color: white;
 }
+
 /* Quitamos la primera hora de la lista para que no choque con la esquina del calendario (opcional, pero se ve más limpio) */
 .rbc-time-gutter .rbc-timeslot-group:first-child .rbc-label {
   display: none;
 }
+
 /*Vista del mes */
 .rbc-month-view {
   border: none !important;
   border-top: 1px solid #e5e7eb !important;
 }
+
 /* Líneas horizontales finas */
 .rbc-month-row {
   border-bottom: 1px solid #e5e7eb !important;
@@ -308,23 +365,29 @@ color:#060606;
 .rbc-day-bg {
   border-left: 1px solid #e5e7eb !important;
 }
+
 .rbc-day-bg:first-child {
   border-left: none !important;
 }
+
 /* Centramos el contenedor original del número y le damos aire arriba */
 .rbc-date-cell {
   text-align: center !important;
   padding: 8px 0 2px 0 !important;
 }
+
 /* ── Estilos de nuestro nuevo número (CustomDateHeader) ── */
 .custom-date-header {
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 0.75rem; /* Número pequeño y elegante */
+  font-size: 0.75rem;
+  /* Número pequeño y elegante */
   font-weight: 500;
-  color: #3c4043; /* Gris oscuro Google */
+  color: #3c4043;
+  /* Gris oscuro Google */
 }
+
 /* La cajita invisible alrededor del número que se volverá círculo si es hoy */
 .custom-date-header span {
   display: flex;
@@ -334,20 +397,25 @@ color:#060606;
   height: 24px;
   border-radius: 50%;
 }
+
 /* Día de hoy: Círculo Azul */
 .custom-date-header.hoy span {
-  background-color: #AD868A;;
+  background-color: #AD868A;
+  ;
   color: white;
 }
+
 /* Días de otros meses (Ej. 30 y 31 del mes pasado) se ponen gris claro */
 .custom-date-header.off-range {
   color: #70757a;
   opacity: 0.5;
 }
+
 /* Fondo ligeramente gris para los días que no son de este mes (Opcional, muy al estilo Google) */
 .rbc-off-range-bg {
   background-color: #f8f9fa !important;
 }
+
 /*ESTILOS DE LOS EVENTOS DEL CALENDARIO*/
 /* QUITAMOS LOS ESTILOS DE BLOQUE SOLIDO QUE TRAE LA LIBRERIA*/
 .rbc-event {
@@ -357,42 +425,52 @@ color:#060606;
   border-radius: 4px !important;
   box-shadow: none;
 }
+
 /* Evitamos que el evento se ponga azul por defecto al hacer clic */
-.rbc-event:focus, .rbc-event.rbc-selected {
+.rbc-event:focus,
+.rbc-event.rbc-selected {
   outline: none !important;
-  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.3) !important; /* Tu verde #0f766e con transparencia */
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.3) !important;
+  /* Tu verde #0f766e con transparencia */
 }
+
 /*estilos internos del componente CustomEvent*/
 .custom-event-content {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-start;
-  padding: 4px 8px; /* Le damos el "aire" necesario al texto */
+  padding: 4px 8px;
+  /* Le damos el "aire" necesario al texto */
   width: 100%;
   height: 100%;
   box-sizing: border-box;
   overflow: hidden;
 }
+
 .event-time {
   font-size: 0.7rem;
   font-weight: 500;
   color: #4b5563;
   margin-top: 2px;
 }
+
 .event-title {
   font-size: 0.8rem;
   font-weight: 600;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis; /* Agrega "..." si no cabe */
+  text-overflow: ellipsis;
+  /* Agrega "..." si no cabe */
   width: 100%;
 }
+
 /* Oculta la hora doble por defecto de la librería */
 .rbc-event-label {
   display: none !important;
 }
+
 /* ── EL TRUCO PARA LA VISTA DE MES (Imagen 1) ── */
 /* En el mes las cajas son bajitas, así que pasamos a formato de fila (Row) */
 .rbc-month-view .custom-event-content {
@@ -410,7 +488,8 @@ color:#060606;
   font-size: 0.65rem;
   margin-top: 0;
   font-weight: 600;
-  flex-shrink: 0; /* Asegura que la hora nunca se aplaste aunque el título sea largo */
+  flex-shrink: 0;
+  /* Asegura que la hora nunca se aplaste aunque el título sea largo */
 }
 
 
@@ -421,19 +500,22 @@ color:#060606;
   background-color: #ffffff;
   padding: 0.5rem;
   border-radius: 8px;
-  border: 1px solid #e5e7eb; 
+  border: 1px solid #e5e7eb;
 }
+
 .mini-calendario-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0.25rem 0.5rem 0.5rem 0.5rem;
 }
+
 .mini-calendario-title {
   font-size: 0.875rem;
   font-weight: 500;
   color: #3c4043;
 }
+
 .mini-calendario-nav {
   display: flex;
   gap: 0.25rem;
@@ -481,7 +563,8 @@ color:#060606;
   background: transparent;
   border: none;
   cursor: pointer;
-  height: 28px; /* Altura compacta */
+  height: 28px;
+  /* Altura compacta */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -497,7 +580,8 @@ color:#060606;
 
 /* AQUÍ CONTROLAMOS EL TAMAÑO PEQUEÑO DE LOS NÚMEROS */
 .numero-dia {
-  font-size: 0.75rem; /* Números pequeños y legibles */
+  font-size: 0.75rem;
+  /* Números pequeños y legibles */
   color: #3c4043;
 }
 
@@ -508,22 +592,544 @@ color:#060606;
 }
 
 .dia-hoy {
-  background-color: #f1f3f4; /* Fondo gris muy suave para hoy */
+  background-color: #f1f3f4;
+  /* Fondo gris muy suave para hoy */
 }
+
 .dia-hoy .numero-dia {
-  color: #AD868A; /* Color de tu diseño para hoy */
+  color: #AD868A;
+  /* Color de tu diseño para hoy */
   font-weight: 600;
 }
 
 .dia-seleccionado {
-  background-color: #e8eaed; /* Gris oscuro o el color primario que prefieras */
+  background-color: #e8eaed;
+  /* Gris oscuro o el color primario que prefieras */
 }
 
 /* Si quieres que el día seleccionado sea un círculo del color de tu diseño (ej. #AD868A o #0f766e) */
 .dia-seleccionado {
-  background-color: #AD868A; 
+  background-color: #AD868A;
 }
+
 .dia-seleccionado .numero-dia {
   color: #ffffff;
   font-weight: 500;
+}
+
+/* =======================================================
+   NUEVAS CLASES TRASLADADAS DESDE EL INLINE CSS
+   ======================================================= */
+
+/* Cabecera exclusiva para la vista de Mes */
+.custom-month-header {
+  padding: 8px 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #70757a;
+  letter-spacing: 0.5px;
+}
+
+/* Ajustes adicionales para alinear los botones de vistas con iconos */
+.btn-view {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Modificación de prioridad para asegurar que el dropdown no sea tapado */
+.dropdown-menu {
+  z-index: 99999 !important;
+}
+
+/* Cabecera interactiva de "Mis Laboratorios" */
+.card-header {
+  cursor: pointer;
+  justify-content: space-between;
+}
+
+.card-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Etiquetas del Checkbox de laboratorios */
+.lab-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+/* ── ESTILOS DINÁMICOS PARA EVENTOS (Antes en JS, ahora en CSS) ── */
+.evento-base {
+  color: #374151 !important;
+  /* Texto gris oscuro de alta legibilidad */
+  border-radius: 4px;
+  display: block;
+  font-size: 0.75rem;
+  padding: 2px 4px;
+}
+
+.evento-redes {
+  background-color: #eff6ff !important;
+  /* Azul muy claro */
+  border: 1px solid #bfdbfe !important;
+  border-left: 4px solid #3b82f6 !important;
+  /* Margen izquierdo grueso azul */
+}
+
+.evento-computo {
+  background-color: #f0fdf4 !important;
+  /* Verde muy claro */
+  border: 1px solid #bbf7d0 !important;
+  border-left: 4px solid #22c55e !important;
+  /* Margen izquierdo grueso verde */
+}
+
+/* =======================================================
+   ESTILOS PARA EL BUSCADOR (SEARCH BAR)
+   ======================================================= */
+.search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  color: #6b7280;
+  /* Gris sutil */
+  pointer-events: none;
+  /* Evita que el ícono bloquee el clic en el input */
+}
+
+.search-input {
+  width: 320px;
+  padding: 0.5rem 1rem 0.5rem 2.2rem;
+  /* Espacio extra a la izquierda para el ícono */
+  border: 1px solid #e5e7eb;
+  border-radius: 9999px;
+  /* Forma de píldora */
+  background-color: #f9fafb;
+  font-size: 0.875rem;
+  color: #374151;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+/* Efecto al hacer clic en el buscador (Glow con tu verde temático) */
+.search-input:focus {
+  background-color: #ffffff;
+  border-color: #19760f;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
+}
+
+/* =======================================================
+   ESTILOS DEL DROPDOWN DE BÚSQUEDA (TIPO AUTOCOMPLETAR)
+   ======================================================= */
+.search-results-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  /* Justo debajo del input */
+  left: 0;
+  width: 100%;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 100000;
+  /* Aseguramos que esté por encima de todo */
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+}
+
+.search-result-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: background-color 0.2s;
+}
+
+.search-result-item:hover {
+  background-color: #f3f4f6;
+  /* Gris muy suave al pasar el mouse */
+}
+
+.result-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.result-date {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.search-result-empty {
+  padding: 12px 16px;
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+/* =======================================================
+   ESTILOS ADAPTATIVOS DE LOS EVENTOS (ESTILO GOOGLE CALENDAR)
+   ======================================================= */
+
+/* CONTENEDOR EN VISTA SEMANA Y DÍA */
+.custom-event-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 4px 6px;
+  /* Espaciado interno balanceado */
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  gap: 2px;
+  /* Separación fina entre título y hora */
+}
+
+/* EL TÍTULO (Ahora se acopla y envuelve en varias líneas si hay espacio) */
+.event-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  /* Texto semi-bold para que resalte */
+  line-height: 1.2;
+  color: #3c4043;
+  /* Gris oscuro oficial de Google Calendar */
+  white-space: normal;
+  /* ¡PERMITE EL ENVOLVIMIENTO DEL TEXTO! */
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  /* Si el título es extremadamente largo, permite máximo 2 líneas antes del elipsis */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+/* LA HORA EN VISTA SEMANA Y DÍA */
+.event-time {
+  font-size: 0.7rem;
+  /* Un poco más pequeña y discreta */
+  font-weight: 500;
+  color: #70757a;
+  /* Gris secundario de Google Calendar */
+  white-space: nowrap;
+}
+
+/* ── COMPORTAMIENTO EXCLUSIVO EN VISTA DE MES ── */
+/* Google Calendar renderiza de forma horizontal en el mes por falta de altura */
+.rbc-month-view .custom-event-content {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 2px 6px;
+  gap: 4px;
+}
+
+.rbc-month-view .event-title {
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  /* En el mes no debe envolver hacia abajo */
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rbc-month-view .event-time {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #70757a;
+  flex-shrink: 0;
+  order: -1;
+  /* TRUCO MAGNÍFICO: En el mes, la hora se antepone al título (ej: 9:00 Clase...) */
+}
+
+/* =======================================================
+   DISEÑO DE CAJA DE EVENTOS CON PALETA INSTITUCIONAL PASTEL
+   ======================================================= */
+
+.evento-base {
+  border-radius: 4px;
+  display: block;
+  font-size: 0.75rem;
+  padding: 0 !important;
+  /* Dejamos que el contenedor interno maneje el padding */
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.evento-base:hover {
+  transform: translateY(-0.5px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+}
+
+/* 1. CLASE EN ROJO PASTEL (EXCLUSIVO PARA MANTENIMIENTO) */
+.evento-mantenimiento {
+  background-color: #fee2e2 !important;
+  /* Rojo pastel sólido (No blanco) */
+  border: 1px solid #fca5a5 !important;
+  /* Borde rojo suave */
+  border-left: 4px solid #ef4444 !important;
+  /* Línea gruesa izquierda en rojo fuerte */
+}
+
+.evento-mantenimiento .event-title {
+  color: #991b1b !important;
+  /* Texto rojo oscuro para legibilidad perfecta */
+}
+
+.evento-mantenimiento .event-time {
+  color: #b91c1c !important;
+}
+
+/* 2. LAB DE REDES (Basado en el verde institucional #0f766e) */
+.evento-sistema-teal {
+  background-color: #e6f4f2 !important;
+  /* Verde institucional en variante pastel */
+  border: 1px solid #b2dfdb !important;
+  border-left: 4px solid #0f766e !important;
+  /* Línea izquierda con el verde base */
+}
+
+.evento-sistema-teal .event-title {
+  color: #0d524d !important;
+  /* Texto verde oscuro legible */
+}
+
+.evento-sistema-teal .event-time {
+  color: #0f766e !important;
+}
+
+/* 3. LAB DE CÓMPUTO (Basado en el amarillo institucional #fcd34d) */
+.evento-sistema-amarillo {
+  background-color: #fffbeb !important;
+  /* Amarillo institucional en variante pastel */
+  border: 1px solid #fde68a !important;
+  border-left: 4px solid #d97706 !important;
+  /* Línea izquierda ámbar/dorada */
+}
+
+.evento-sistema-amarillo .event-title {
+  color: #78350f !important;
+  /* Texto café/marrón oscuro */
+}
+
+.evento-sistema-amarillo .event-time {
+  color: #b45309 !important;
+}
+
+/* =======================================================
+   ESTILOS DEL POPOVER (DETALLES DEL EVENTO)
+   ======================================================= */
+.event-popover-container {
+  position: fixed;
+  background-color: #ffffff;
+  width: 320px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+  z-index: 999999;
+  /* Por encima de todo en la pantalla */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  animation: popoverFadeIn 0.2s ease-out;
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.popover-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  position: relative;
+}
+
+.popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  /* Separación sutil entre los iconos */
+  margin-bottom: 4px;
+}
+
+.btn-popover-action {
+  background: transparent;
+  border: none;
+  color: #4b5563;
+  /* Gris sutil */
+  cursor: pointer;
+  padding: 6px;
+  /* Padding para que el hover sea circular */
+  border-radius: 50%;
+  /* Botones completamente redondos */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+/* Hover estándar (Gris oscuro) */
+.btn-popover-action:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+/* Hover EXCLUSIVO para el botón de eliminar (Rojo alerta) */
+.btn-delete:hover {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.btn-close-popover {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.btn-close-popover:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.popover-title {
+  margin: 0 0 4px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.3;
+}
+
+.popover-time {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+  text-transform: capitalize;
+  /* Para que el día de la semana inicie con mayúscula */
+}
+
+.popover-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.popover-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.875rem;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.popover-icon {
+  color: #6b7280;
+  flex-shrink: 0;
+  /* Evita que el icono se apachurre si el texto es largo */
+  margin-top: 2px;
+}
+
+.text-red {
+  color: #ef4444;
+  /* Rojo para destacar el ícono de mantenimiento */
+}
+
+.text-sm {
+  font-size: 0.8rem;
+  color: #4b5563;
+}
+
+/*Actualizar el contenedor principal*/
+.calendar-page-wrapper {
+  display: flex;
+  height: 100%;
+  gap: 1.5rem;
+  position: relative;
+  /* <-- SOLO AGREGA ESTA LÍNEA */
+}
+
+/* =======================================================
+   ESTILOS DEL INDICADOR DE CARGA (LOADING)
+   ======================================================= */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.75);
+  /* Fondo blanco semitransparente */
+  backdrop-filter: blur(3px);
+  /* Efecto cristal/desenfoque moderno */
+  z-index: 1000;
+  /* Por encima del calendario pero debajo de modales */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+
+  /* Tipografía y color */
+  color: #0f766e;
+  /* Verde institucional de la USO */
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+
+  /* Animación de latido */
+  animation: pulse-text 1.5s infinite ease-in-out;
+}
+
+/* Animación para que el texto parpadee suavemente */
+@keyframes pulse-text {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.98);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0.5;
+    transform: scale(0.98);
+  }
 }

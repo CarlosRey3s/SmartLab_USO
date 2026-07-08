@@ -1,223 +1,125 @@
-import { useState } from 'react';
-import { Search, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, Printer } from 'lucide-react';
+import { useState, useEffect, createContext, useContext } from 'react';
+import {
+  Search, Calendar as CalendarIcon, ChevronLeft, ChevronRight,
+  ChevronDown, ChevronUp, Plus, Printer, X, User, Wrench, FileText, Info,
+  Edit2, Trash2
+} from 'lucide-react';
 import { Calendar, dateFnsLocalizer, type ToolbarProps, type View } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isToday } from 'date-fns';
-// Ajusta la ruta './components/MiniCalendario' según la estructura de tus carpetas
 import { MiniCalendario } from './MiniCalendario.tsx';
 import { es } from 'date-fns/locale/es';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-// Importa tu nuevo modal (ajusta la ruta según donde tengas CalendarioView)
 import { ModalNuevaActividad } from '../../components/shared/ModalNuevaActividad';
+import { obtenerActividades } from '../../services/actividades.service'; // <-- Ajusta esta ruta según tus carpetas
 import '../../css/calendario.css';
 
-import { formatDistanceStrictWithOptions } from 'date-fns/fp';
-
+// ── 1. CONFIGURACIÓN DE FECHAS E IDIOMA ──
 const locales = { 'es': es };
 const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 0 }),
-  getDay,
-  locales,
+  format, parse, startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 0 }), getDay, locales,
 });
 
-// ── 1. AGREGAMOS A QUÉ LABORATORIO PERTENECE CADA EVENTO ──
+const NavegacionContext = createContext({ irAFecha: (fecha: Date) => { } });
+
+// ── 2. INTERFAZ PARA EVENTOS (Consulta SQL) ──
 export interface EventoLaboratorio {
+  id: number;
   title: string;
   start: Date;
   end: Date;
-  laboratorio: string; // <-- NUEVO: Para saber de qué lab es el evento
+  laboratorio: string;
+  tipo: 'clase' | 'mantenimiento' | 'reserva';
+  materia?: string;
+  docente_id?: string;
+  clase_estudiantes?: number;
+  tecnico_responsable?: string;
+  mant_descripcion?: string;
+  reserva_titulo?: string;
+  reserva_nota?: string;
+  estado_reserva?: string;
 }
 
-// Lista de todos nuestros laboratorios que existen
 const LABORATORIOS_DISPONIBLES = ['Lab de Redes', 'Lab de Computo'];
 
-// Eventos de prueba con su respectivo laboratorio asignado
-const eventosPrueba: EventoLaboratorio[] = [
-  {
-    title: 'Clase de Cisco CCNA',
-    start: new Date(2026, 3, 15, 9, 0),
-    end: new Date(2026, 3, 15, 12, 0),
-    laboratorio: 'Lab de Redes'
-  },
-  {
-    title: 'Mantenimiento de Servidores',
-    start: new Date(2026, 3, 16, 14, 0),
-    end: new Date(2026, 3, 16, 17, 0),
-    laboratorio: 'Lab de Redes'
-  },
-  {
-    title: 'Clase de Programación III',
-    start: new Date(2026, 3, 15, 13, 0),
-    end: new Date(2026, 3, 15, 16, 0),
-    laboratorio: 'Lab de Computo'
-  }
-];
-
-const CustomHeader = ({date}: {date: Date}) => {
-  //obtenemos el dia en texto corto y lo pasamos a mayusculas
-  const diaStr = format(date, 'eee',{locale: es}).toUpperCase();
-  //obtenemos solo el numero del dia
-  const numStr = format(date,'dd');
-  //verificamos si esta columna corresponde al dia de hoy
+// ── 3. COMPONENTES PERSONALIZADOS DEL CALENDARIO ──
+const CustomHeader = ({ date }: { date: Date }) => {
   const esHoy = isToday(date);
-
-
-return (
+  return (
     <div className={`custom-header-cell ${esHoy ? 'hoy' : ''}`}>
-      <span className="dia-texto">{diaStr}</span>
-      <span className="dia-numero">{numStr}</span>
+      <span className="dia-texto">{format(date, 'eee', { locale: es }).toUpperCase()}</span>
+      <span className="dia-numero">{format(date, 'dd')}</span>
     </div>
   );
 };
 
-// ── NUEVO COMPONENTE: CABECERA SOLO PARA EL MES ──
-// Esta solo muestra el texto "LUN", "MAR", sin números ni círculos
-const CustomMonthHeader = ({ date }: { date: Date }) => {
-  const diaStr = format(date, 'eee', { locale: es }).toUpperCase();
-  return (
-    <div style={{ padding: '8px 0', fontSize: '0.75rem', fontWeight: 500, color: '#70757a', letterSpacing: '0.5px' }}>
-      {diaStr}
-    </div>
-  );
+const CustomMonthHeader = ({ date }: { date: Date }) => (
+  <div className="custom-month-header">{format(date, 'eee', { locale: es }).toUpperCase()}</div>
+);
+
+const CustomDateHeader = ({ label, date, isOffRange }: any) => (
+  <div className={`custom-date-header ${isToday(date) ? 'hoy' : ''} ${isOffRange ? 'off-range' : ''}`}>
+    <span>{label}</span>
+  </div>
+);
+
+const CustomEvent = ({ event }: any) => (
+  <div className='custom-event-content'>
+    <span className="event-title">{event.title}</span>
+    <span className="event-time">{`${format(event.start, 'h:mm')} - ${format(event.end, 'h:mm')}`}</span>
+  </div>
+);
+
+const eventStyleGetter = (event: EventoLaboratorio) => {
+  let className = 'evento-base';
+  if (event.tipo === 'mantenimiento') className += ' evento-mantenimiento';
+  else if (event.laboratorio === 'Lab de Redes') className += ' evento-sistema-teal';
+  else if (event.laboratorio === 'Lab de Computo') className += ' evento-sistema-amarillo';
+  return { className };
 };
 
-// nuevo componente numero del dia en vista de mes
-const CustomDateHeader = ({ label, date, isOffRange }: any) => {
-  const esHoy = isToday(date);
-  return (
-    <div className={`custom-date-header ${esHoy ? 'hoy' : ''} ${isOffRange ? 'off-range' : ''}`}>
-    <span>{label}</span> 
-    </div>
-  );
-};
-
-//NUEVO COMPONENTE: TEXTO DENTRO DEL EVENTO
-const CustomEvent= ({ event}: any ) => {
-  // formateamos la hora de inicio para que se vea asi "9:00"
-  const horaInicio = format(event.start, 'h:mm');
-
-  return (
-    <div className='custom-event-content'>
-      <span className="event-title">{event.title}</span>
-      <span className="event-time">{horaInicio}</span>
-    </div>
-  );
-};
- 
-//colores dinamicos del evento 
-const eventStyleGetter = (event: EventoLaboratorio) =>{
-  //colores por defecto
-  let backgroundColor = '#ffffff';
-  let borderColor = '#d1d5db';
-  let colorMargenIzquierdo = '#9ca3af';
-
-// Asignamos colores según el laboratorio para distinguirlos rápido
-  if (event.laboratorio === 'Lab de Redes') {
-    backgroundColor = '#eff6ff'; // Azul muy claro
-    borderColor = '#bfdbfe';
-    colorMargenIzquierdo = '#3b82f6'; // Azul fuerte
-  } else if (event.laboratorio === 'Lab de Computo') {
-    backgroundColor = '#f0fdf4'; // Verde muy claro
-    borderColor = '#bbf7d0';
-    colorMargenIzquierdo = '#22c55e'; // Verde fuerte
-  }
-return {
-    style: {
-      backgroundColor,
-      color: '#374151', // Texto gris oscuro para que sea legible
-      border: `1px solid ${borderColor}`,
-      borderLeft: `4px solid ${colorMargenIzquierdo}`, // La rayita gruesa de color a la izquierda
-      borderRadius: '4px',
-      display: 'block',
-      fontSize: '0.75rem',
-      padding: '2px 4px',
-    }
-  };
-};
+// ── 4. BARRA DE HERRAMIENTAS (TOOLBAR INTERNA) ──
+// Pasamos un prop ficticio para que el filtro interno de Toolbar no falle si no hay eventos cargados aún
 const CustomToolbar = (toolbar: ToolbarProps<EventoLaboratorio>) => {
-  // estado local para abrir/cerrar el menu de vistas
   const [MenuVistaAbierto, setMenuVistaAbierto] = useState(false);
+  const [terminoBusqueda, setTerminoBusqueda] = useState('');
+  const [mostrarResultados, setMostrarResultados] = useState(false);
+  const { irAFecha } = useContext(NavegacionContext);
 
-  const irAHoy = () => toolbar.onNavigate('TODAY');
-  const irAtras = () => toolbar.onNavigate('PREV');
-  const irAdelante = () => toolbar.onNavigate('NEXT');
-  const vistaActual = toolbar.view;
-
-  // Un diccionario para traducir el nombre de la vista actual
-  const nombreVistas: Record<string, string> = {
-    month: 'Mes',
-    week: 'Semana',
-    work_week: 'Semana',
-    day: 'Día' // Corregido el acento
-  };
-
-  // Función para cambiar de vista y cerrar el menú automáticamente
-  const cambiarVista = (nuevaVista: View) => {
-    toolbar.onView(nuevaVista);
-    setMenuVistaAbierto(false);
-  };
+  const cambiarVista = (nuevaVista: View) => { toolbar.onView(nuevaVista); setMenuVistaAbierto(false); };
 
   return (
     <div className="calendar-toolbar-custom">
       <div className="toolbar-left">
-        <button onClick={irAHoy} className="btn-hoy">Hoy</button>
+        <button onClick={() => toolbar.onNavigate('TODAY')} className="btn-hoy">Hoy</button>
         <div className="nav-arrows">
-          <button onClick={irAtras} className="btn-icon"><ChevronLeft size={20} /></button>
-          <button onClick={irAdelante} className="btn-icon"><ChevronRight size={20} /></button>
+          <button onClick={() => toolbar.onNavigate('PREV')} className="btn-icon"><ChevronLeft size={20} /></button>
+          <button onClick={() => toolbar.onNavigate('NEXT')} className="btn-icon"><ChevronRight size={20} /></button>
         </div>
         <h2 className="toolbar-label">{toolbar.label}</h2>
       </div>
 
       <div className="toolbar-right">
-        <button className="btn-search"><Search size={18} /></button>
+        <div className="search-container">
+          <Search size={18} className="search-icon" />
+          <input
+            type="text" className="search-input" placeholder="Buscar actividad..."
+            value={terminoBusqueda}
+            onChange={(e) => { setTerminoBusqueda(e.target.value); setMostrarResultados(true); }}
+            onFocus={() => setMostrarResultados(true)}
+            onBlur={() => setTimeout(() => setMostrarResultados(false), 200)}
+          />
+        </div>
 
-        {/* ── CONTENEDOR RELATIVO (El Ancla) ── */}
-        <div style={{ position: 'relative', display: 'inline-block' }}>
-          
-          {/* El Botón que muestra la vista actual */}
-          <button
-            onClick={() => setMenuVistaAbierto(!MenuVistaAbierto)}
-            className="btn-view active"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-          >
-            {nombreVistas[vistaActual] || 'Vista'}
+        <div className="dropdown-container">
+          <button onClick={() => setMenuVistaAbierto(!MenuVistaAbierto)} className="btn-view active">
+            {{ month: 'Mes', week: 'Semana', work_week: 'Semana', day: 'Día' }[toolbar.view] || 'Vista'}
             {MenuVistaAbierto ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
-
-          {/* ── EL MENÚ FLOTANTE (Forzado con estilos en línea) ── */}
           {MenuVistaAbierto && (
-            <div style={{
-              position: 'absolute',
-              top: 'calc(100% + 8px)',
-              right: '0',
-              backgroundColor: '#ffffff',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2)',
-              display: 'flex',
-              flexDirection: 'column',
-              width: '140px',
-              zIndex: 99999 /* Esto asegura que NADA lo tape */
-            }}>
-              <button
-                onClick={() => cambiarVista('day')}
-                className={`dropdown-item ${vistaActual === 'day' ? 'active' : ''}`}
-              >
-                Día
-              </button>
-              <button
-                onClick={() => cambiarVista('week')}
-                className={`dropdown-item ${vistaActual === 'week' ? 'active' : ''}`}
-              >
-                Semana
-              </button>
-              <button
-                onClick={() => cambiarVista('month')}
-                className={`dropdown-item ${vistaActual === 'month' ? 'active' : ''}`}
-              >
-                Mes
-              </button>
+            <div className="dropdown-menu">
+              <button onClick={() => cambiarVista('day')} className="dropdown-item">Día</button>
+              <button onClick={() => cambiarVista('week')} className="dropdown-item">Semana</button>
+              <button onClick={() => cambiarVista('month')} className="dropdown-item">Mes</button>
             </div>
           )}
         </div>
@@ -226,167 +128,194 @@ const CustomToolbar = (toolbar: ToolbarProps<EventoLaboratorio>) => {
   );
 };
 
+// ── 5. COMPONENTE PRINCIPAL (VISTA) ──
 export const CalendarioView = () => {
-  const [fechaActual, setFechaActual] = useState(new Date(2026, 3, 15));
+  const [fechaActual, setFechaActual] = useState(new Date());
   const [vistaActual, setVistaActual] = useState<View>('week');
-  // ── 2. NUEVOS ESTADOS PARA LOS LABORATORIOS ──
-  // Estado para saber qué laboratorios están marcados (por defecto, todos)
   const [labsActivos, setLabsActivos] = useState<string[]>(LABORATORIOS_DISPONIBLES);
-  // Estado para saber si el menú está desplegado o contraído
   const [menuDesplegado, setMenuDesplegado] = useState(true);
-
-  // Añade este nuevo estado para controlar el modal:
   const [modalAbierto, setModalAbierto] = useState(false);
 
-  // 1 configuracion del rango de horas
-  //empieza a las 6:00 AM
-  const horasInicio =  new Date();
-  horasInicio.setHours(6, 0, 0);
+  const [eventoSeleccionado, setEventoSeleccionado] = useState<EventoLaboratorio | null>(null);
+  const [popoverPos, setPopoverPos] = useState({ x: 0, y: 0 });
 
-  //termino a las 11:59 PM
-  const horaFin = new Date();
-  horaFin.setHours(23, 59, 59);
+  const [eventos, setEventos] = useState<EventoLaboratorio[]>([]);
+  const [cargando, setCargando] = useState(true);
 
-  // Configuramos el formato de texto
-  // 'h a' le dice a date-fns que use "hora y AM/PM" (ej. "8 a. m.") sin minutos
-  const formatosPerzonalizados ={
-    timeGutterFormat: 'h a'
-  };
+  useEffect(() => {
+    const cargarDatos = async () => {
+      try {
+        setCargando(true);
+        const data = await obtenerActividades();
+        setEventos(data);
+      } catch (error) {
+        console.error("Error al traer data:", error);
+      } finally {
+        setCargando(false);
+      }
+    };
+    cargarDatos();
+  }, []);
 
+  const horasInicio = new Date(); horasInicio.setHours(6, 0, 0);
+  const horaFin = new Date(); horaFin.setHours(23, 59, 59);
 
-  // ── 3. LÓGICA DE FILTRADO Y MANEJO DE CLICS ──
-  // Esta función decide qué pasa cuando le damos clic a un checkbox
   const toggleLaboratorio = (nombreLab: string) => {
-    setLabsActivos((prev) => {
-      // Si el laboratorio ya estaba marcado, lo quitamos de la lista
-      if (prev.includes(nombreLab)) {
-        return prev.filter(lab => lab !== nombreLab);
-      }
-      // Si no estaba marcado, lo agregamos a la lista
-      else {
-        return [...prev, nombreLab];
-      }
-    });
+    setLabsActivos(prev => prev.includes(nombreLab) ? prev.filter(lab => lab !== nombreLab) : [...prev, nombreLab]);
   };
 
-  // MAGIA DE FILTRADO: Solo le pasamos al calendario los eventos cuyo laboratorio esté en "labsActivos"
-  const eventosFiltrados = eventosPrueba.filter(evento => 
-    labsActivos.includes(evento.laboratorio)
-  );
+  const eventosFiltrados = eventos.filter(evento => labsActivos.includes(evento.laboratorio));
+
+  // ── SOLUCIÓN IMAGEN 1: Cambiamos el tipo del evento nativo a 'any' para evitar colisiones ──
+  const handleSelectEvent = (evento: EventoLaboratorio, e: any) => {
+    const evt = e.nativeEvent as MouseEvent;
+
+    // Si el evento viene de un clic directo en un botón interno (como borrar), no abras el popover
+    if (!evt) return;
+
+    let x = evt.clientX;
+    let y = evt.clientY;
+
+    const popoverWidth = 320;
+    const popoverHeight = 200;
+    if (x + popoverWidth > window.innerWidth) x = x - popoverWidth - 20;
+    else x = x + 20;
+    if (y + popoverHeight > window.innerHeight) y = y - popoverHeight;
+
+    setPopoverPos({ x, y });
+    setEventoSeleccionado(evento);
+  };
+
+  const handleEditarEvento = () => {
+    console.log("Editar ID:", eventoSeleccionado?.id);
+  };
+
+  const handleEliminarEvento = () => {
+    console.log("Eliminar ID:", eventoSeleccionado?.id);
+  };
 
   return (
-    <div className="calendar-page-wrapper">
-      {/* Añade el modal en cualquier parte superior del return */}
-    {modalAbierto && (
-        <ModalNuevaActividad 
-          onClose={() => setModalAbierto(false)} 
-          onGuardar={async (data) => {
-            console.log("Datos listos para enviar al backend:", data);
+    <NavegacionContext.Provider value={{ irAFecha: (fecha) => setFechaActual(fecha) }}>
+      <div className="calendar-page-wrapper" onClick={() => eventoSeleccionado && setEventoSeleccionado(null)}>
 
-            try {
-              // Aquí iría tu lógica para enviar 'data' al backend
-              const respuesta = await fetch('http://localhost:4000/api/actividades', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-              });
-              //convertimos la respuesta del backend a json
-              const resultado = await respuesta.json();
-               if( respuesta.ok) {
-                console.log("Actividadcreada con exito:", resultado);
-                // Opcional: aqui podra disparar una recarga de eventos en el calendario
-               }else{
-                console.error("Error al crear actividad:", resultado);
-                alert("Error al crear actividad: " + resultado.message);
-               }
+        {cargando && <div className="loading-overlay">Cargando base de datos smartlabs...</div>}
 
-            } catch (error) {
-              console.error("Error al enviar datos al backend:", error);
-              alert("No se pudo conectar con el servidor para crear la actividad.");
-            }
-          }}
-        />
-      )}
-      <div className="calendar-main-container">
-        <Calendar
-          localizer={localizer}
-          events={eventosFiltrados} // Le pasamos la lista FILTRADA, no la original
-          startAccessor="start"
-          endAccessor="end"
-          date={fechaActual}
-          onNavigate={(nuevaFecha) => setFechaActual(nuevaFecha)}
-          view={vistaActual}
-          onView={(nuevaVista) => setVistaActual(nuevaVista)}
-
-        // aplicar cambios
-        min={horasInicio}
-        max={horaFin}
-        formats={formatosPerzonalizados}
-          culture="es"
-          eventPropGetter={eventStyleGetter}
-          components={{ toolbar: CustomToolbar,
-            week:{header:CustomHeader},
-            day: {header: CustomHeader},
-            month:{header:CustomMonthHeader,
-                  dateHeader: CustomDateHeader
-            },
-            //Pasandole el diseño del texto a todas las vistas
-            event:CustomEvent
-          }}
-          style={{ height: '100%' }}
-        />
-      </div>
-
-      <div className="calendar-sidebar-right">
-        {/* Conecta el botón "Crear" para que cambie el estado a true */}
-        <button className="btn-crear" onClick={() => setModalAbierto(true)}>
-          <Plus size={20} /> Crear
-        </button>
-        
-        {/* ── AQUÍ SE INSERTA EL COMPONENTE SEPARADO ── */}
-        <MiniCalendario 
-          fechaSeleccionada={fechaActual} 
-          onFechaCambiada={(nuevaFecha) => setFechaActual(nuevaFecha)} 
-        />
-
-        {/* ── 4. UI: TARJETA DE MIS LABORATORIOS ── */}
-        <div className="mis-laboratorios-card">
-          
-          {/* Cabecera (Ahora es un botón interactivo) */}
-          <div 
-            className="card-header" 
-            onClick={() => setMenuDesplegado(!menuDesplegado)}
-            style={{ cursor: 'pointer', justifyContent: 'space-between' }}
+        {eventoSeleccionado && (
+          <div
+            className="event-popover-container"
+            style={{ top: popoverPos.y, left: popoverPos.x }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <CalendarIcon size={18} /> Mis laboratorios
+            <div className="popover-header">
+              <div className="popover-actions">
+                <button className="btn-popover-action" onClick={handleEditarEvento} title="Editar">
+                  <Edit2 size={16} />
+                </button>
+                <button className="btn-popover-action btn-delete" onClick={handleEliminarEvento} title="Eliminar">
+                  <Trash2 size={16} />
+                </button>
+                <button className="btn-popover-action" onClick={() => setEventoSeleccionado(null)} title="Cerrar">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <h3 className="popover-title">{eventoSeleccionado.title}</h3>
+              <p className="popover-time">
+                {format(eventoSeleccionado.start, "EEEE d 'de' MMMM • h:mm a", { locale: es })} - {format(eventoSeleccionado.end, 'h:mm a')}
+              </p>
             </div>
-            {/* Cambiamos la flechita dependiendo de si está abierto o cerrado */}
-            {menuDesplegado ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+
+            <div className="popover-body">
+              <div className="popover-row">
+                <CalendarIcon size={16} className="popover-icon" />
+                <span>{eventoSeleccionado.laboratorio}</span>
+              </div>
+
+              {eventoSeleccionado.tipo === 'clase' && (
+                <>
+                  <div className="popover-row"><FileText size={16} className="popover-icon" /> <span>Materia: {eventoSeleccionado.materia}</span></div>
+                  <div className="popover-row"><User size={16} className="popover-icon" /> <span>Docente ID: {eventoSeleccionado.docente_id}</span></div>
+                </>
+              )}
+
+              {eventoSeleccionado.tipo === 'mantenimiento' && (
+                <>
+                  <div className="popover-row"><Wrench size={16} className="popover-icon text-red" /> <span>Técnico ID: {eventoSeleccionado.tecnico_responsable}</span></div>
+                  <div className="popover-row"><FileText size={16} className="popover-icon" /> <span className="text-sm">{eventoSeleccionado.mant_descripcion}</span></div>
+                </>
+              )}
+
+              {eventoSeleccionado.tipo === 'reserva' && (
+                <>
+                  <div className="popover-row"><User size={16} className="popover-icon" /> <span>Reserva: {eventoSeleccionado.reserva_titulo}</span></div>
+                  <div className="popover-row"><FileText size={16} className="popover-icon" /> <span className="text-sm">Nota: {eventoSeleccionado.reserva_nota}</span></div>
+                </>
+              )}
+            </div>
           </div>
+        )}
 
-          {/* Cuerpo (Solo se muestra si menuDesplegado es true) */}
-          {menuDesplegado && (
-            <div className="card-body">
-              {LABORATORIOS_DISPONIBLES.map((lab) => (
-                <label key={lab} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                  <input 
-                    type="checkbox" 
-                    checked={labsActivos.includes(lab)} // Se marca solo si está en nuestro estado
-                    onChange={() => toggleLaboratorio(lab)} // Llama a nuestra función al hacer clic
-                  /> 
-                  {lab}
-                </label>
-              ))}
-            </div>
-          )}
+        {modalAbierto && (
+          <ModalNuevaActividad
+            onClose={() => setModalAbierto(false)}
+            // ── SOLUCIÓN IMAGEN 2: Le asignamos tipo 'any' explícito a la data entrante ──
+            onGuardar={async (data: any) => {
+              console.log("Data capturada del modal:", data);
+            }}
+          />
+        )}
 
+        <div className="calendar-main-container">
+          <Calendar
+            localizer={localizer}
+            events={eventosFiltrados}
+            startAccessor="start" endAccessor="end"
+            date={fechaActual} onNavigate={setFechaActual}
+            view={vistaActual} onView={setVistaActual}
+            min={horasInicio} max={horaFin}
+            formats={{ timeGutterFormat: 'h a' }} culture="es"
+            eventPropGetter={eventStyleGetter}
+            onSelectEvent={handleSelectEvent}
+            components={{
+              toolbar: CustomToolbar, week: { header: CustomHeader }, day: { header: CustomHeader },
+              month: { header: CustomMonthHeader, dateHeader: CustomDateHeader }, event: CustomEvent
+            }}
+            style={{ height: '100%' }}
+          />
         </div>
 
-        <button className="btn-exportar"><Printer size={20} /> Exportar</button>
+        <div className="calendar-sidebar-right">
+          <button className="btn-crear" onClick={() => setModalAbierto(true)}>
+            <Plus size={20} /> Crear
+          </button>
+          <MiniCalendario fechaSeleccionada={fechaActual} onFechaCambiada={setFechaActual} />
+
+          <div className="mis-laboratorios-card">
+            <div className="card-header" onClick={() => setMenuDesplegado(!menuDesplegado)}>
+              <div className="card-header-title">
+                <CalendarIcon size={18} /> Mis laboratorios
+              </div>
+              {menuDesplegado ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </div>
+
+            {menuDesplegado && (
+              <div className="card-body">
+                {LABORATORIOS_DISPONIBLES.map((lab) => (
+                  <label key={lab} className="lab-checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={labsActivos.includes(lab)}
+                      onChange={() => toggleLaboratorio(lab)}
+                    />
+                    {lab}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          <button className="btn-exportar"><Printer size={20} /> Exportar</button>
+        </div>
       </div>
-    </div>
+    </NavegacionContext.Provider>
   );
 };

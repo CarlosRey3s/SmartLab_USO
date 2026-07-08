@@ -1,0 +1,40 @@
+// src/services/actividades.service.ts
+import axios from 'axios';
+import type { EventoLaboratorio } from '..//pages/admin/Calendario.tsx'; // Ajusta la ruta a donde tengas tu interfaz
+// Ajusta la ruta a donde tengas tu interfaz
+
+// Reemplaza esto con la URL real de tu backend si es diferente
+const API_URL = "http://localhost:4000/api/actividades"
+
+export const obtenerActividades = async (): Promise<EventoLaboratorio[]> => {
+    try {
+        const respuesta = await axios.get(API_URL);
+
+        // 1. Imprimimos en consola exactamente lo que mandó el backend
+        console.log("Respuesta cruda del backend:", respuesta.data);
+
+        // 2. Ajustamos la ruta. Si tu JSON viene envuelto en una propiedad "data", 
+        // debes usar respuesta.data.data. Si se llama "actividades", usa respuesta.data.actividades.
+
+        // CAMBIA ESTA LÍNEA basándote en lo que veas en la consola:
+        const datos = respuesta.data.data; // <-- Si es un array directo
+        // const datos = respuesta.data.data; <-- Si viene envuelto en "data"
+
+        // Transformamos los datos del backend al formato del calendario
+        return datos.map((item: any) => {
+            let nombreLaboratorio = 'Laboratorio Desconocido';
+            if (item.laboratorio_id === 1) nombreLaboratorio = 'Lab de Redes';
+            if (item.laboratorio_id === 2) nombreLaboratorio = 'Lab de Computo';
+
+            return {
+                ...item,
+                start: new Date(item.start),
+                end: new Date(item.end),
+                laboratorio: nombreLaboratorio
+            };
+        });
+    } catch (error) {
+        console.error('Error al obtener las actividades desde el backend:', error);
+        throw error;
+    }
+};
