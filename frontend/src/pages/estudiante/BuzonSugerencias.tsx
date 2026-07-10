@@ -1,26 +1,109 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../../css/buzonSugerencias.css";
+import { customToast } from "../../components/custom-toast/CustomToast";
+
+interface Sugerencia {
+  id: number;
+  titulo: string;
+  comentario: string;
+  estado_gestion: string;
+  respuesta_coordinador: string;
+  fecha_envio: string;
+}
+
+interface Laboratorio {
+  id: number;
+  nombre: string;
+}
 
 export const BuzonSugerencias: React.FC = () => {
   const [titulo, setTitulo] = useState("");
   const [categoria, setCategoria] = useState("");
-  const [laboratorio, setLaboratorio] = useState("");
+  const [laboratorioId, setLaboratorioId] = useState("");
   const [descripcion, setDescripcion] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [sugerencias, setSugerencias] = useState<Sugerencia[]>([]);
+  const [laboratorios, setLaboratorios] = useState<Laboratorio[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchSugerencias();
+    fetchLaboratorios();
+  }, []);
+
+  const fetchSugerencias = async () => {
+    try {
+      const res = await fetch('http://localhost:4000/api/sugerencias');
+      const data = await res.json();
+      if (data.status === 'success') {
+        setSugerencias(data.data);
+      }
+    } catch (error) {
+      console.error("Error cargando sugerencias", error);
+    }
+  };
+
+  const fetchLaboratorios = async () => {
+    try {
+      const res = await fetch('http://localhost:4000/api/laboratorios');
+      const data = await res.json();
+      if (data.status === 'success') {
+        setLaboratorios(data.data);
+      }
+    } catch (error) {
+      console.error("Error cargando laboratorios", error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!titulo || !categoria || !descripcion) {
-      alert("Complete todos los campos obligatorios.");
+      customToast.error("Complete todos los campos obligatorios.");
       return;
     }
 
-    alert("Sugerencia enviada correctamente.");
+    setLoading(true);
+    
+    // Concatenamos la categoría a la descripción ya que la BD no tiene campo categoría
+    const comentarioFinal = `[Categoría: ${categoria}]\n${descripcion}`;
 
-    setTitulo("");
-    setCategoria("");
-    setLaboratorio("");
-    setDescripcion("");
+    const payload = {
+      usuario_id: 2, // Hardcoded para la demostración (Estudiante)
+      laboratorio_id: laboratorioId ? parseInt(laboratorioId) : null,
+      titulo,
+      comentario: comentarioFinal
+    };
+
+    try {
+      const res = await fetch('http://localhost:4000/api/sugerencias', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (data.status === 'success') {
+        customToast.success("Sugerencia enviada correctamente.");
+        setTitulo("");
+        setCategoria("");
+        setLaboratorioId("");
+        setDescripcion("");
+        fetchSugerencias(); // Recargar historial
+      } else {
+        customToast.error("Error al enviar sugerencia.");
+      }
+    } catch (error) {
+      console.error(error);
+      customToast.error("Error de conexión al servidor.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatearFecha = (fecha: string) => {
+    const f = new Date(fecha);
+    return f.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
   return (
@@ -71,12 +154,15 @@ export const BuzonSugerencias: React.FC = () => {
 
             <div className="form-group">
               <label>Laboratorio (Opcional)</label>
-              <input
-                type="text"
-                placeholder="Ej. Laboratorio de Electrónica"
-                value={laboratorio}
-                onChange={(e) => setLaboratorio(e.target.value)}
-              />
+              <select
+                value={laboratorioId}
+                onChange={(e) => setLaboratorioId(e.target.value)}
+              >
+                <option value="">Ninguno en específico</option>
+                {laboratorios.map(lab => (
+                  <option key={lab.id} value={lab.id}>{lab.nombre}</option>
+                ))}
+              </select>
             </div>
 
             <div className="form-group">
@@ -89,8 +175,8 @@ export const BuzonSugerencias: React.FC = () => {
               />
             </div>
 
-            <button type="submit" className="btn-enviar">
-              Enviar sugerencia
+            <button type="submit" className="btn-enviar" disabled={loading}>
+              {loading ? 'Enviando...' : 'Enviar sugerencia'}
             </button>
 
           </form>
@@ -101,39 +187,49 @@ export const BuzonSugerencias: React.FC = () => {
 
           <h3>Mis sugerencias</h3>
 
-          <div className="sugerencia-card">
-            <div className="estado pendiente">
-              En revisión
-            </div>
+          {sugerencias.length === 0 ? (
+            <p style={{ color: '#666', fontStyle: 'italic', marginTop: '10px' }}>No has enviado ninguna sugerencia aún.</p>
+          ) : (
+            sugerencias.map((sug) => {
+              // Extraer categoría del comentario (si existe) para mostrarla más limpia
+              const match = sug.comentario.match(/\[Categoría:\s(.*?)\]\n([\s\S]*)/);
+              const comentarioLimpio = match ? match[2] : sug.comentario;
+              
+              let estadoClase = '';
+              let estadoTexto = '';
+              
+              switch(sug.estado_gestion) {
+                case 'pendiente': estadoClase = 'pendiente'; estadoTexto = 'En revisión'; break;
+                case 'en_revisión': estadoClase = 'pendiente'; estadoTexto = 'En revisión'; break;
+                case 'atendida': estadoClase = 'respondida'; estadoTexto = 'Respondida'; break;
+                case 'archivada': estadoClase = 'archivada'; estadoTexto = 'Archivada'; break;
+                default: estadoClase = 'pendiente'; estadoTexto = 'Pendiente';
+              }
 
-            <h4>Mostrar estaciones disponibles</h4>
+              return (
+                <div className="sugerencia-card" key={sug.id}>
+                  <div className={`estado ${estadoClase}`}>
+                    {estadoTexto}
+                  </div>
 
-            <p>
-              Sería útil visualizar las mesas libres antes de realizar
-              una reserva.
-            </p>
+                  <h4>{sug.titulo}</h4>
 
-            <span className="fecha">
-              20 Jun 2026
-            </span>
-          </div>
+                  <p>{comentarioLimpio}</p>
 
-          <div className="sugerencia-card">
-            <div className="estado respondida">
-              Respondida
-            </div>
+                  {sug.respuesta_coordinador && (
+                    <div style={{ marginTop: '10px', padding: '10px', background: '#f5f5f5', borderRadius: '5px', borderLeft: '3px solid #219653' }}>
+                      <strong>Respuesta oficial:</strong>
+                      <p style={{ margin: '5px 0 0 0', color: '#333' }}>{sug.respuesta_coordinador}</p>
+                    </div>
+                  )}
 
-            <h4>Agregar filtros de laboratorio</h4>
-
-            <p>
-              Se revisará para una futura actualización del sistema.
-            </p>
-
-            <span className="fecha">
-              15 Jun 2026
-            </span>
-          </div>
-
+                  <span className="fecha">
+                    {formatearFecha(sug.fecha_envio)}
+                  </span>
+                </div>
+              );
+            })
+          )}
         </div>
 
       </div>

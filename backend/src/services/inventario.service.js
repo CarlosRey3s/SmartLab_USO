@@ -4,11 +4,12 @@ const { pool } = require('../config/db');
 const obtenerTodoElInventario = async () => {
   const query = `
     SELECT 
-      id, laboratorio_id, nombre, codigo_interno, numero_cas, categoria, 
-      ubicacion_fisica, unidad_medida, tipo_control, cantidad_actual, 
-      stock_minimo, imagen_url
-    FROM item_inventario 
-    ORDER BY nombre ASC
+      i.id, i.laboratorio_id, l.nombre AS laboratorio_nombre, i.nombre, i.codigo_interno, 
+      i.numero_cas, i.categoria, i.ubicacion_fisica, i.unidad_medida, i.tipo_control, 
+      i.cantidad_actual, i.stock_minimo, i.imagen_url
+    FROM item_inventario i
+    LEFT JOIN laboratorios l ON i.laboratorio_id = l.id
+    ORDER BY i.nombre ASC
   `;
   
   const result = await pool.query(query);

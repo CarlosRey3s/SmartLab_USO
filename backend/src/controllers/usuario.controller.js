@@ -71,6 +71,12 @@ const eliminarUsuario = async (req, res) => {
     });
   } catch (error) {
     console.error('Error al eliminar usuario:', error);
+    if (error.code === '23001' || error.code === '23503') {
+      return res.status(400).json({ 
+        status: 'error', 
+        message: 'No se puede eliminar el usuario porque tiene registros de mantenimiento asociados. Te sugerimos cambiar su estado a "inactivo".' 
+      });
+    }
     res.status(500).json({ status: 'error', message: 'Error interno del servidor al eliminar usuario' });
   }
 };

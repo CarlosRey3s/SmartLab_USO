@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal, Plus, MoreVertical, CheckCircle } from 'lucide-react';
+import { Search, SlidersHorizontal, Plus, MoreVertical, CheckCircle, ArrowUp, ArrowDown } from 'lucide-react';
 import '../../css/inventario.css';
 import '../../css/usuarios.css';
 import { AgregarItemModal } from '../../components/shared/AgregarItemModal';
 import { inventarioService } from '../../services/inventario.service';
+import { laboratoriosService } from '../../services/laboratorios.service';
 import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
 import { customToast } from '../../components/custom-toast/CustomToast';
 
 interface InventoryItem {
-  id: string;
+  id: string | number;
   nombre: string;
   codigo_interno: string;
   categoria: string;
-  laboratorio_id: string;
+  laboratorio_id: string | number;
+  laboratorio_nombre?: string;
   cantidad_actual: number;
   stock_minimo: number;
   ubicacion_fisica: string;
@@ -25,21 +27,43 @@ interface InventoryItem {
 export const InventarioView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'inventario' | 'reportes'>('inventario');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [activeMenu, setActiveMenu] = useState<string | number | null>(null);
   const [reportStatusFilter, setReportStatusFilter] = useState('Todos los Estados');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editData, setEditData] = useState<InventoryItem | undefined>(undefined);
   
+  // Estados para los filtros avanzados
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filterLetter, setFilterLetter] = useState('');
+  const [filterLab, setFilterLab] = useState('');
+  const [filterState, setFilterState] = useState('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  
   // Estado para modal de confirmación de eliminación
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<string | number | null>(null);
 
   // Datos de la pestaña Inventario traídos de la base de datos
   const [items, setItems] = useState<InventoryItem[]>([]);
+  const [laboratoriosList, setLaboratoriosList] = useState<any[]>([]);
 
   useEffect(() => {
     cargarInventario();
+    cargarLaboratorios();
   }, []);
+
+  const cargarLaboratorios = async () => {
+    try {
+      const result = await laboratoriosService.getLaboratorios();
+      if (result && result.success && result.data) {
+        setLaboratoriosList(result.data);
+      } else if (result && (result as any).data) {
+        setLaboratoriosList((result as any).data);
+      }
+    } catch (error) {
+      console.error("Error al cargar laboratorios:", error);
+    }
+  };
 
   const cargarInventario = async () => {
     try {
@@ -60,7 +84,7 @@ export const InventarioView: React.FC = () => {
     setActiveMenu(null);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string | number) => {
     setItemToDelete(id);
     setIsDeleteModalOpen(true);
     setActiveMenu(null);
@@ -84,6 +108,41 @@ export const InventarioView: React.FC = () => {
     setEditData(undefined);
     setIsAddModalOpen(true);
   };
+
+  // Computar valores únicos de laboratorios sumando todos los espacios reales de la BD
+  const uniqueLabs = Array.from(new Set([
+    ...laboratoriosList.map(lab => lab.nombre),
+    ...items.map(item => item.laboratorio_nombre || `Lab ID: ${item.laboratorio_id}`)
+  ]));
+
+  // Filtrar items
+  const filteredItems = items.filter(item => {
+    // 1. Search term
+    const searchMatch = item.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        item.codigo_interno.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // 2. Letter filter
+    const letterMatch = filterLetter ? item.nombre.toUpperCase().startsWith(filterLetter) : true;
+    
+    // 3. Lab filter
+    const labName = item.laboratorio_nombre || `Lab ID: ${item.laboratorio_id}`;
+    const labMatch = filterLab ? labName === filterLab : true;
+    
+    // 4. State filter
+    let estadoActual = 'Disponible';
+    if (item.cantidad_actual === 0) estadoActual = 'Agotado';
+    else if (item.cantidad_actual <= item.stock_minimo) estadoActual = 'Bajo Stock';
+    
+    const stateMatch = filterState ? estadoActual === filterState : true;
+
+    return searchMatch && letterMatch && labMatch && stateMatch;
+  }).sort((a, b) => {
+    if (sortOrder === 'asc') {
+      return Number(a.id) - Number(b.id);
+    } else {
+      return Number(b.id) - Number(a.id);
+    }
+  });
 
   // Estado para la tabla de Reportes de Inventario (Ejemplos estáticos)
   const [reportes] = useState<any[]>([
@@ -171,10 +230,116 @@ export const InventarioView: React.FC = () => {
           />
         </div>
         
-        <button className="btn-filter">
-          <SlidersHorizontal size={16} />
-          <span>Filtros</span>
-        </button>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <button 
+            className="btn-filter" 
+            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+            title={sortOrder === 'asc' ? "Ordenar Descendentemente" : "Ordenar Ascendentemente"}
+          >
+            {sortOrder === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
+            <span>ID</span>
+          </button>
+          
+          <div style={{ position: 'relative' }}>
+            <button className="btn-filter" onClick={() => setIsFilterOpen(!isFilterOpen)}>
+              <SlidersHorizontal size={16} />
+              <span>Filtros</span>
+            </button>
+
+          {isFilterOpen && activeTab === 'inventario' && (
+            <div className="filter-dropdown-menu" style={{
+              position: 'absolute',
+              top: '100%',
+              right: 0,
+              marginTop: '8px',
+              background: 'white',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              padding: '16px',
+              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+              zIndex: 50,
+              width: '320px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: '600', fontSize: '14px', color: '#334155' }}>Filtros</span>
+                <button 
+                  onClick={() => { setFilterLetter(''); setFilterLab(''); setFilterState(''); setIsFilterOpen(false); }}
+                  style={{ fontSize: '12px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                  Limpiar
+                </button>
+              </div>
+              
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>Por Letra Inicial</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                  <button
+                    onClick={() => setFilterLetter('')}
+                    style={{
+                      padding: '4px 8px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      background: filterLetter === '' ? '#3b82f6' : '#f1f5f9',
+                      color: filterLetter === '' ? 'white' : '#475569',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    Todas
+                  </button>
+                  {"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').map(letter => (
+                    <button
+                      key={letter}
+                      onClick={() => setFilterLetter(letter === filterLetter ? '' : letter)}
+                      style={{
+                        width: '24px',
+                        height: '24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        background: filterLetter === letter ? '#3b82f6' : '#f1f5f9',
+                        color: filterLetter === letter ? 'white' : '#475569',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {letter}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Por Laboratorio</label>
+                <select value={filterLab} onChange={(e) => setFilterLab(e.target.value)} style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', outline: 'none' }}>
+                  <option value="">Todos</option>
+                  {uniqueLabs.map(lab => (
+                    <option key={lab} value={lab}>{lab}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Por Estado</label>
+                <select value={filterState} onChange={(e) => setFilterState(e.target.value)} style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', outline: 'none' }}>
+                  <option value="">Todos</option>
+                  <option value="Disponible">Disponible</option>
+                  <option value="Bajo Stock">Bajo Stock</option>
+                  <option value="Agotado">Agotado</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
 
         {activeTab === 'inventario' ? (
           <button className="btn-add-item" onClick={openAddModal}>
@@ -192,6 +357,7 @@ export const InventarioView: React.FC = () => {
             <option value="Resuelto">Resuelto</option>
           </select>
         )}
+        </div>
       </div>
 
       {/* ================= CONTENIDO DE TABLAS DINÁMICAS ================= */}
@@ -214,20 +380,20 @@ export const InventarioView: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {items.length === 0 ? (
+              {filteredItems.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="no-reports-cell">
-                    No hay ítems en el inventario
+                    No hay ítems en el inventario que coincidan con los filtros
                   </td>
                 </tr>
               ) : (
-                items.map((item) => (
+                filteredItems.map((item) => (
                   <tr key={item.id}>
-                    <td>{item.id.substring(0, 8)}...</td>
+                    <td>#{item.id}</td>
                     <td className="item-name-cell">{item.nombre}</td>
                     <td>{item.codigo_interno}</td>
                     <td>{item.categoria}</td>
-                    <td>Lab ID: {item.laboratorio_id.substring(0, 8)}...</td>
+                    <td>{item.laboratorio_nombre || `Lab ID: ${item.laboratorio_id}`}</td>
                     <td>{item.cantidad_actual} {item.unidad_medida}</td>
                     <td>{item.ubicacion_fisica || 'N/A'}</td>
                     <td>
@@ -262,12 +428,12 @@ export const InventarioView: React.FC = () => {
 {activeTab === "inventario" && (
   <div className="inventory-cards">
 
-    {items.length === 0 ? (
+    {filteredItems.length === 0 ? (
       <div className="inventory-card empty">
-        No hay ítems en el inventario
+        No hay ítems en el inventario que coincidan con los filtros
       </div>
     ) : (
-      items.map((item) => (
+      filteredItems.map((item) => (
         <div className="inventory-card" key={item.id}>
 
           <div className="card-header">
@@ -329,7 +495,7 @@ export const InventarioView: React.FC = () => {
 
             <div>
               <span>Laboratorio</span>
-              <strong>{item.laboratorio_id.substring(0,8)}...</strong>
+              <strong>{item.laboratorio_nombre || `Lab ${item.laboratorio_id}`}</strong>
             </div>
 
             <div className="estado-item">

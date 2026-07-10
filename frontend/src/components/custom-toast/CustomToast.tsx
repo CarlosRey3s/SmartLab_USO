@@ -71,12 +71,16 @@ type ToastListener = (toast: ToastMessage) => void;
 let listeners: ToastListener[] = [];
 
 export const customToast = {
-  success: (title: string, message: string) => {
-    const toast: ToastMessage = { id: Date.now(), title, message, type: 'success' };
+  success: (titleOrMessage: string, message?: string) => {
+    const finalTitle = message ? titleOrMessage : 'Éxito';
+    const finalMessage = message ? message : titleOrMessage;
+    const toast: ToastMessage = { id: Date.now(), title: finalTitle, message: finalMessage, type: 'success' };
     listeners.forEach(l => l(toast));
   },
-  error: (title: string, message: string) => {
-    const toast: ToastMessage = { id: Date.now(), title, message, type: 'error' };
+  error: (titleOrMessage: string, message?: string) => {
+    const finalTitle = message ? titleOrMessage : 'Error';
+    const finalMessage = message ? message : titleOrMessage;
+    const toast: ToastMessage = { id: Date.now(), title: finalTitle, message: finalMessage, type: 'error' };
     listeners.forEach(l => l(toast));
   }
 };

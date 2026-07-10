@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, Plus, MoreHorizontal, Layers, CheckCircle2, Wrench, XCircle, Monitor, FlaskConical, Presentation, Building } from 'lucide-react';
 import { AgregarEspacioModal } from '../../components/shared/AgregarEspacioModal';
 import { VistaEstaciones } from '../../components/shared/VistaEstaciones';
+import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
+import { customToast } from '../../components/custom-toast/CustomToast';
 import '../../css/inventario.css';
 import '../../css/espacios.css';
 import '../../css/usuarios.css';
@@ -29,6 +31,9 @@ export const EspacioView: React.FC = () => {
   // Estados para gestionar estaciones de un lab específico
   const [gestionarLabId, setGestionarLabId] = useState<string | null>(null);
   const [gestionarLabNombre, setGestionarLabNombre] = useState('');
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [espacioToDelete, setEspacioToDelete] = useState<string | null>(null);
 
   const fetchEspacios = async () => {
     setLoading(true);
@@ -63,24 +68,32 @@ export const EspacioView: React.FC = () => {
     setActiveMenu(null);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar este espacio?')) return;
+  const handleDeleteClick = (id: string) => {
+    setEspacioToDelete(id);
+    setIsDeleteModalOpen(true);
+    setActiveMenu(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!espacioToDelete) return;
     
     try {
-      const res = await fetch(`http://localhost:4000/api/laboratorios/${id}`, {
+      const res = await fetch(`http://localhost:4000/api/laboratorios/${espacioToDelete}`, {
         method: 'DELETE'
       });
       const data = await res.json();
       if (data.status === 'success') {
+        customToast.success('Espacio eliminado correctamente');
         fetchEspacios();
       } else {
-        alert(data.message || 'Error al eliminar el espacio');
+        customToast.error(data.message || 'Error al eliminar el espacio');
       }
     } catch (error) {
       console.error('Error al eliminar:', error);
-      alert('Error al conectar con el servidor');
+      customToast.error('Error al conectar con el servidor');
     }
-    setActiveMenu(null);
+    setIsDeleteModalOpen(false);
+    setEspacioToDelete(null);
   };
 
   const openAddModal = () => {
@@ -227,7 +240,7 @@ export const EspacioView: React.FC = () => {
                               </button>
                             )}
                             <button className="dropdown-item" onClick={() => handleEdit(item)}>Editar</button>
-                            <button className="dropdown-item delete" onClick={() => handleDelete(item.id)}>Eliminar</button>
+                            <button className="dropdown-item delete" onClick={() => handleDeleteClick(item.id)}>Eliminar</button>
                           </div>
                         )}
                       </div>
@@ -237,121 +250,87 @@ export const EspacioView: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          <div className="espacios-cards">
+            {espacios.map((item) => (
+              <div className="espacio-card" key={item.id}>
+                <div className="espacio-card-header">
+                  <div className="espacio-card-title">
+                    {getIconForLab(item.nombre)}
+                    <div>
+                      <h3>{item.nombre}</h3>
+                    </div>
+                  </div>
+                  <div className="action-menu-container">
+                    <button
+                      className="action-button"
+                      onClick={() => setActiveMenu(activeMenu === item.id ? null : item.id)}
+                    >
+                      <MoreHorizontal size={22}/>
+                    </button>
+                    {activeMenu === item.id && (
+                      <div className="actions-dropdown">
+                        {item.modo_reserva === 'por_estacion' && (
+                          <button
+                            className="dropdown-item"
+                            onClick={() => {
+                              setGestionarLabId(item.id);
+                              setGestionarLabNombre(item.nombre);
+                              setActiveMenu(null);
+                            }}
+                          >
+                            Ver espacio de trabajo
+                          </button>
+                        )}
+                        <button className="dropdown-item" onClick={() => handleEdit(item)}>Editar</button>
+                        <button className="dropdown-item delete" onClick={() => handleDeleteClick(item.id)}>Eliminar</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="espacio-card-info">
+                  <div>
+                    <span>Tipo</span>
+                    <strong>{item.modo_reserva === "espacio_completo" ? "Espacio Completo" : "Por Estación"}</strong>
+                  </div>
+                  <div>
+                    <span>Ubicación</span>
+                    <strong>{item.edificio}, Piso {item.piso}, Aula {item.aula}</strong>
+                  </div>
+                  <div>
+                    <span>Capacidad</span>
+                    <strong>{item.capacidad_maxima > 0 ? item.capacidad_maxima : "Dinámica"}</strong>
+                  </div>
+                  <div>
+                    <span>Estado</span>
+                    <strong>{item.estado}</strong>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </>
       )}
 
+      {isModalOpen && (
+        <AgregarEspacioModal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          onSuccess={fetchEspacios}
+          editData={editData}
+        />
+      )}
 
-      <div className="espacios-cards">
-
-  {espacios.map((item) => (
-
-    <div className="espacio-card" key={item.id}>
-
-      <div className="espacio-card-header">
-
-        <div className="espacio-card-title">
-          {getIconForLab(item.nombre)}
-
-          <div>
-            <h3>{item.nombre}</h3>
-          </div>
-        </div>
-
-        <div className="action-menu-container">
-
-          <button
-            className="action-button"
-            onClick={() =>
-              setActiveMenu(activeMenu === item.id ? null : item.id)
-            }
-          >
-            <MoreHorizontal size={22}/>
-          </button>
-
-          {activeMenu === item.id && (
-            <div className="actions-dropdown">
-
-              {item.modo_reserva === 'por_estacion' && (
-                <button
-                  className="dropdown-item"
-                  onClick={() => {
-                    setGestionarLabId(item.id);
-                    setGestionarLabNombre(item.nombre);
-                    setActiveMenu(null);
-                  }}
-                >
-                  Ver espacio de trabajo
-                </button>
-              )}
-
-              <button
-                className="dropdown-item"
-                onClick={() => handleEdit(item)}
-              >
-                Editar
-              </button>
-
-              <button
-                className="dropdown-item delete"
-                onClick={() => handleDelete(item.id)}
-              >
-                Eliminar
-              </button>
-
-            </div>
-          )}
-
-        </div>
-
-      </div>
-
-      <div className="espacio-card-info">
-
-        <div>
-          <span>Tipo</span>
-          <strong>
-            {item.modo_reserva === "espacio_completo"
-              ? "Espacio Completo"
-              : "Por Estación"}
-          </strong>
-        </div>
-
-        <div>
-          <span>Ubicación</span>
-          <strong>
-            {item.edificio}, Piso {item.piso}, Aula {item.aula}
-          </strong>
-        </div>
-
-        <div>
-          <span>Capacidad</span>
-          <strong>
-            {item.capacidad_maxima > 0
-              ? item.capacidad_maxima
-              : "Dinámica"}
-          </strong>
-        </div>
-
-        <div>
-          <span>Estado</span>
-          <strong>{item.estado}</strong>
-        </div>
-
-      </div>
-
-    </div>
-
-  ))}
-
-</div>
-
-      <AgregarEspacioModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSuccess={fetchEspacios}
-        editData={editData}
+      <ConfirmModal 
+        isOpen={isDeleteModalOpen}
+        title="Eliminar Espacio"
+        message="¿Estás seguro de que deseas eliminar este espacio de forma permanente?"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setIsDeleteModalOpen(false);
+          setEspacioToDelete(null);
+        }}
       />
-
     </div>
   );
 };

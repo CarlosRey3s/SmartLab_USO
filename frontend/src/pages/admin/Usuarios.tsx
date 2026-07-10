@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import '../../css/Usuarios.css';
 import { usuariosService } from '../../services/usuarios.service';
+import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
+import { customToast } from '../../components/custom-toast/CustomToast';
 
 export default function Usuarios() {
   const [users, setUsers] = useState<any[]>([]);
@@ -23,6 +25,9 @@ export default function Usuarios() {
   const [selectedNewRole, setSelectedNewRole] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
+
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [confirmModalData, setConfirmModalData] = useState<{title: string, message: string, action: () => void} | null>(null);
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
@@ -49,7 +54,13 @@ export default function Usuarios() {
   const handleGuardarUsuario = async () => {
     // Si estamos creando, la contraseña es obligatoria. Si estamos editando, es opcional.
     if(!formData.nombre || !formData.apellido || !formData.correo || !formData.rol || !formData.expediente || (!editingUserId && !formData.password)) {
-      alert("Por favor llena todos los campos obligatorios.");
+      customToast.error("Por favor llena todos los campos obligatorios.");
+      return;
+    }
+
+    // Validación de longitud mínima de contraseña
+    if (formData.password && formData.password.length < 6) {
+      customToast.error("La contraseña debe tener al menos 6 caracteres.");
       return;
     }
 
@@ -70,26 +81,32 @@ export default function Usuarios() {
     }
 
     if(result.status === 'success') {
-      alert(`Usuario ${editingUserId ? 'actualizado' : 'creado'} correctamente`);
+      customToast.success(`Usuario ${editingUserId ? 'actualizado' : 'creado'} correctamente`);
       setIsAddModalOpen(false);
       setEditingUserId(null);
       setFormData({ nombre: '', apellido: '', expediente: '', correo: '', password: '', rol: '', estado: 'activo' });
       cargarUsuarios();
     } else {
-      alert("Error: " + result.message);
+      customToast.error("Error: " + result.message);
     }
   };
 
   const handleEliminar = async (id: number) => {
-    if (window.confirm("¿Estás seguro de que deseas eliminar este usuario de forma permanente?")) {
-      const result = await usuariosService.eliminarUsuario(id);
-      if (result.status === 'success') {
-        alert("Usuario eliminado correctamente");
-        cargarUsuarios();
-      } else {
-        alert("Error al eliminar el usuario");
+    setConfirmModalData({
+      title: 'Eliminar Usuario',
+      message: '¿Estás seguro de que deseas eliminar este usuario de forma permanente?',
+      action: async () => {
+        const result = await usuariosService.eliminarUsuario(id);
+        if (result.status === 'success') {
+          customToast.success("Usuario eliminado correctamente");
+          cargarUsuarios();
+        } else {
+          customToast.error("Error al eliminar el usuario");
+        }
+        setIsConfirmModalOpen(false);
       }
-    }
+    });
+    setIsConfirmModalOpen(true);
   };
 
   const handleAbrirEdicion = (user: any) => {
@@ -186,15 +203,21 @@ export default function Usuarios() {
 
       {/* Acciones en lote */}
       <div className="bulk-actions-bar">
-        <button className="bulk-btn" onClick={async () => {
+        <button className="bulk-btn" onClick={() => {
           if (selectedUsers.length === 0) return;
-          if (window.confirm(`¿Estás seguro de eliminar ${selectedUsers.length} usuarios de forma permanente?`)) {
-            const deletePromises = selectedUsers.map(id => usuariosService.eliminarUsuario(id));
-            await Promise.all(deletePromises);
-            alert("Usuarios eliminados correctamente");
-            cargarUsuarios();
-            setSelectedUsers([]);
-          }
+          setConfirmModalData({
+            title: 'Eliminar Usuarios',
+            message: `¿Estás seguro de eliminar ${selectedUsers.length} usuarios de forma permanente?`,
+            action: async () => {
+              const deletePromises = selectedUsers.map(id => usuariosService.eliminarUsuario(id));
+              await Promise.all(deletePromises);
+              customToast.success("Usuarios eliminados correctamente");
+              cargarUsuarios();
+              setSelectedUsers([]);
+              setIsConfirmModalOpen(false);
+            }
+          });
+          setIsConfirmModalOpen(true);
         }}>
           <Trash2 size={14} /> Papelera
         </button>
@@ -260,7 +283,7 @@ export default function Usuarios() {
                     });
 
                     await Promise.all(updatePromises);
-                    alert("Roles actualizados correctamente");
+                    customToast.success("Roles actualizados correctamente");
                     cargarUsuarios();
                     setSelectedUsers([]);
                   }
@@ -424,6 +447,16 @@ export default function Usuarios() {
             </div>
           </div>
         </div>
+      )}
+
+      {isConfirmModalOpen && confirmModalData && (
+        <ConfirmModal
+          isOpen={isConfirmModalOpen}
+          title={confirmModalData.title}
+          message={confirmModalData.message}
+          onConfirm={confirmModalData.action}
+          onCancel={() => setIsConfirmModalOpen(false)}
+        />
       )}
     </div>
   );
