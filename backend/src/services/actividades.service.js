@@ -318,19 +318,46 @@ const obtenerActividades = async () => {
 const eliminarActividad = async (idActividad) => {
     const client = await db.connect();
     try {
-        const query = 'DELETE FROM actividades WHERE id = $1';
-        const result = await client.query(query, [idActividad]);
+        await client.query('BEGIN');
 
-        // Verificar si realmente se eliminó alguna fila
-        if (result.rowCount === 0) {
-            throw new Error('No se encontró la actividad con el ID proporcionado.');
+        //antes de borrar, obtenemos a que laboratorio pertenece y a que tipo de actividad es
+        const querySelect = `SELECT laboratorio_id, tipo FROM actividades WHERE id = $1`;
+        const resSelect = await client.query(querySelect, [idActividad]);
+        if(resSelect.rows.length === 0) {
+            throw new Error('La actividad que intentas eliminar no existe.');
         }
+    const {laboratorio_id, tipo } = resSelect.rows[0];
 
-        return { exito: true, mensaje: 'Actividad eliminada exitosamente' };
+    // ejecutar eliminacion gracias al cascade limpia tablas hijas automaticamen
+    const queryDelete = `DELETE FROM actividades WHERE id = $1`;
+    await client.query(queryDelete, [idActividad]);
+
+    //Logica inteligente para mantenimientos
+    if(tipo === 'mantenimiento'){
+    //verificamos si quedan otros mantenimientos activos para este laboratorio
+    const checkMantenimientos = await client.query(
+                `SELECT id FROM actividades WHERE laboratorio_id = $1 AND tipo = 'mantenimiento'`,
+                [laboratorio_id]
+            );
+
+            // si ya no hay mas mantenimientos programados, entonces si liberamos el laboratorio
+            if(checkMantenimientos.rows.length === 0){
+                await client.query(
+                    `UPDATE laboratorios SET estado = 'disponible' WHERE id = $1`, 
+                    [laboratorio_id]
+                );
+                console.log(`-> Mantenimiento eliminado. Estado del laboratorio ${laboratorio_id} devuelto a 'disponible'`);
+            }else{
+                console.log(`-> Mantenimiento eliminado, pero el lab ${laboratorio_id} sigue en mantenimiento por otras actividades pendientes.`);
+            }
+    }
+    await client.query('COMMIT');
+    return { exito: true, mensaje: 'Actividad eliminada exitosamente y estados sincronizados.' };
 
     } catch (error) {
+        await client.query('ROLLBACK');
         console.error('Error al eliminar actividad en el Service:', error);
-        throw new Error(error.mensaje || 'Error al eliminar la actividad. Por favor, inténtalo de nuevo.');
+        throw new Error('Error al eliminar la actividad. Por favor, inténtalo de nuevo.');
     } finally {
         if (client) client.release();
     }
