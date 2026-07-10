@@ -10,8 +10,9 @@ import { MiniCalendario } from './MiniCalendario.tsx';
 import { es } from 'date-fns/locale/es';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { ModalNuevaActividad } from '../../components/shared/ModalNuevaActividad';
-import { obtenerActividades } from '../../services/actividades.service'; // <-- Ajusta esta ruta según tus carpetas
+import { obtenerActividades, crearActividad } from '../../services/actividades.service';
 import '../../css/calendario.css';
+import { customToast } from '../../components/custom-toast/CustomToast.tsx'; // Importación de tu Toast
 
 // ── 1. CONFIGURACIÓN DE FECHAS E IDIOMA ──
 const locales = { 'es': es };
@@ -38,8 +39,6 @@ export interface EventoLaboratorio {
   reserva_nota?: string;
   estado_reserva?: string;
 }
-
-const LABORATORIOS_DISPONIBLES = ['Lab de Redes', 'Lab de Computo'];
 
 // ── 3. COMPONENTES PERSONALIZADOS DEL CALENDARIO ──
 const CustomHeader = ({ date }: { date: Date }) => {
@@ -74,18 +73,26 @@ const eventStyleGetter = (event: EventoLaboratorio) => {
   if (event.tipo === 'mantenimiento') className += ' evento-mantenimiento';
   else if (event.laboratorio === 'Lab de Redes') className += ' evento-sistema-teal';
   else if (event.laboratorio === 'Lab de Computo') className += ' evento-sistema-amarillo';
+  else className += ' evento-sistema-teal'; // Color por defecto si no es redes ni cómputo
   return { className };
 };
 
-// ── 4. BARRA DE HERRAMIENTAS (TOOLBAR INTERNA) ──
-// Pasamos un prop ficticio para que el filtro interno de Toolbar no falle si no hay eventos cargados aún
-const CustomToolbar = (toolbar: ToolbarProps<EventoLaboratorio>) => {
+// ── 4. BARRA DE HERRAMIENTAS CON BUSCADOR TIPO GOOGLE ──
+interface CustomToolbarProps extends ToolbarProps<EventoLaboratorio> {
+  eventos: EventoLaboratorio[];
+}
+
+const CustomToolbar = (toolbar: CustomToolbarProps) => {
   const [MenuVistaAbierto, setMenuVistaAbierto] = useState(false);
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [mostrarResultados, setMostrarResultados] = useState(false);
   const { irAFecha } = useContext(NavegacionContext);
 
   const cambiarVista = (nuevaVista: View) => { toolbar.onView(nuevaVista); setMenuVistaAbierto(false); };
+
+  const resultadosBusqueda = terminoBusqueda.trim() === ''
+    ? []
+    : toolbar.eventos.filter(e => e.title.toLowerCase().includes(terminoBusqueda.toLowerCase()));
 
   return (
     <div className="calendar-toolbar-custom">
@@ -108,6 +115,18 @@ const CustomToolbar = (toolbar: ToolbarProps<EventoLaboratorio>) => {
             onFocus={() => setMostrarResultados(true)}
             onBlur={() => setTimeout(() => setMostrarResultados(false), 200)}
           />
+          {mostrarResultados && terminoBusqueda.trim() !== '' && (
+            <div className="search-results-dropdown">
+              {resultadosBusqueda.length > 0 ? (
+                resultadosBusqueda.map((evento) => (
+                  <div key={evento.id} className="search-result-item" onClick={() => { irAFecha(evento.start); setTerminoBusqueda(''); setMostrarResultados(false); }}>
+                    <div className="result-title">{evento.title}</div>
+                    <div className="result-date">{format(evento.start, "d 'de' MMM, h:mm a", { locale: es })}</div>
+                  </div>
+                ))
+              ) : (<div className="search-result-empty">No se encontraron actividades</div>)}
+            </div>
+          )}
         </div>
 
         <div className="dropdown-container">
@@ -130,10 +149,8 @@ const CustomToolbar = (toolbar: ToolbarProps<EventoLaboratorio>) => {
 
 // ── 5. COMPONENTE PRINCIPAL (VISTA) ──
 export const CalendarioView = () => {
-  const [fechaActual, setFechaActual] = useState(new Date());
+  const [fechaActual, setFechaActual] = useState(new Date(2026, 6, 6));
   const [vistaActual, setVistaActual] = useState<View>('week');
-  const [labsActivos, setLabsActivos] = useState<string[]>(LABORATORIOS_DISPONIBLES);
-  const [menuDesplegado, setMenuDesplegado] = useState(true);
   const [modalAbierto, setModalAbierto] = useState(false);
 
   const [eventoSeleccionado, setEventoSeleccionado] = useState<EventoLaboratorio | null>(null);
@@ -142,35 +159,27 @@ export const CalendarioView = () => {
   const [eventos, setEventos] = useState<EventoLaboratorio[]>([]);
   const [cargando, setCargando] = useState(true);
 
+  const cargarDatos = async () => {
+    try {
+      setCargando(true);
+      const data = await obtenerActividades();
+      setEventos(data); 
+    } catch (error) {
+      console.error("Error al traer data:", error);
+    } finally {
+      setCargando(false);
+    }
+  };
+
   useEffect(() => {
-    const cargarDatos = async () => {
-      try {
-        setCargando(true);
-        const data = await obtenerActividades();
-        setEventos(data);
-      } catch (error) {
-        console.error("Error al traer data:", error);
-      } finally {
-        setCargando(false);
-      }
-    };
     cargarDatos();
   }, []);
 
   const horasInicio = new Date(); horasInicio.setHours(6, 0, 0);
   const horaFin = new Date(); horaFin.setHours(23, 59, 59);
 
-  const toggleLaboratorio = (nombreLab: string) => {
-    setLabsActivos(prev => prev.includes(nombreLab) ? prev.filter(lab => lab !== nombreLab) : [...prev, nombreLab]);
-  };
-
-  const eventosFiltrados = eventos.filter(evento => labsActivos.includes(evento.laboratorio));
-
-  // ── SOLUCIÓN IMAGEN 1: Cambiamos el tipo del evento nativo a 'any' para evitar colisiones ──
   const handleSelectEvent = (evento: EventoLaboratorio, e: any) => {
     const evt = e.nativeEvent as MouseEvent;
-
-    // Si el evento viene de un clic directo en un botón interno (como borrar), no abras el popover
     if (!evt) return;
 
     let x = evt.clientX;
@@ -192,6 +201,24 @@ export const CalendarioView = () => {
 
   const handleEliminarEvento = () => {
     console.log("Eliminar ID:", eventoSeleccionado?.id);
+  };
+
+  // ── LA NUEVA FUNCIÓN PARA GUARDAR ACTIVIDADES ──
+  const handleGuardarActividad = async (datosModal: any) => {
+    try {
+      console.log("Guardando actividad:", datosModal);
+      const resultado = await crearActividad(datosModal);
+      
+      // Disparamos el Toast verde de éxito
+      customToast.success('¡Éxito!', resultado?.mensaje || resultado?.message || 'Actividad guardada correctamente');
+      
+      setModalAbierto(false);
+      await cargarDatos(); // Recargar el calendario con los datos frescos
+    } catch (error: any) {
+      console.error("Error al guardar actividad:", error);
+      // Disparamos el Toast rojo atrapando el mensaje exacto del backend
+      customToast.error('Operación rechazada', error.message || 'Error desconocido al guardar');
+    }
   };
 
   return (
@@ -255,20 +282,18 @@ export const CalendarioView = () => {
           </div>
         )}
 
+        {/* ── AQUÍ CONECTAMOS LA FUNCIÓN ── */}
         {modalAbierto && (
           <ModalNuevaActividad
             onClose={() => setModalAbierto(false)}
-            // ── SOLUCIÓN IMAGEN 2: Le asignamos tipo 'any' explícito a la data entrante ──
-            onGuardar={async (data: any) => {
-              console.log("Data capturada del modal:", data);
-            }}
+            onGuardar={handleGuardarActividad}
           />
         )}
 
         <div className="calendar-main-container">
           <Calendar
             localizer={localizer}
-            events={eventosFiltrados}
+            events={eventos} 
             startAccessor="start" endAccessor="end"
             date={fechaActual} onNavigate={setFechaActual}
             view={vistaActual} onView={setVistaActual}
@@ -277,7 +302,8 @@ export const CalendarioView = () => {
             eventPropGetter={eventStyleGetter}
             onSelectEvent={handleSelectEvent}
             components={{
-              toolbar: CustomToolbar, week: { header: CustomHeader }, day: { header: CustomHeader },
+              toolbar: (props) => <CustomToolbar {...props} eventos={eventos} />,
+              week: { header: CustomHeader }, day: { header: CustomHeader },
               month: { header: CustomMonthHeader, dateHeader: CustomDateHeader }, event: CustomEvent
             }}
             style={{ height: '100%' }}
@@ -288,31 +314,9 @@ export const CalendarioView = () => {
           <button className="btn-crear" onClick={() => setModalAbierto(true)}>
             <Plus size={20} /> Crear
           </button>
+
           <MiniCalendario fechaSeleccionada={fechaActual} onFechaCambiada={setFechaActual} />
 
-          <div className="mis-laboratorios-card">
-            <div className="card-header" onClick={() => setMenuDesplegado(!menuDesplegado)}>
-              <div className="card-header-title">
-                <CalendarIcon size={18} /> Mis laboratorios
-              </div>
-              {menuDesplegado ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-            </div>
-
-            {menuDesplegado && (
-              <div className="card-body">
-                {LABORATORIOS_DISPONIBLES.map((lab) => (
-                  <label key={lab} className="lab-checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={labsActivos.includes(lab)}
-                      onChange={() => toggleLaboratorio(lab)}
-                    />
-                    {lab}
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
           <button className="btn-exportar"><Printer size={20} /> Exportar</button>
         </div>
       </div>

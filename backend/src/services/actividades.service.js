@@ -5,15 +5,15 @@ const { pool: db } = require('../config/db');
  * Función interna para verificar detalladamente los solapamientos de horarios y reglas de infraestructura.
  */
 const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, finDatetime, tipoNuevaActividad, datosModal, idActividadExcluir = null) => {
-    
+
     // 1. Obtener estado Y modo de reserva del laboratorio
     const queryEstadoLab = `SELECT estado, modo_reserva FROM laboratorios WHERE id = $1`;
     const resEstadoLab = await client.query(queryEstadoLab, [laboratorio_id]);
-    
+
     if (resEstadoLab.rows.length === 0) {
         throw new Error('El laboratorio seleccionado no existe.');
     }
-    
+
     const { estado: estadoActualLab, modo_reserva: modoReservaLab } = resEstadoLab.rows[0];
 
     // Validaciones físicas del estado
@@ -24,26 +24,32 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
         throw new Error('El laboratorio está bajo mantenimiento físico. No se permiten clases ni reservas.');
     }
 
-    // 1.5 [NUEVO] Validar congruencia de la estación de trabajo si es una reserva
-    let estacionNueva = datosModal.estacion || null;
+    // 1.5 [MODIFICADO] Soporte para múltiples estaciones
+    let estacionesNuevas = [];
+    if (Array.isArray(datosModal.estaciones) && datosModal.estaciones.length > 0) {
+        estacionesNuevas = datosModal.estaciones.map(e => parseInt(e, 10));
+    } else if (datosModal.estacion) {
+        estacionesNuevas = [parseInt(datosModal.estacion, 10)];
+    }
 
     if (tipoNuevaActividad === 'reserva') {
-        if(modoReservaLab === 'espacio_completo'){
-            datosModal.estacion = null; // No se requiere estación específica
-            estacionNueva = null;
+        if (modoReservaLab === 'espacio_completo') {
+            estacionesNuevas = [null];
         }
-        else if(modoReservaLab === 'por_estacion'){
-            if(!estacionNueva){
-                throw new Error('Este laboratorio requiere reservar por estacion de trabajo. Por favor, selecciona una estación específica.');
+        // Verificar cada estación seleccionada
+        else if (modoReservaLab === 'por_estacion' && estacionesNuevas.length > 0) {
+            for (const estId of estacionesNuevas) {
+                if (estId === null) continue;
+                const checkEstacion = await client.query(
+                    `SELECT id FROM estaciones_trabajo WHERE id = $1 AND laboratorio_id = $2`,
+                    [estId, laboratorio_id]
+                );
+                if (checkEstacion.rows.length === 0) {
+                    throw new Error(`La estación de trabajo seleccionada no existe o no pertenece al laboratorio seleccionado.`);
+                }
             }
-            // verificar que la estacion exista  y pertenezca fisicamente al laboratorio
-           const checkEstacion = await client.query(
-                `SELECT id FROM estaciones_trabajo WHERE id = $1 AND laboratorio_id = $2`, 
-                [estacionNueva, laboratorio_id]
-            );
-            if(checkEstacion.rows.length === 0){
-                throw new Error('La estación de trabajo seleccionada no existe o no pertenece al laboratorio seleccionado.');
-            }
+        } else if (modoReservaLab === 'por_estacion' && estacionesNuevas.length === 0) {
+            estacionesNuevas = [null];
         }
     }
 
@@ -56,9 +62,9 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
           AND a.fecha_hora_inicio < $2 
           AND a.fecha_hora_fin > $3
     `;
-    
+
     const parametros = [laboratorio_id, finDatetime, inicioDatetime];
-    
+
     if (idActividadExcluir) {
         queryChoques += ` AND a.id != $4`;
         parametros.push(idActividadExcluir);
@@ -72,11 +78,11 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
     // 3. Evaluar conflictos según el modo de reserva
     if (tipoNuevaActividad === 'clase' || tipoNuevaActividad === 'mantenimiento') {
         const actEx = actividadesConflictivas[0];
-        let tipoAmigable = actEx.tipo === 'clase' ? 'una Clase Académica' : 
-                           (actEx.tipo === 'mantenimiento' ? 'un Mantenimiento Preventivo' : 'una Reserva de Estudiante');
+        let tipoAmigable = actEx.tipo === 'clase' ? 'una Clase Académica' :
+            (actEx.tipo === 'mantenimiento' ? 'un Mantenimiento Preventivo' : 'una Reserva de Estudiante');
         throw new Error(`El laboratorio ya está ocupado en este horario por ${tipoAmigable}.`);
-    } 
-    
+    }
+
     else if (tipoNuevaActividad === 'reserva') {
         for (const act of actividadesConflictivas) {
             if (act.tipo === 'clase') {
@@ -86,12 +92,12 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
                 throw new Error('No puedes reservar porque el laboratorio estará bajo Mantenimiento.');
             }
             if (act.tipo === 'reserva') {
-                // [NUEVO] Si el laboratorio es de espacio completo, 1 sola reserva bloquea todo.
-                if (modoReservaLab === 'espacio_completo') {
+                // Si el laboratorio es de espacio completo (o la reserva actual abarca todo el lab), bloqueamos.
+                if (modoReservaLab === 'espacio_completo' || act.estacion_id === null || estacionesNuevas.includes(null)) {
                     throw new Error('El laboratorio ya ha sido reservado en su totalidad por otro usuario en este horario.');
                 }
                 // Si es por estación, bloqueamos solo si intentan usar la misma PC
-                if (modoReservaLab === 'por_estacion' && act.estacion_id === estacionNueva) {
+                if (modoReservaLab === 'por_estacion' && estacionesNuevas.includes(act.estacion_id)) {
                     throw new Error('La estación de trabajo seleccionada ya está reservada por otro estudiante en este horario.');
                 }
             }
@@ -119,7 +125,7 @@ const programarActividad = async (datosModal, idUsuarioLogueado) => {
     const client = await db.connect();
     try {
         await client.query('BEGIN');
-        
+
         // [VALIDACIÓN CRÍTICA]: Ejecutar el árbol lógico de choques de horarios e infraestructura
         await verificarChoqueHorario(client, laboratorio, inicioDatetime, finDatetime, tipo, datosModal);
 
@@ -128,7 +134,7 @@ const programarActividad = async (datosModal, idUsuarioLogueado) => {
             await client.query(`UPDATE laboratorios SET estado = 'en_mantenimiento' WHERE id = $1`, [laboratorio]);
             console.log(`-> Estado del laboratorio ${laboratorio} cambiado a 'en_mantenimiento'`);
         }
-        
+
         // --- PASO A: Insertar en la tabla padre (actividades) ---
         const queryBase = `
             INSERT INTO actividades (laboratorio_id, tipo, fecha_hora_inicio, fecha_hora_fin, recurrencia) 
@@ -142,31 +148,44 @@ const programarActividad = async (datosModal, idUsuarioLogueado) => {
             throw new Error("Fallo crítico: No se pudo obtener el ID de la nueva actividad.");
         }
         console.log("-> ID de actividad creado exitosamente:", idGenerado);
-        
+
         // --- PASO B: Insertar en la tabla hija correspondiente según tu diseño ---
         if (tipo === 'clase') {
-            // Tabla: clases_academicas (actividad_id, materia, docente_id, num_estudiantes)
             const queryHija = `INSERT INTO clases_academicas (actividad_id, materia, docente_id, num_estudiantes) VALUES ($1, $2, $3, $4)`;
-            const docenteId = datosModal.docente || idUsuarioLogueado; 
+            const docenteId = datosModal.docente || idUsuarioLogueado;
             await client.query(queryHija, [idGenerado, datosModal.materia, docenteId, numPersonas]);
         } else if (tipo === 'mantenimiento') {
-            // Tabla: mantenimientos (actividad_id, tecnico_id, descripcion_ti)
             const queryHija = `INSERT INTO mantenimientos (actividad_id, tecnico_id, descripcion_ti) VALUES ($1, $2, $3)`;
             const tecnicoId = datosModal.responsable || idUsuarioLogueado;
             await client.query(queryHija, [idGenerado, tecnicoId, datosModal.descripcion || 'Sin descripción']);
         } else if (tipo === 'reserva') {
-            const queryHija = `INSERT INTO reservas_estudiantes (actividad_id, usuario_id, estacion_id, titulo, nota_adicional) VALUES ($1, $2, $3, $4, $5)`;
-            const estacionId = datosModal.estacion || null; 
-            await client.query(queryHija, [idGenerado, idUsuarioLogueado, estacionId, datosModal.titulo, datosModal.descripcion || null]);
+            const queryHija = `INSERT INTO reservas_estudiantes (actividad_id, usuario_id, estacion_id, titulo, nota_adicional, estado_reserva) VALUES ($1, $2, $3, $4, $5, $6)`;
+            
+            const estaciones = Array.isArray(datosModal.estaciones) && datosModal.estaciones.length > 0 
+                ? datosModal.estaciones 
+                : (datosModal.estacion ? [datosModal.estacion] : [null]);
+
+            for (let est of estaciones) {
+                const estId = est ? parseInt(est, 10) : null;
+                await client.query(queryHija, [idGenerado, idUsuarioLogueado, estId, datosModal.titulo, datosModal.descripcion || null, 'aprobada']);
+            }
         }
-        
+
+        // --- PASO C: Insertar items de inventario si los hay ---
+        if (datosModal.equipos && Array.isArray(datosModal.equipos) && datosModal.equipos.length > 0) {
+            const queryItem = `INSERT INTO reserva_items (actividad_id, item_id, cantidad_solicitada) VALUES ($1, $2, $3)`;
+            for (const equipo of datosModal.equipos) {
+                await client.query(queryItem, [idGenerado, equipo.id, equipo.cantidad || 1]);
+            }
+        }
+
         await client.query('COMMIT');
         return { exito: true, mensaje: 'Actividad programada exitosamente', id: idGenerado };
 
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error al programar actividad en el Service:', error);
-        throw new Error('Error al programar la actividad. Por favor, inténtalo de nuevo.');
+        throw new Error(error.message || 'Error al programar la actividad. Por favor, inténtalo de nuevo.');
     } finally {
         if (client) client.release();
     }
@@ -202,7 +221,7 @@ const actualizarActividad = async (idActividad, datosModal, idUsuarioLogueado) =
 
         // Actualizar la tabla hija correspondiente según el tipo
         if (tipo === 'clase') {
-            const docenteId = datosModal.docente || idUsuarioLogueado; 
+            const docenteId = datosModal.docente || idUsuarioLogueado;
             const queryHija = `UPDATE clases_academicas SET materia = $1, docente_id = $2, num_estudiantes = $3 WHERE actividad_id = $4`;
             await client.query(queryHija, [datosModal.materia, docenteId, numPersonas, idActividad]);
         } else if (tipo === 'mantenimiento') {
@@ -210,17 +229,37 @@ const actualizarActividad = async (idActividad, datosModal, idUsuarioLogueado) =
             const queryHija = `UPDATE mantenimientos SET tecnico_id = $1, descripcion_ti = $2 WHERE actividad_id = $3`;
             await client.query(queryHija, [tecnicoId, datosModal.descripcion || 'Sin descripción', idActividad]);
         } else if (tipo === 'reserva') {
-            const estacionId = datosModal.estacion || null; 
-            const queryHija = `UPDATE reservas_estudiantes SET estacion_id = $1, titulo = $2, nota_adicional = $3 WHERE actividad_id = $4`;
-            await client.query(queryHija, [estacionId, datosModal.titulo, datosModal.descripcion || null, idActividad]);
+            // Eliminar las reservas actuales de estaciones para esta actividad
+            await client.query(`DELETE FROM reservas_estudiantes WHERE actividad_id = $1`, [idActividad]);
+            
+            const estaciones = Array.isArray(datosModal.estaciones) && datosModal.estaciones.length > 0 
+                ? datosModal.estaciones 
+                : (datosModal.estacion ? [datosModal.estacion] : [null]);
+
+            const queryHija = `INSERT INTO reservas_estudiantes (actividad_id, usuario_id, estacion_id, titulo, nota_adicional, estado_reserva) VALUES ($1, $2, $3, $4, $5, $6)`;
+            for (let est of estaciones) {
+                const estId = est ? parseInt(est, 10) : null;
+                await client.query(queryHija, [idActividad, idUsuarioLogueado, estId, datosModal.titulo, datosModal.descripcion || null, 'aprobada']);
+            }
         }
-        
+
+        // Si se están mandando equipos actualizados, reemplazamos los anteriores
+        if (datosModal.equipos && Array.isArray(datosModal.equipos)) {
+            // Eliminar los anteriores
+            await client.query(`DELETE FROM reserva_items WHERE actividad_id = $1`, [idActividad]);
+            // Insertar los nuevos
+            const queryItem = `INSERT INTO reserva_items (actividad_id, item_id, cantidad_solicitada) VALUES ($1, $2, $3)`;
+            for (const equipo of datosModal.equipos) {
+                await client.query(queryItem, [idActividad, equipo.id, equipo.cantidad || 1]);
+            }
+        }
+
         await client.query('COMMIT');
-        return { exito: true, mensaje: 'Actividad actualizada exitosamente' };  
+        return { exito: true, mensaje: 'Actividad actualizada exitosamente' };
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error al actualizar actividad en el Service:', error);
-        throw new Error('Error al actualizar la actividad. Por favor, inténtalo de nuevo.');
+        throw new Error(error.message || 'Error al actualizar la actividad. Por favor, inténtalo de nuevo.');
     } finally {
         if (client) client.release();
     }
@@ -264,7 +303,7 @@ const obtenerActividades = async () => {
                 reservas_estudiantes re ON a.id = re.actividad_id;
         `;
         const result = await client.query(query);
-        return result.rows; 
+        return result.rows;
     } catch (error) {
         console.error('Error al obtener actividades:', error);
         throw new Error('Error al obtener las actividades. Por favor, inténtalo de nuevo.');
@@ -281,7 +320,7 @@ const eliminarActividad = async (idActividad) => {
     try {
         const query = 'DELETE FROM actividades WHERE id = $1';
         const result = await client.query(query, [idActividad]);
-        
+
         // Verificar si realmente se eliminó alguna fila
         if (result.rowCount === 0) {
             throw new Error('No se encontró la actividad con el ID proporcionado.');
@@ -295,6 +334,6 @@ const eliminarActividad = async (idActividad) => {
     } finally {
         if (client) client.release();
     }
-}; // CORRECCIÓN: Se eliminó la llave '}' extra que estaba aquí abajo.
+};
 
 module.exports = { programarActividad, obtenerActividades, actualizarActividad, eliminarActividad };

@@ -6,12 +6,13 @@
 
 /* Overlay */
 .na-overlay {
-    position: fixed;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(34, 128, 107, 0.15); /* Fondo verde traslúcido */
+  background: rgba(34, 128, 107, 0.15);
+  /* Fondo verde traslúcido */
   backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
@@ -21,7 +22,7 @@
 
 /* Modal */
 .na-modal {
-background: #ffffff;
+  background: #ffffff;
   border-radius: 16px;
   width: 780px;
   max-width: 100%;
@@ -31,7 +32,7 @@ background: #ffffff;
   overflow: hidden;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
 
-    border-top: 4px solid #1D9E75;
+  border-top: 4px solid #1D9E75;
 }
 
 /* Header */
@@ -46,12 +47,14 @@ background: #ffffff;
 .na-header-title {
   font-size: 20px;
   font-weight: 600;
-  color: #171717; /* Texto blanco en cabecera */
+  color: #171717;
+  /* Texto blanco en cabecera */
 }
 
 .na-header-sub {
   font-size: 16px;
-color: #222222; /* Verde clarito para el subtítulo */
+  color: #222222;
+  /* Verde clarito para el subtítulo */
   margin-top: 2px;
 }
 
@@ -144,9 +147,17 @@ color: #222222; /* Verde clarito para el subtítulo */
   margin: 0 auto 6px;
 }
 
-.na-ico-clase { background: #e1f5ee; }
-.na-ico-mant  { background: #fcebeb; }
-.na-ico-res   { background: #faeeda; }
+.na-ico-clase {
+  background: #e1f5ee;
+}
+
+.na-ico-mant {
+  background: #fcebeb;
+}
+
+.na-ico-res {
+  background: #faeeda;
+}
 
 .na-tipo-name {
   font-size: 12px;
@@ -212,14 +223,21 @@ color: #222222; /* Verde clarito para el subtítulo */
 .na-input::placeholder {
   color: #aaa;
 }
+
 /* Ajuste de inputs para que se vean más limpios */
-.na-input, .na-select, .na-textarea {
-  border: 1.5px solid #e2e8f0; /* Borde un poco más visible */
+.na-input,
+.na-select,
+.na-textarea {
+  border: 1.5px solid #e2e8f0;
+  /* Borde un poco más visible */
   background: #f8fafc;
 }
+
 .na-input:focus {
-  border-color: #1a3a34; /* Foco color verde oscuro */
+  border-color: #1a3a34;
+  /* Foco color verde oscuro */
 }
+
 /* Select */
 .na-select {
   width: 100%;
@@ -361,7 +379,7 @@ color: #222222; /* Verde clarito para el subtítulo */
 }
 
 .na-btn-cancel {
- padding: 10px 24px;
+  padding: 10px 24px;
   background-color: #E2E8F0;
   color: #475569;
   border: none;
@@ -376,7 +394,7 @@ color: #222222; /* Verde clarito para el subtítulo */
 }
 
 .na-btn-save {
-   padding: 10px 24px;
+  padding: 10px 24px;
   background-color: var(--verde);
   color: white;
   border: none;
@@ -559,7 +577,7 @@ color: #222222; /* Verde clarito para el subtítulo */
   max-height: 180px;
   overflow-y: auto;
 
-  box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
 }
 
 /* item resultado */
@@ -690,4 +708,175 @@ color: #222222; /* Verde clarito para el subtítulo */
   opacity: 0.4;
   cursor: not-allowed;
   background: #b8c4c0;
+}
+
+/* ============================================
+   NUEVO: STEPPER (barra de progreso por pasos)
+   ============================================ */
+.na-progress {
+  padding: 0 28px 14px 28px;
+}
+
+.na-progress-dots {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.na-dot {
+  flex: 1;
+  height: 4px;
+  border-radius: 4px;
+  background: #e5e5e5;
+  transition: background 0.15s;
+}
+
+.na-dot-on {
+  background: #1d9e75;
+}
+
+.na-progress-label {
+  font-size: 11px;
+  color: #888;
+}
+
+.na-hint {
+  font-size: 11px;
+  color: #999;
+  margin-top: 2px;
+}
+
+/* ============================================
+   NUEVO: MAPA DE ESTACIONES (estilo cine)
+   ============================================ */
+.na-estaciones-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 4px 0 10px;
+}
+
+.na-leg-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #888;
+}
+
+.na-leg-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.na-leg-disp {
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+}
+
+.na-leg-sel {
+  background: #e7f7f1;
+  border: 1px solid #1d9e75;
+}
+
+.na-leg-no {
+  background: #ffecec;
+  border: 1px solid #e24b4a;
+}
+
+.na-estaciones-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 8px;
+}
+
+.na-estacion-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  padding: 10px 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1a1a1a;
+
+  border: 0.5px solid #e5e5e5;
+  border-radius: 8px;
+  background: #ffffff;
+
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.na-estacion-btn:hover:not(:disabled) {
+  border-color: #1d9e75;
+}
+
+.na-estacion-sel {
+  background: #e7f7f1;
+  border: 1.5px solid #1d9e75;
+  color: #0f6e56;
+}
+
+.na-estacion-no {
+  background: #ffecec;
+  border: 1px solid #e24b4a;
+  color: #a33;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* ============================================
+   NUEVO: TARJETA DE LABORATORIO COMPLETO
+   ============================================ */
+.na-full-lab-card {
+  border: 0.5px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 22px 14px;
+  text-align: center;
+  color: #888;
+}
+
+.na-full-lab-card svg {
+  color: #1d9e75;
+}
+
+.na-full-lab-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-top: 8px;
+}
+
+.na-full-lab-desc {
+  font-size: 11px;
+  color: #888;
+  margin-top: 4px;
+}
+
+/* ============================================
+   NUEVO: TARJETA DE RESUMEN (último paso)
+   ============================================ */
+.na-resumen-card {
+  background: #f8fafc;
+  border: 0.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 4px;
+}
+
+.na-resumen-line {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.na-resumen-note {
+  font-size: 11px;
+  color: #a36a00;
+  margin-top: 6px;
 }

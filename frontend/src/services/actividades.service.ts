@@ -38,3 +38,21 @@ export const obtenerActividades = async (): Promise<EventoLaboratorio[]> => {
         throw error;
     }
 };
+
+export const crearActividad = async (datosModal: any): Promise<any> => {
+    try {
+        const respuesta = await axios.post(API_URL, datosModal, {
+            // Cuando agregues tokens JWT, pasar los headers aquí
+            headers: {'Content-Type': 'application/json'}
+        });
+        return respuesta.data;
+    } catch (error: any) {
+        console.error('Error al crear la actividad en el backend:', error);
+        if (error.response && error.response.data && error.response.data.error) {
+            throw new Error(error.response.data.error);
+        }else if (error.response && error.response.data && error.response.data.message){
+            throw new Error(error.response.data.message);
+        }
+        throw new Error('Error de conexión con el servidor. Por favor, inténtalo de nuevo más tarde.');
+    }
+};

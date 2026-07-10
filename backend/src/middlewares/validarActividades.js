@@ -28,21 +28,21 @@ const validarActividades = (req, res, next) => {
             });
         }
     } else if (tipo === 'mantenimiento') {
-        const { responsable, descripcion } = req.body;
-        if (!responsable || !descripcion) {
+        const { responsable } = req.body;
+        if (!responsable) {
             return res.status(400).json({
                 success: false,
-                message: 'Faltan campos obligatorios para mantenimiento. Responsable y descripcion son requeridos.'
+                message: 'Faltan campos obligatorios para mantenimiento. Responsable es requerido.'
             });
         }
     }
     else if (tipo === 'reserva') { // Corregido: 'res' por 'reserva'
         // 2. Corregido: cambiamos 'numeroPersonas' por 'numPersonas'
-        const { titulo, estacion, numPersonas } = req.body;
-        if (!titulo || !estacion || !numPersonas) {
+        const { titulo, numPersonas } = req.body;
+        if (!titulo || !numPersonas) {
             return res.status(400).json({
                 success: false,
-                message: 'Faltan campos obligatorios para reserva. Titulo, estacion y numPersonas son requeridos.'
+                message: 'Faltan campos obligatorios para reserva. Titulo y numPersonas son requeridos.'
             });
         }
     }

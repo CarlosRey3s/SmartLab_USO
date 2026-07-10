@@ -1,19 +1,30 @@
-import { useState ,  useEffect} from 'react';
-import { Search, Plus, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Plus, X, Monitor, Building2 } from 'lucide-react';
 import '../../css/ModalNuevaActividad.css';
 
 type TipoActividad = "clase" | "mantenimiento" | "reserva" | null;
+type ModoReserva = "por_estacion" | "espacio_completo";
+type EstadoEstacion = "disponible" | "no_disponible";
 
-interface LaboratorioDB{
+interface LaboratorioDB {
   id: number;
   nombre: string;
+  modo_reserva: ModoReserva;
+  capacidad_maxima?: number;
+}
+
+// Estaciones ahora incluyen estado y capacidad (según estaciones_trabajo en la BD)
+interface EstacionDB {
+  id: number;
+  numero: string; // O el campo que tu backend devuelva para nombrar la estación
+  estado: EstadoEstacion;
+  capacidad?: number;
 }
 
 interface NuevaActividadProps {
   onClose: () => void;
-  onGuardar: (data: any) => void; // Reemplazar 'any' con el tipo correcto de datos que se espera guardar
+  onGuardar: (data: any) => void;
 }
-
 
 interface FormData {
   tipo: TipoActividad;
@@ -25,7 +36,7 @@ interface FormData {
   descripcion?: string;
   // Reserva
   titulo?: string;
-  estacion?: string;
+  estaciones?: (number | string)[]; // ahora es multi-selección
   equipos?: EquipoSeleccionado[];
   // Compartidos
   laboratorio?: string;
@@ -37,47 +48,32 @@ interface FormData {
 }
 
 // ── Inventario ──────────────────────────────────────────
+interface ItemInventarioDB {
+  id: number;
+  laboratorio_id: number;
+  nombre: string;
+  cantidad_actual: number;
+}
+
 interface EquipoSeleccionado {
-  id: string;
+  id: number | string;
   nombre: string;
   disponibles: number;
   cantidad?: number;
 }
 
-// Datos de ejemplo — reemplazar con llamada a API filtrada por lab + horario
-const EQUIPO_DISPONIBLE: EquipoSeleccionado[] = [
-  { id: "e1", nombre: "Osciloscopio digital",  disponibles: 4 },
-  { id: "e2", nombre: "Multímetro digital",     disponibles: 8 },
-  { id: "e3", nombre: "Fuente de poder",        disponibles: 1 },
-  { id: "e4", nombre: "Generador de señales",   disponibles: 3 },
-  { id: "e5", nombre: "Kit Arduino Uno",        disponibles: 12 },
-  { id: "e6", nombre: "Raspberry Pi 4",         disponibles: 5 },
-];
-
 function badgeClass(disponibles: number) {
   if (disponibles === 0) return "inv-badge-no";
-  if (disponibles <= 2)  return "inv-badge-lim";
+  if (disponibles <= 2) return "inv-badge-lim";
   return "inv-badge-ok";
 }
 
 function badgeLabel(disponibles: number) {
   if (disponibles === 0) return "No disponible";
-  if (disponibles <= 2)  return `Stock bajo (${disponibles})`;
+  if (disponibles <= 2) return `Stock bajo (${disponibles})`;
   return `Disponible (${disponibles})`;
 }
 // ────────────────────────────────────────────────────────
-
-const LABS = [
-  { value: "1", label: "Lab 1 · Física" },
-  { value: "2", label: "Lab 2 · Electrónica" },
-  { value: "3", label: "Lab 3 · Sistemas" },
-];
-
-const ESTACIONES: Record<string, string[]> = {
-  "1": ["Estación A1 · Cap. 4", "Estación A2 · Cap. 3", "Estación B1 · Cap. 4", "Estación B2 · Cap. 3"],
-  "2": ["Estación A1 · Cap. 4", "Estación A2 · Cap. 4", "Estación B1 · Cap. 3", "Estación B2 · Cap. 3", "Estación C1 · Cap. 4"],
-  "3": ["Estación A1 · Cap. 5", "Estación A2 · Cap. 5", "Estación B1 · Cap. 4"],
-};
 
 const RECURRENCIA_CLASE = [
   "No se repite",
@@ -97,129 +93,243 @@ const RECURRENCIA_SIMPLE = [
 
 const FOOTER_TIPS: Record<string, string> = {
   clase: "Los campos marcados son obligatorios · La recurrencia aplica a todas las semanas del ciclo",
-  mantenimiento:  "El laboratorio quedará bloqueado en ese horario para todos los estudiantes",
-  reserva:   "La reserva directa no requiere aprobación y se confirma inmediatamente",
+  mantenimiento: "El laboratorio quedará bloqueado en ese horario para todos los estudiantes",
+  reserva: "La reserva directa no requiere aprobación y se confirma inmediatamente",
 };
 
 const HEADER_SUBS: Record<string, string> = {
   clase: "Clase regular con docente y horario asignado",
-  mantenimiento:  "Cierre técnico del laboratorio",
-  reserva:   "Reserva directa sin pasar por solicitud",
+  mantenimiento: "Cierre técnico del laboratorio",
+  reserva: "Reserva directa sin pasar por solicitud",
+};
+
+const TIPO_LABEL: Record<string, string> = {
+  clase: "Clase regular",
+  mantenimiento: "Cierre técnico",
+  reserva: "Reserva directa",
+};
+
+// ── Pasos por tipo de actividad ──────────────────────────
+// clase y mantenimiento no usan estación individual (no existe esa
+// relación en clases_academicas ni en mantenimientos, solo en
+// reservas_estudiantes), así que su paso "laboratorio" no muestra el mapa.
+const STEPS: Record<Exclude<TipoActividad, null>, string[]> = {
+  clase: ["datos", "laboratorio", "instrumentos", "horario"],
+  mantenimiento: ["datos", "laboratorio", "horario"],
+  reserva: ["datos", "laboratorio", "instrumentos", "horario"],
+};
+
+const STEP_TITLES: Record<string, Partial<Record<Exclude<TipoActividad, null>, string>>> = {
+  datos: { clase: "Datos de la clase", mantenimiento: "Datos del mantenimiento", reserva: "Datos de la reserva" },
+  laboratorio: { clase: "Laboratorio", mantenimiento: "Laboratorio", reserva: "Laboratorio y estación" },
+  instrumentos: { clase: "Instrumentos", reserva: "Instrumentos" },
+  horario: { clase: "Fecha y hora", mantenimiento: "Fecha y hora", reserva: "Fecha y hora" },
 };
 
 export function ModalNuevaActividad({ onClose, onGuardar }: NuevaActividadProps) {
- // 1 Estado para guardar los laboratorios de la BD
+  // ── Estados para llamadas a BD ──
+  const [labsDesdeBD, setLabsDesdeBD] = useState<LaboratorioDB[]>([]);
+  const [cargandoLabs, setCargandoLabs] = useState(true);
 
-  const [labsDesdeBD,setLabsDesdeBD] = useState<LaboratorioDB[]>([]);
-  const [cargandoLabs, setCarganndoLabs] = useState(true);
+  const [estacionesDesdeBD, setEstacionesDesdeBD] = useState<EstacionDB[]>([]);
+  const [cargandoEstaciones, setCargandoEstaciones] = useState(false);
 
-  // 2 useeffect para traer los datos al abrir el modal
+  const [inventarioDesdeBD, setInventarioDesdeBD] = useState<ItemInventarioDB[]>([]);
+  const [cargandoInventario, setCargandoInventario] = useState(false);
+
+  // 1. Efecto para cargar los laboratorios al inicio
   useEffect(() => {
     const fetchlaboratorios = async () => {
-      try{
+      try {
         const response = await fetch('http://localhost:4000/api/laboratorios');
         const result = await response.json();
 
-        if(result.success){
-          setLabsDesdeBD(result.data);
+        if (result.success || result.data) {
+          setLabsDesdeBD(result.data || result);
+        } else if (Array.isArray(result)) {
+          setLabsDesdeBD(result);
         }
-      }catch(error){
+      } catch (error) {
         console.error('Error al cargar laboratorios:', error);
-      }finally{
-        setCarganndoLabs(false);
+      } finally {
+        setCargandoLabs(false);
       }
-    }
+    };
     fetchlaboratorios();
-  }, []); // el array vacio siginifica que se ejecuta solo una vez al montar el componente
+  }, []);
 
-  const [tipo, setTipo]   = useState<TipoActividad>(null);
-  const [form, setForm]   = useState<FormData>({ tipo: null, numPersonas: 20, recurrencia: "No se repite", equipos: [] });
+  // Efecto para cargar el inventario completo
+  useEffect(() => {
+    const fetchInventario = async () => {
+      setCargandoInventario(true);
+      try {
+        const response = await fetch('http://localhost:4000/api/inventario');
+        const result = await response.json();
+
+        if (result.success || result.data) {
+          setInventarioDesdeBD(result.data || result);
+        } else if (Array.isArray(result)) {
+          setInventarioDesdeBD(result);
+        }
+      } catch (error) {
+        console.error('Error al cargar inventario:', error);
+      } finally {
+        setCargandoInventario(false);
+      }
+    };
+    fetchInventario();
+  }, []);
+
+  const [tipo, setTipo] = useState<TipoActividad>(null);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [form, setForm] = useState<FormData>({
+    tipo: null,
+    numPersonas: 20,
+    recurrencia: "No se repite",
+    equipos: [],
+    estaciones: [],
+  });
+
+  // 2. Efecto para cargar estaciones dependientes del laboratorio seleccionado
+  useEffect(() => {
+    if (!form.laboratorio) {
+      setEstacionesDesdeBD([]);
+      return;
+    }
+
+    const fetchEstaciones = async () => {
+      setCargandoEstaciones(true);
+      try {
+        const response = await fetch(`http://localhost:4000/api/laboratorios/${form.laboratorio}/estaciones`);
+        const result = await response.json();
+
+        if (result.success || result.data) {
+          setEstacionesDesdeBD(result.data || result);
+        } else if (Array.isArray(result)) {
+          setEstacionesDesdeBD(result);
+        }
+      } catch (error) {
+        console.error(`Error al cargar estaciones del lab ${form.laboratorio}:`, error);
+      } finally {
+        setCargandoEstaciones(false);
+      }
+    };
+
+    fetchEstaciones();
+  }, [form.laboratorio]);
 
   // ── Inventario state ──
-  const [query, setQuery]           = useState("");
+  const [query, setQuery] = useState("");
   const [showResults, setShowResults] = useState(false);
 
   const equiposSeleccionados: EquipoSeleccionado[] = form.equipos || [];
+  const estacionesSeleccionadas: (number | string)[] = form.estaciones || [];
 
-  const resultados = EQUIPO_DISPONIBLE.filter(
-    (e) =>
-      e.nombre.toLowerCase().includes(query.toLowerCase()) &&
-      !equiposSeleccionados.find((s) => s.id === e.id)
-  );
+  const resultados = !form.laboratorio ? [] : inventarioDesdeBD
+    .filter(
+      (e) =>
+        e.laboratorio_id?.toString() === form.laboratorio?.toString() &&
+        (query.trim() === "" || e.nombre.toLowerCase().includes(query.toLowerCase())) &&
+        !equiposSeleccionados.find((s) => s.id === e.id)
+    )
+    .map((e) => ({
+      id: e.id,
+      nombre: e.nombre,
+      disponibles: e.cantidad_actual
+    }));
 
- const agregarEquipo = (equipo: EquipoSeleccionado) => {
-  setForm((prev) => ({
-    ...prev,
-    equipos: [
-      ...(prev.equipos || []),
-      { ...equipo, cantidad: 1 } //  aquí nace la cantidad
-    ]
-  }));
+  const agregarEquipo = (equipo: EquipoSeleccionado) => {
+    setForm((prev) => ({
+      ...prev,
+      equipos: [
+        ...(prev.equipos || []),
+        { ...equipo, cantidad: 1 }
+      ]
+    }));
+    setQuery("");
+    setShowResults(false);
+  };
 
-  setQuery("");
-  setShowResults(false);
-};
-  const quitarEquipo = (id: string) => {
-  setForm((prev) => ({
-    ...prev,
-    equipos: (prev.equipos || []).filter((e) => e.id !== id)
-  }));
-};
+  const quitarEquipo = (id: string | number) => {
+    setForm((prev) => ({
+      ...prev,
+      equipos: (prev.equipos || []).filter((e) => e.id !== id)
+    }));
+  };
 
-const aumentarCantidad = (id: string) => {
-  setForm((prev) => ({
-    ...prev,
-    equipos: (prev.equipos || []).map((equipo) => {
-      if (equipo.id !== id) return equipo;
+  const aumentarCantidad = (id: string | number) => {
+    setForm((prev) => ({
+      ...prev,
+      equipos: (prev.equipos || []).map((equipo) => {
+        if (equipo.id !== id) return equipo;
+        const cantidadActual = equipo.cantidad ?? 1;
+        return {
+          ...equipo,
+          cantidad: cantidadActual < equipo.disponibles ? cantidadActual + 1 : cantidadActual,
+        };
+      }),
+    }));
+  };
 
-      const cantidadActual = equipo.cantidad ?? 1;
+  const disminuirCantidad = (id: string | number) => {
+    setForm((prev) => ({
+      ...prev,
+      equipos: (prev.equipos || []).map((equipo) => {
+        if (equipo.id !== id) return equipo;
+        const cantidadActual = equipo.cantidad ?? 1;
+        return {
+          ...equipo,
+          cantidad: cantidadActual > 1 ? cantidadActual - 1 : 1,
+        };
+      }),
+    }));
+  };
 
+  // Selección múltiple de estaciones (solo aplica a reserva + modo por_estacion)
+  const toggleEstacion = (id: number | string) => {
+    setForm((prev) => {
+      const actuales = prev.estaciones || [];
+      const yaSeleccionada = actuales.includes(id);
       return {
-        ...equipo,
-        cantidad:
-          cantidadActual < equipo.disponibles
-            ? cantidadActual + 1
-            : cantidadActual,
+        ...prev,
+        estaciones: yaSeleccionada ? actuales.filter((e) => e !== id) : [...actuales, id],
       };
-    }),
-  }));
-};
+    });
+  };
+  // ─────────────────────
 
-const disminuirCantidad = (id: string) => {
-  setForm((prev) => ({
-    ...prev,
-    equipos: (prev.equipos || []).map((equipo) => {
-      if (equipo.id !== id) return equipo;
+  const set = (field: keyof FormData, value: string | number) =>
+    setForm((prev) => ({ ...prev, [field]: value }));
 
-      const cantidadActual = equipo.cantidad ?? 1;
-
-      return {
-        ...equipo,
-        cantidad:
-          cantidadActual > 1
-            ? cantidadActual - 1
-            : 1,
-      };
-    }),
-  }));
-};
-
-// ─────────────────────
-
-const set = (field: keyof FormData, value: string | number) =>
-  setForm((prev) => ({ ...prev, [field]: value }));
-
-const handleLabChange = (val: string) => {
-  set("laboratorio", val);
-  set("estacion", "");
-};
   const handleTipo = (t: TipoActividad) => {
     setTipo(t);
-    setForm({ tipo: t, numPersonas: t === "clase" ? 20 : 3, recurrencia: "No se repite", equipos: [],
+    setStepIndex(0);
+    setForm({
+      tipo: t,
+      numPersonas: t === "clase" ? 20 : 3,
+      recurrencia: "No se repite",
+      equipos: [],
+      estaciones: [],
       desde: t === "clase" ? "08:00" : t === "mantenimiento" ? "14:00" : "09:00",
       hasta: t === "clase" ? "10:00" : t === "mantenimiento" ? "17:00" : "11:00",
-     });
+    });
     setQuery("");
+  };
+
+  const steps = tipo ? STEPS[tipo] : [];
+  const currentStepKey = steps[stepIndex];
+  const isLastStep = stepIndex === steps.length - 1;
+
+  const laboratorioSeleccionado = labsDesdeBD.find((l) => l.id.toString() === form.laboratorio?.toString());
+  const modoReserva: ModoReserva = laboratorioSeleccionado?.modo_reserva || "por_estacion";
+
+  const handleAtras = () => {
+    if (stepIndex === 0) {
+      setTipo(null);
+      setForm({ tipo: null, numPersonas: 20, recurrencia: "No se repite", equipos: [], estaciones: [] });
+    } else {
+      setStepIndex((i) => i - 1);
+    }
   };
 
   const handleGuardar = () => {
@@ -227,7 +337,28 @@ const handleLabChange = (val: string) => {
     onClose();
   };
 
-  const canSave = tipo !== null;
+  const handleSiguiente = () => {
+    if (isLastStep) {
+      handleGuardar();
+    } else {
+      setStepIndex((i) => i + 1);
+    }
+  };
+
+  const canAvanzar = (): boolean => {
+    if (!tipo) return false;
+    if (currentStepKey === "datos") {
+      if (tipo === "clase") return !!form.materia && !!form.docente;
+      if (tipo === "mantenimiento") return !!form.responsable && !!form.descripcion;
+      if (tipo === "reserva") return !!form.titulo;
+    }
+    if (currentStepKey === "laboratorio") {
+      if (!form.laboratorio) return false;
+      if (tipo === "reserva" && modoReserva === "por_estacion") return estacionesSeleccionadas.length > 0;
+    }
+    if (currentStepKey === "horario") return !!form.fecha;
+    return true;
+  };
 
   return (
     <div className="na-overlay">
@@ -244,44 +375,51 @@ const handleLabChange = (val: string) => {
           <button className="na-close" onClick={onClose}>×</button>
         </div>
 
+        {/* Progreso por pasos (solo una vez elegido el tipo) */}
+        {tipo && (
+          <div className="na-progress">
+            <div className="na-progress-dots">
+              {steps.map((s, i) => (
+                <span key={s} className={`na-dot ${i <= stepIndex ? "na-dot-on" : ""}`} />
+              ))}
+            </div>
+            <div className="na-progress-label">
+              Paso {stepIndex + 1} de {steps.length} · {STEP_TITLES[currentStepKey]?.[tipo]}
+            </div>
+          </div>
+        )}
+
         <div className="na-body">
 
-          {/* Selector de tipo */}
-          <div className="na-field-label">TIPO DE ACTIVIDAD</div>
-          <div className="na-tipo-selector">
-            <button
-              className={`na-tipo-btn na-tipo-clase ${tipo === "clase" ? "na-tipo-on" : ""}`}
-              onClick={() => handleTipo("clase")}
-            >
-              <div className="na-tipo-ico na-ico-clase"><CalendarIcon color="#0F6E56" /></div>
-              <div className="na-tipo-name">Clase regular</div>
-              <div className="na-tipo-desc">Clase con docente asignado</div>
-            </button>
+          {/* ── SELECCIÓN DE TIPO (pantalla inicial, sin más campos) ── */}
+          {!tipo && (
+            <>
+              <div className="na-field-label">TIPO DE ACTIVIDAD</div>
+              <div className="na-tipo-selector">
+                <button className="na-tipo-btn na-tipo-clase" onClick={() => handleTipo("clase")}>
+                  <div className="na-tipo-ico na-ico-clase"><CalendarIcon color="#0F6E56" /></div>
+                  <div className="na-tipo-name">Clase regular</div>
+                  <div className="na-tipo-desc">Clase con docente asignado</div>
+                </button>
 
-            <button
-              className={`na-tipo-btn na-tipo-mant ${tipo === "mantenimiento" ? "na-tipo-on na-tipo-mant-on" : ""}`}
-              onClick={() => handleTipo("mantenimiento")}
-            >
-              <div className="na-tipo-ico na-ico-mant"><WrenchIcon color="#A32D2D" /></div>
-              <div className="na-tipo-name">Mantenimiento</div>
-              <div className="na-tipo-desc">Cierre técnico del laboratorio</div>
-            </button>
+                <button className="na-tipo-btn na-tipo-mant" onClick={() => handleTipo("mantenimiento")}>
+                  <div className="na-tipo-ico na-ico-mant"><WrenchIcon color="#A32D2D" /></div>
+                  <div className="na-tipo-name">Cierre técnico</div>
+                  <div className="na-tipo-desc">Cierre técnico del laboratorio</div>
+                </button>
 
-            <button
-              className={`na-tipo-btn na-tipo-res ${tipo === "reserva" ? "na-tipo-on na-tipo-res-on" : ""}`}
-              onClick={() => handleTipo("reserva")}
-            >
-              <div className="na-tipo-ico na-ico-res"><UserIcon color="#854F0B" /></div>
-              <div className="na-tipo-name">Reserva directa</div>
-              <div className="na-tipo-desc">Reserva manual del admin</div>
-            </button>
-          </div>
+                <button className="na-tipo-btn na-tipo-res" onClick={() => handleTipo("reserva")}>
+                  <div className="na-tipo-ico na-ico-res"><UserIcon color="#854F0B" /></div>
+                  <div className="na-tipo-name">Reserva directa</div>
+                  <div className="na-tipo-desc">Reserva manual del admin</div>
+                </button>
+              </div>
+            </>
+          )}
 
-          {/* ── CLASE ── */}
-          {tipo === "clase" && (
+          {/* ── PASO: DATOS ── */}
+          {tipo === "clase" && currentStepKey === "datos" && (
             <div className="na-fields">
-              <div className="na-sep" />
-              <div className="na-section-lbl">INFORMACIÓN DE LA CLASE</div>
               <div className="na-row2">
                 <div className="na-field-group">
                   <label className="na-field-label">MATERIA / TÍTULO</label>
@@ -292,21 +430,58 @@ const handleLabChange = (val: string) => {
                   <input className="na-input" placeholder="Nombre del profesor" value={form.docente || ""} onChange={(e) => set("docente", e.target.value)} />
                 </div>
               </div>
-              <div className="na-row2">
-                <div className="na-field-group">
-                  <label className="na-field-label">LABORATORIO</label>
-
-
-                  <select className="na-select" value={form.laboratorio || ""} onChange={(e) => set("laboratorio", e.target.value)} disabled={cargandoLabs}>
-                    <option value="">{cargandoLabs? "Cargando laboratorios..." : "Selecciona un laboratorio"}</option>
-                    {/**Mapeamos los laboratorios que vinieron de la BD */}
-                    {labsDesdeBD.map((lab) => (
-                        <option key={lab.id} value={lab.id}>{lab.nombre}</option>
-                      ))}
-                  </select>
-
-
+              <div className="na-field-group">
+                <label className="na-field-label">N° DE ESTUDIANTES</label>
+                <div className="na-num-row">
+                  <button className="na-num-btn" onClick={() => set("numPersonas", Math.max(1, (form.numPersonas || 1) - 1))}>−</button>
+                  <span className="na-num-val">{form.numPersonas}</span>
+                  <button className="na-num-btn" onClick={() => set("numPersonas", (form.numPersonas || 0) + 1)}>+</button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {tipo === "mantenimiento" && currentStepKey === "datos" && (
+            <div className="na-fields">
+              <div className="na-field-group">
+                <label className="na-field-label">RESPONSABLE TÉCNICO</label>
+                <input className="na-input" placeholder="Nombre del técnico" value={form.responsable || ""} onChange={(e) => set("responsable", e.target.value)} />
+              </div>
+              <div className="na-field-group">
+                <label className="na-field-label">DESCRIPCIÓN DEL TRABAJO</label>
+                <textarea className="na-textarea" placeholder="Ej: Revisión general de equipos, cambio de fuente de poder #3..." value={form.descripcion || ""} onChange={(e) => set("descripcion", e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          {tipo === "reserva" && currentStepKey === "datos" && (
+            <div className="na-fields">
+              <div className="na-field-group">
+                <label className="na-field-label">TÍTULO / MOTIVO</label>
+                <input className="na-input" placeholder="Ej: Demostración para visita académica, Práctica docente..." value={form.titulo || ""} onChange={(e) => set("titulo", e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          {/* ── PASO: LABORATORIO (y estación, solo para reserva) ── */}
+          {currentStepKey === "laboratorio" && tipo && (
+            <div className="na-fields">
+              <div className="na-field-group">
+                <label className="na-field-label">LABORATORIO</label>
+                <select
+                  className="na-select"
+                  value={form.laboratorio || ""}
+                  onChange={(e) => { set("laboratorio", e.target.value); set("estaciones" as keyof FormData, [] as any); }}
+                  disabled={cargandoLabs}
+                >
+                  <option value="">{cargandoLabs ? "Cargando laboratorios..." : "Selecciona un laboratorio"}</option>
+                  {labsDesdeBD.map((lab) => (
+                    <option key={lab.id} value={lab.id}>{lab.nombre}</option>
+                  ))}
+                </select>
+              </div>
+
+              {tipo === "clase" && (
                 <div className="na-field-group">
                   <label className="na-field-label">N° DE ESTUDIANTES</label>
                   <div className="na-num-row">
@@ -315,247 +490,150 @@ const handleLabChange = (val: string) => {
                     <button className="na-num-btn" onClick={() => set("numPersonas", (form.numPersonas || 0) + 1)}>+</button>
                   </div>
                 </div>
-              </div>
-              <div className="na-sep" />
-              <div className="na-section-lbl">FECHA Y HORA</div>
-              <div className="na-row3">
-                <div className="na-field-group">
-                  <label className="na-field-label">FECHA</label>
-                  <input className="na-input" type="date" value={form.fecha || ""} onChange={(e) => set("fecha", e.target.value)} />
-                </div>
-                <div className="na-field-group">
-                  <label className="na-field-label">DESDE</label>
-                  <input className="na-input" type="time" value={form.desde || "08:00"} onChange={(e) => set("desde", e.target.value)} />
-                </div>
-                <div className="na-field-group">
-                  <label className="na-field-label">HASTA</label>
-                  <input className="na-input" type="time" value={form.hasta || "10:00"} onChange={(e) => set("hasta", e.target.value)} />
-                </div>
-              </div>
-              <div className="na-field-group">
-                <label className="na-field-label">RECURRENCIA</label>
-                <div className="na-recur-row">
-                  <RecurIcon />
-                  <select className="na-select na-recur-select" value={form.recurrencia || ""} onChange={(e) => set("recurrencia", e.target.value)}>
-                    {RECURRENCIA_CLASE.map((r) => <option key={r}>{r}</option>)}
-                  </select>
-                </div>
-              </div>
+              )}
+
+              {tipo === "reserva" && form.laboratorio && (
+                <>
+                  <div className="na-field-group">
+                    <label className="na-field-label">N° DE PERSONAS</label>
+                    <div className="na-num-row">
+                      <button className="na-num-btn" onClick={() => set("numPersonas", Math.max(1, (form.numPersonas || 1) - 1))}>−</button>
+                      <span className="na-num-val">{form.numPersonas}</span>
+                      <button className="na-num-btn" onClick={() => set("numPersonas", (form.numPersonas || 0) + 1)}>+</button>
+                    </div>
+                  </div>
+
+                  {modoReserva === "por_estacion" ? (
+                    <div className="na-field-group">
+                      <label className="na-field-label">ESTACIÓN DE TRABAJO · puedes elegir una o varias</label>
+                      {cargandoEstaciones ? (
+                        <div className="na-hint">Cargando estaciones...</div>
+                      ) : (
+                        <div className="na-estaciones-legend">
+                          <span className="na-leg-item"><span className="na-leg-dot na-leg-disp" />Disponible</span>
+                          <span className="na-leg-item"><span className="na-leg-dot na-leg-sel" />Seleccionada</span>
+                          <span className="na-leg-item"><span className="na-leg-dot na-leg-no" />No disponible</span>
+                        </div>
+                      )}
+                      <div className="na-estaciones-grid">
+                        {estacionesDesdeBD.map((est) => {
+                          const seleccionada = estacionesSeleccionadas.includes(est.id);
+                          const noDisponible = est.estado === "no_disponible";
+                          const clase = noDisponible
+                            ? "na-estacion-btn na-estacion-no"
+                            : seleccionada
+                              ? "na-estacion-btn na-estacion-sel"
+                              : "na-estacion-btn";
+                          return (
+                            <button
+                              key={est.id}
+                              type="button"
+                              className={clase}
+                              disabled={noDisponible}
+                              onClick={() => toggleEstacion(est.id)}
+                            >
+                              <Monitor size={14} />
+                              {est.numero}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="na-full-lab-card">
+                      <Building2 size={26} />
+                      <div className="na-full-lab-title">Espacio completo</div>
+                      <div className="na-full-lab-desc">
+                        Este laboratorio se reserva entero, sin estaciones individuales
+                        {laboratorioSeleccionado?.capacidad_maxima ? ` · capacidad ${laboratorioSeleccionado.capacidad_maxima} personas` : ""}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {tipo === "mantenimiento" && (
+                <div className="na-hint">Este tipo de actividad bloquea el laboratorio completo, no requiere seleccionar estación.</div>
+              )}
             </div>
           )}
 
-          {/* ── MANTENIMIENTO ── */}
-          {tipo === "mantenimiento" && (
+          {/* ── PASO: INSTRUMENTOS (clase y reserva) ── */}
+          {currentStepKey === "instrumentos" && (tipo === "clase" || tipo === "reserva") && (
             <div className="na-fields">
-              <div className="na-sep" />
-              <div className="na-section-lbl">INFORMACIÓN DEL MANTENIMIENTO</div>
-              <div className="na-row2">
-                <div className="na-field-group">
-                  <label className="na-field-label">LABORATORIO</label>
+              <div className="na-field-group">
+                <div className="inv-search-wrapper">
+                  <Search size={14} className="inv-search-icon" />
+                  <input
+                    className="na-input inv-search-input"
+                    type="text"
+                    placeholder="Buscar equipo o activo..."
+                    value={query}
+                    onChange={(e) => {
+                      setQuery(e.target.value);
+                      setShowResults(true);
+                    }}
+                    onFocus={() => setShowResults(true)}
+                    onBlur={() => setTimeout(() => setShowResults(false), 150)}
+                  />
 
-                  <select className="na-select" value={form.laboratorio || ""} onChange={(e) => set("laboratorio", e.target.value)} disabled={cargandoLabs}>
-                    <option value="">{cargandoLabs? "Cargando laboratorios..." : "Selecciona un laboratorio"}</option>
-                    {/**Mapeamos los laboratorios que vinieron de la BD */}
-                    {labsDesdeBD.map((lab) => (
-                        <option key={lab.id} value={lab.id}>{lab.nombre}</option>
+                  {showResults && resultados.length > 0 && (
+                    <ul className="inv-results">
+                      {resultados.map((equipo) => (
+                        <li
+                          key={equipo.id}
+                          className="inv-result-item"
+                          onMouseDown={() => agregarEquipo(equipo)}
+                        >
+                          <span className="inv-result-nombre">{equipo.nombre}</span>
+                          <span className={`inv-result-badge ${badgeClass(equipo.disponibles)}`}>
+                            {badgeLabel(equipo.disponibles)}
+                          </span>
+                        </li>
                       ))}
-                  </select>
+                    </ul>
+                  )}
+                </div>
 
-                </div>
-                <div className="na-field-group">
-                  <label className="na-field-label">RESPONSABLE TÉCNICO</label>
-                  <input className="na-input" placeholder="Nombre del técnico" value={form.responsable || ""} onChange={(e) => set("responsable", e.target.value)} />
-                </div>
-              </div>
-              <div className="na-field-group">
-                <label className="na-field-label">DESCRIPCIÓN DEL TRABAJO</label>
-                <textarea className="na-textarea" placeholder="Ej: Revisión general de equipos, cambio de fuente de poder #3..." value={form.descripcion || ""} onChange={(e) => set("descripcion", e.target.value)} />
-              </div>
-              <div className="na-sep" />
-              <div className="na-section-lbl">FECHA Y HORA</div>
-              <div className="na-row3">
-                <div className="na-field-group">
-                  <label className="na-field-label">FECHA</label>
-                  <input className="na-input" type="date" value={form.fecha || ""} onChange={(e) => set("fecha", e.target.value)} />
-                </div>
-                <div className="na-field-group">
-                  <label className="na-field-label">DESDE</label>
-                  <input className="na-input" type="time" value={form.desde || "14:00"} onChange={(e) => set("desde", e.target.value)} />
-                </div>
-                <div className="na-field-group">
-                  <label className="na-field-label">HASTA</label>
-                  <input className="na-input" type="time" value={form.hasta || "17:00"} onChange={(e) => set("hasta", e.target.value)} />
-                </div>
-              </div>
-              <div className="na-field-group">
-                <label className="na-field-label">RECURRENCIA</label>
-                <div className="na-recur-row">
-                  <RecurIcon />
-                  <select className="na-select na-recur-select" value={form.recurrencia || ""} onChange={(e) => set("recurrencia", e.target.value)}>
-                    {RECURRENCIA_SIMPLE.map((r) => <option key={r}>{r}</option>)}
-                  </select>
-                </div>
+                {equiposSeleccionados.length > 0 && (
+                  <ul className="inv-selected-list">
+                    {equiposSeleccionados.map((equipo) => (
+                      <li key={equipo.id} className="inv-selected-item">
+                        <div className="inv-selected-info">
+                          <span className="inv-selected-nombre">{equipo.nombre}</span>
+                          <span className={`inv-result-badge ${badgeClass(equipo.disponibles)}`}>
+                            {badgeLabel(equipo.disponibles)}
+                          </span>
+                        </div>
+                        <div className="inv-selected-actions">
+                          <div className="inv-cantidad-wrapper">
+                            <span className="inv-cantidad-label">Cantidad</span>
+                            <div className="inv-cantidad">
+                              <button type="button" onClick={() => disminuirCantidad(equipo.id)} disabled={(equipo.cantidad || 1) <= 1}>−</button>
+                              <span>{equipo.cantidad || 1}</span>
+                              <button type="button" onClick={() => aumentarCantidad(equipo.id)} disabled={(equipo.cantidad || 1) >= equipo.disponibles}>+</button>
+                            </div>
+                          </div>
+                          <button type="button" className="inv-quitar-btn" onClick={() => quitarEquipo(equipo.id)}>
+                            <X size={14} />
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <button type="button" className="inv-add-btn" onClick={() => setShowResults(true)}>
+                  <Plus size={13} />
+                  Añadir ítem
+                </button>
               </div>
             </div>
           )}
 
-          {/* ── RESERVA DIRECTA ── */}
-          {tipo === "reserva" && (
+          {/* ── PASO: FECHA, HORA Y RESUMEN ── */}
+          {currentStepKey === "horario" && tipo && (
             <div className="na-fields">
-              <div className="na-sep" />
-              <div className="na-section-lbl">INFORMACIÓN DE LA RESERVA</div>
-              <div className="na-field-group">
-                <label className="na-field-label">TÍTULO / MOTIVO</label>
-                <input className="na-input" placeholder="Ej: Demostración para visita académica, Práctica docente..." value={form.titulo || ""} onChange={(e) => set("titulo", e.target.value)} />
-              </div>
-              <div className="na-row2">
-                <div className="na-field-group">
-                  <label className="na-field-label">LABORATORIO</label>
-                   <select className="na-select" value={form.laboratorio || ""} onChange={(e) => set("laboratorio", e.target.value)} disabled={cargandoLabs}>
-                    <option value="">{cargandoLabs? "Cargando laboratorios..." : "Selecciona un laboratorio"}</option>
-                    {/**Mapeamos los laboratorios que vinieron de la BD */}
-                    {labsDesdeBD.map((lab) => (
-                        <option key={lab.id} value={lab.id}>{lab.nombre}</option>
-                      ))}
-                  </select>
-
-                </div>
-                <div className="na-field-group">
-                  <label className="na-field-label">ESTACIÓN DE TRABAJO</label>
-                  <select className="na-select" value={form.estacion || ""} onChange={(e) => set("estacion", e.target.value)} disabled={!form.laboratorio}>
-                    <option value="">{form.laboratorio ? "Selecciona estación..." : "Elige el lab primero..."}</option>
-                    {(ESTACIONES[form.laboratorio || ""] || []).map((e) => <option key={e}>{e}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="na-field-group">
-                <label className="na-field-label">N° DE PERSONAS</label>
-                <div className="na-num-row">
-                  <button className="na-num-btn" onClick={() => set("numPersonas", Math.max(1, (form.numPersonas || 1) - 1))}>−</button>
-                  <span className="na-num-val">{form.numPersonas}</span>
-                  <button className="na-num-btn" onClick={() => set("numPersonas", (form.numPersonas || 0) + 1)}>+</button>
-                </div>
-              </div>
-
-              {/* ── CAMPO DE INVENTARIO ── */}
-<div className="na-sep" />
-<div className="na-section-lbl">SOLICITAR INSTRUMENTO (OPCIONAL)</div>
-
-<div className="na-field-group">
-  <div className="inv-search-wrapper">
-    <Search size={14} className="inv-search-icon" />
-
-    <input
-      className="na-input inv-search-input"
-      type="text"
-      placeholder="Buscar equipo o activo..."
-      value={query}
-      onChange={(e) => {
-        setQuery(e.target.value);
-        setShowResults(true);
-      }}
-      onFocus={() => setShowResults(true)}
-      onBlur={() => setTimeout(() => setShowResults(false), 150)}
-    />
-
-    {showResults && resultados.length > 0 && (
-      <ul className="inv-results">
-        {resultados.map((equipo) => (
-          <li
-            key={equipo.id}
-            className="inv-result-item"
-            onMouseDown={() => agregarEquipo(equipo)}
-          >
-            <span className="inv-result-nombre">
-              {equipo.nombre}
-            </span>
-
-            <span className={`inv-result-badge ${badgeClass(equipo.disponibles)}`}>
-              {badgeLabel(equipo.disponibles)}
-            </span>
-          </li>
-        ))}
-      </ul>
-    )}
-  </div>
-
-{/* ITEMS SELECCIONADOS */}
-{equiposSeleccionados.length > 0 && (
-  <ul className="inv-selected-list">
-    {equiposSeleccionados.map((equipo) => (
-      <li key={equipo.id} className="inv-selected-item">
-
-        <div className="inv-selected-info">
-          <span className="inv-selected-nombre">
-            {equipo.nombre}
-          </span>
-
-          <span className={`inv-result-badge ${badgeClass(equipo.disponibles)}`}>
-            {badgeLabel(equipo.disponibles)}
-          </span>
-        </div>
-
-        <div className="inv-selected-actions">
-
-          <div className="inv-cantidad-wrapper">
-            <span className="inv-cantidad-label">
-              Cantidad
-            </span>
-
-            <div className="inv-cantidad">
-
-              <button
-                type="button"
-                onClick={() => disminuirCantidad(equipo.id)}
-                disabled={(equipo.cantidad || 1) <= 1}
-              >
-                −
-              </button>
-
-              <span>
-                {equipo.cantidad || 1}
-              </span>
-
-              <button
-                type="button"
-                onClick={() => aumentarCantidad(equipo.id)}
-                disabled={(equipo.cantidad || 1) >= equipo.disponibles}
-              >
-                +
-              </button>
-
-            </div>
-          </div>
-
-          <button
-            type="button"
-            className="inv-quitar-btn"
-            onClick={() => quitarEquipo(equipo.id)}
-          >
-            <X size={14} />
-          </button>
-
-        </div>
-
-      </li>
-    ))}
-  </ul>
-)}
-
-<button
-  type="button"
-  className="inv-add-btn"
-  onClick={() => setShowResults(true)}
->
-  <Plus size={13} />
-  Añadir ítem
-</button>
-</div>
-
-{/* ── FIN CAMPO DE INVENTARIO ── */}
-
-              <div className="na-sep" />
-              <div className="na-section-lbl">FECHA Y HORA</div>
               <div className="na-row3">
                 <div className="na-field-group">
                   <label className="na-field-label">FECHA</label>
@@ -563,11 +641,11 @@ const handleLabChange = (val: string) => {
                 </div>
                 <div className="na-field-group">
                   <label className="na-field-label">DESDE</label>
-                  <input className="na-input" type="time" value={form.desde || "09:00"} onChange={(e) => set("desde", e.target.value)} />
+                  <input className="na-input" type="time" value={form.desde || ""} onChange={(e) => set("desde", e.target.value)} />
                 </div>
                 <div className="na-field-group">
                   <label className="na-field-label">HASTA</label>
-                  <input className="na-input" type="time" value={form.hasta || "11:00"} onChange={(e) => set("hasta", e.target.value)} />
+                  <input className="na-input" type="time" value={form.hasta || ""} onChange={(e) => set("hasta", e.target.value)} />
                 </div>
               </div>
               <div className="na-field-group">
@@ -575,12 +653,25 @@ const handleLabChange = (val: string) => {
                 <div className="na-recur-row">
                   <RecurIcon />
                   <select className="na-select na-recur-select" value={form.recurrencia || ""} onChange={(e) => set("recurrencia", e.target.value)}>
-                    {RECURRENCIA_SIMPLE.map((r) => <option key={r}>{r}</option>)}
+                    {(tipo === "clase" ? RECURRENCIA_CLASE : RECURRENCIA_SIMPLE).map((r) => <option key={r}>{r}</option>)}
                   </select>
                 </div>
               </div>
+
+              <div className="na-resumen-card">
+                <div className="na-resumen-line">
+                  {TIPO_LABEL[tipo]} · {laboratorioSeleccionado?.nombre || "sin laboratorio"}
+                  {tipo === "reserva" && modoReserva === "por_estacion"
+                    ? ` · ${estacionesSeleccionadas.length} estación${estacionesSeleccionadas.length === 1 ? "" : "es"}`
+                    : ""}
+                </div>
+                {tipo === "reserva" && (
+                  <div className="na-resumen-note">Se guardará como reserva aprobada automáticamente.</div>
+                )}
+              </div>
             </div>
           )}
+
         </div>
 
         {/* Footer */}
@@ -589,20 +680,27 @@ const handleLabChange = (val: string) => {
             {tipo ? FOOTER_TIPS[tipo] : "Selecciona un tipo para continuar"}
           </div>
           <div className="na-footer-btns">
-            <button className="na-btn-cancel" onClick={onClose}>Cancelar</button>
-            <button
-              className={`na-btn-save ${tipo === "mantenimiento" ? "na-btn-save-mant" : ""}`}
-              onClick={handleGuardar}
-              disabled={!canSave}
-            >
-              Guardar actividad
-            </button>
+            {tipo ? (
+              <>
+                <button className="na-btn-cancel" onClick={handleAtras}>
+                  {stepIndex === 0 ? "Cambiar tipo" : "Atrás"}
+                </button>
+                <button
+                  className={`na-btn-save ${tipo === "mantenimiento" ? "na-btn-save-mant" : ""}`}
+                  onClick={handleSiguiente}
+                  disabled={!canAvanzar()}
+                >
+                  {isLastStep ? "Guardar actividad" : "Siguiente"}
+                </button>
+              </>
+            ) : (
+              <button className="na-btn-cancel" onClick={onClose}>Cancelar</button>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
-
 }
 
 /* ── Íconos inline ── */
