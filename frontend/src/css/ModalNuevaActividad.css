@@ -711,33 +711,79 @@
 }
 
 /* ============================================
-   NUEVO: STEPPER (barra de progreso por pasos)
+   NUEVO: STEPPER (círculos numerados conectados)
    ============================================ */
-.na-progress {
-  padding: 0 28px 14px 28px;
-}
-
-.na-progress-dots {
+.na-stepper {
   display: flex;
-  gap: 4px;
-  margin-bottom: 6px;
+  align-items: flex-start;
+  padding: 4px 28px 16px 28px;
 }
 
-.na-dot {
+.na-stepper-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   flex: 1;
-  height: 4px;
-  border-radius: 4px;
-  background: #e5e5e5;
+}
+
+.na-stepper-item:last-child {
+  flex: 0 0 auto;
+}
+
+.na-stepper-node {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.na-stepper-circle {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 13px;
+  font-weight: 700;
+  color: #b7c2bd;
+
+  background: #ffffff;
+  border: 2px solid #dbe3df;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.na-stepper-circle-on {
+  background: #1d9e75;
+  border-color: #1d9e75;
+  color: #ffffff;
+}
+
+.na-stepper-line {
+  flex: 1;
+  height: 2px;
+  background: #dbe3df;
+  margin: 0 4px;
   transition: background 0.15s;
 }
 
-.na-dot-on {
+.na-stepper-line-on {
   background: #1d9e75;
 }
 
-.na-progress-label {
-  font-size: 11px;
-  color: #888;
+.na-stepper-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #9aa5a0;
+  margin-top: 6px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.na-stepper-label-on {
+  color: #1d9e75;
+  font-weight: 600;
 }
 
 .na-hint {

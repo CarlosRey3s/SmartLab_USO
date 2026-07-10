@@ -24,6 +24,7 @@ interface EstacionDB {
 interface NuevaActividadProps {
   onClose: () => void;
   onGuardar: (data: any) => void;
+  actividadExistente?: any; // Para editar, si es necesario
 }
 
 interface FormData {
@@ -119,14 +120,15 @@ const STEPS: Record<Exclude<TipoActividad, null>, string[]> = {
   reserva: ["datos", "laboratorio", "instrumentos", "horario"],
 };
 
-const STEP_TITLES: Record<string, Partial<Record<Exclude<TipoActividad, null>, string>>> = {
-  datos: { clase: "Datos de la clase", mantenimiento: "Datos del mantenimiento", reserva: "Datos de la reserva" },
-  laboratorio: { clase: "Laboratorio", mantenimiento: "Laboratorio", reserva: "Laboratorio y estación" },
-  instrumentos: { clase: "Instrumentos", reserva: "Instrumentos" },
-  horario: { clase: "Fecha y hora", mantenimiento: "Fecha y hora", reserva: "Fecha y hora" },
+// Etiquetas cortas para el stepper numerado (debajo de cada círculo)
+const STEP_SHORT_LABELS: Record<string, string> = {
+  datos: "General",
+  laboratorio: "Espacio",
+  instrumentos: "Equipos",
+  horario: "Fecha y hora",
 };
 
-export function ModalNuevaActividad({ onClose, onGuardar }: NuevaActividadProps) {
+export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: NuevaActividadProps) {
   // ── Estados para llamadas a BD ──
   const [labsDesdeBD, setLabsDesdeBD] = useState<LaboratorioDB[]>([]);
   const [cargandoLabs, setCargandoLabs] = useState(true);
@@ -136,6 +138,48 @@ export function ModalNuevaActividad({ onClose, onGuardar }: NuevaActividadProps)
 
   const [inventarioDesdeBD, setInventarioDesdeBD] = useState<ItemInventarioDB[]>([]);
   const [cargandoInventario, setCargandoInventario] = useState(false);
+
+  // ── EFECTO PARA MODO EDICIÓN ──
+  useEffect(() => {
+    if (actividadExistente) {
+      // 1. Convertir los objetos Date a formato de input (YYYY-MM-DD y HH:mm)
+      const start = new Date(actividadExistente.start);
+      const end = new Date(actividadExistente.end);
+
+      // Usamos métodos locales para evitar saltos de zona horaria
+      const fechaLocal = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+      const desdeLocal = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`;
+      const hastaLocal = `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
+
+      // 2. Establecer el tipo principal
+      setTipo(actividadExistente.tipo);
+
+      // 3. Rellenar el formulario con todos los campos correspondientes a la BD
+      setForm({
+        tipo: actividadExistente.tipo,
+        laboratorio: actividadExistente.laboratorio_id ? actividadExistente.laboratorio_id.toString() : "",
+        fecha: fechaLocal,
+        desde: desdeLocal,
+        hasta: hastaLocal,
+        recurrencia: actividadExistente.recurrencia || "No se repite",
+
+        // Datos específicos de Clase
+        materia: actividadExistente.materia || "",
+        docente: actividadExistente.docente_id || "",
+        numPersonas: actividadExistente.clase_estudiantes || 20,
+
+        // Datos específicos de Mantenimiento
+        responsable: actividadExistente.tecnico_responsable || "",
+        descripcion: actividadExistente.mant_descripcion || actividadExistente.reserva_nota || "",
+
+        // Datos específicos de Reserva
+        titulo: actividadExistente.reserva_titulo || "",
+        estaciones: actividadExistente.estacion_id ? [actividadExistente.estacion_id.toString()] : [],
+
+        equipos: [] // Si luego habilitas edición de equipos, aquí iría el mapeo
+      });
+    }
+  }, [actividadExistente]);
 
   // 1. Efecto para cargar los laboratorios al inicio
   useEffect(() => {
@@ -360,6 +404,8 @@ export function ModalNuevaActividad({ onClose, onGuardar }: NuevaActividadProps)
     return true;
   };
 
+  const canSave = canAvanzar();
+
   return (
     <div className="na-overlay">
       <div className="na-modal">
@@ -367,7 +413,7 @@ export function ModalNuevaActividad({ onClose, onGuardar }: NuevaActividadProps)
         {/* Header */}
         <div className="na-header">
           <div>
-            <div className="na-header-title">Nueva Actividad</div>
+            <div className="na-header-title">{actividadExistente ? "Editar Actividad" : "Nueva Actividad"}</div>
             <div className="na-header-sub">
               {tipo ? HEADER_SUBS[tipo] : "Selecciona el tipo de actividad para continuar"}
             </div>
@@ -377,15 +423,26 @@ export function ModalNuevaActividad({ onClose, onGuardar }: NuevaActividadProps)
 
         {/* Progreso por pasos (solo una vez elegido el tipo) */}
         {tipo && (
-          <div className="na-progress">
-            <div className="na-progress-dots">
-              {steps.map((s, i) => (
-                <span key={s} className={`na-dot ${i <= stepIndex ? "na-dot-on" : ""}`} />
-              ))}
-            </div>
-            <div className="na-progress-label">
-              Paso {stepIndex + 1} de {steps.length} · {STEP_TITLES[currentStepKey]?.[tipo]}
-            </div>
+          <div className="na-stepper">
+            {steps.map((s, i) => {
+              const isDone = i < stepIndex;
+              const isActive = i === stepIndex;
+              return (
+                <div className="na-stepper-item" key={s}>
+                  <div className="na-stepper-node">
+                    <div className={`na-stepper-circle ${isActive || isDone ? "na-stepper-circle-on" : ""}`}>
+                      {i + 1}
+                    </div>
+                    {i < steps.length - 1 && (
+                      <div className={`na-stepper-line ${isDone ? "na-stepper-line-on" : ""}`} />
+                    )}
+                  </div>
+                  <div className={`na-stepper-label ${isActive || isDone ? "na-stepper-label-on" : ""}`}>
+                    {STEP_SHORT_LABELS[s]}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -688,9 +745,9 @@ export function ModalNuevaActividad({ onClose, onGuardar }: NuevaActividadProps)
                 <button
                   className={`na-btn-save ${tipo === "mantenimiento" ? "na-btn-save-mant" : ""}`}
                   onClick={handleSiguiente}
-                  disabled={!canAvanzar()}
+                  disabled={!canSave}
                 >
-                  {isLastStep ? "Guardar actividad" : "Siguiente"}
+                  {isLastStep ? (actividadExistente ? "Actualizar actividad" : "Guardar actividad") : "Siguiente"}
                 </button>
               </>
             ) : (

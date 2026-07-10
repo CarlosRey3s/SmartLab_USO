@@ -65,7 +65,7 @@ const actualizarActividad = async (req, res) => {
     try {
 
         const idactividad = req.params.id; // extraer el id de la URL
-        const idAdminLogueado = "a0000000-0000-0000-0000-000000000001"; // Cambiar cuando se tenga el middleware de autenticación implementado
+        const idAdminLogueado = "1"; // Cambiar cuando se tenga el middleware de autenticación implementado
         const datosModal = req.body; // extraer los datos del cuerpo de la solicitud
 
         // Llamar al servicio para actualizar la actividad
@@ -89,22 +89,20 @@ const actualizarActividad = async (req, res) => {
 }
 
 const eliminarActividad = async (req, res) => {
-   try{
-    const idactividad = req.params.id; // extraer el id de la URL
-    const resultado = await actividadesService.eliminarActividad(idactividad);
+    try {
+        const idactividad = req.params.id; // extraer el id de la URL
+        const resultado = await actividadesService.eliminarActividad(idactividad);
 
         res.status(200).json({
             success: true,
             message: 'Actividad eliminada exitosamente',
             data: resultado
-         });
-    }catch (error) {
+        });
+    } catch (error) {
         console.error('Error al eliminar la actividad:', error);
-
         // si el error es porque no existi, mandamos un 404, sino un 500
         const statusCode = error.message.includes('no existe') ? 404 : 500;
-
-        re.status(statusCode).json({
+        res.status(statusCode).json({
             success: false,
             message: 'Error al eliminar la actividad',
             error: error.message

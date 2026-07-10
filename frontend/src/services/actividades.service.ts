@@ -43,16 +43,48 @@ export const crearActividad = async (datosModal: any): Promise<any> => {
     try {
         const respuesta = await axios.post(API_URL, datosModal, {
             // Cuando agregues tokens JWT, pasar los headers aquí
-            headers: {'Content-Type': 'application/json'}
+            headers: { 'Content-Type': 'application/json' }
         });
         return respuesta.data;
     } catch (error: any) {
         console.error('Error al crear la actividad en el backend:', error);
         if (error.response && error.response.data && error.response.data.error) {
             throw new Error(error.response.data.error);
-        }else if (error.response && error.response.data && error.response.data.message){
+        } else if (error.response && error.response.data && error.response.data.message) {
             throw new Error(error.response.data.message);
         }
         throw new Error('Error de conexión con el servidor. Por favor, inténtalo de nuevo más tarde.');
     }
 };
+
+export const actualizarActividad = async (idActividad: number | string, datosModal: any): Promise<any> => {
+    try {
+        const respuesta = await axios.put(`${API_URL}/${idActividad}`, datosModal, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+        return respuesta.data;
+    } catch (error: any) {
+        console.error(`Error al actualizar la actividad ${idActividad} en el backend:`, error); if (error.response && error.response.data && error.response.data.error) {
+            throw new Error(error.response.data.error);
+        } else if (error.response && error.response.data && error.response.data.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw new Error('Error de conexión con el servidor. Por favor, inténtalo de nuevo más tarde.');
+    }
+}
+
+export const eliminarActividad = async (idActividad: number | string): Promise<any> => {
+    try {
+        const respuesta = await axios.delete(`${API_URL}/${idActividad}`, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+        return respuesta.data;
+    } catch (error: any) {
+        console.error(`Error al eliminar la actividad ${idActividad} en el backend:`, error); if (error.response && error.response.data && error.response.data.error) {
+            throw new Error(error.response.data.error);
+        } else if (error.response && error.response.data && error.response.data.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw new Error('Error de conexión con el servidor. Por favor, inténtalo de nuevo más tarde.');
+    }
+}

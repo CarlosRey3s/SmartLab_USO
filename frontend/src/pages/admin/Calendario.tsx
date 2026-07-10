@@ -10,9 +10,9 @@ import { MiniCalendario } from './MiniCalendario.tsx';
 import { es } from 'date-fns/locale/es';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { ModalNuevaActividad } from '../../components/shared/ModalNuevaActividad';
-import { obtenerActividades, crearActividad } from '../../services/actividades.service';
+import { obtenerActividades, crearActividad, actualizarActividad, eliminarActividad } from '../../services/actividades.service';
 import '../../css/calendario.css';
-import { customToast } from '../../components/custom-toast/CustomToast.tsx'; // Importación de tu Toast
+import { customToast } from '../../components/custom-toast/CustomToast.tsx';
 
 // ── 1. CONFIGURACIÓN DE FECHAS E IDIOMA ──
 const locales = { 'es': es };
@@ -29,6 +29,7 @@ export interface EventoLaboratorio {
   start: Date;
   end: Date;
   laboratorio: string;
+  laboratorio_id?: number; // Asegúrate de tener este campo mapeado desde tu backend
   tipo: 'clase' | 'mantenimiento' | 'reserva';
   materia?: string;
   docente_id?: string;
@@ -73,7 +74,7 @@ const eventStyleGetter = (event: EventoLaboratorio) => {
   if (event.tipo === 'mantenimiento') className += ' evento-mantenimiento';
   else if (event.laboratorio === 'Lab de Redes') className += ' evento-sistema-teal';
   else if (event.laboratorio === 'Lab de Computo') className += ' evento-sistema-amarillo';
-  else className += ' evento-sistema-teal'; // Color por defecto si no es redes ni cómputo
+  else className += ' evento-sistema-teal';
   return { className };
 };
 
@@ -131,7 +132,7 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
 
         <div className="dropdown-container">
           <button onClick={() => setMenuVistaAbierto(!MenuVistaAbierto)} className="btn-view active">
-            {{ month: 'Mes', week: 'Semana', work_week: 'Semana', day: 'Día' }[toolbar.view] || 'Vista'}
+            {{ month: 'Mes', week: 'Semana', work_week: 'Semana', day: 'Día', agenda: 'Agenda' }[toolbar.view] || 'Vista'}
             {MenuVistaAbierto ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
           {MenuVistaAbierto && (
@@ -159,11 +160,14 @@ export const CalendarioView = () => {
   const [eventos, setEventos] = useState<EventoLaboratorio[]>([]);
   const [cargando, setCargando] = useState(true);
 
+  // ESTADO NUEVO: Guarda qué actividad se va a editar
+  const [actividadAEditar, setActividadAEditar] = useState<EventoLaboratorio | null>(null);
+
   const cargarDatos = async () => {
     try {
       setCargando(true);
       const data = await obtenerActividades();
-      setEventos(data); 
+      setEventos(data);
     } catch (error) {
       console.error("Error al traer data:", error);
     } finally {
@@ -195,29 +199,64 @@ export const CalendarioView = () => {
     setEventoSeleccionado(evento);
   };
 
+  // [MODIFICADO] Activamos el modo edición con el evento seleccionado
   const handleEditarEvento = () => {
-    console.log("Editar ID:", eventoSeleccionado?.id);
+    if (!eventoSeleccionado) return;
+    setActividadAEditar(eventoSeleccionado); // Guardamos la data completa en el estado
+    setEventoSeleccionado(null); // Cerramos el popover
+    setModalAbierto(true); // Abrimos el modal
   };
 
-  const handleEliminarEvento = () => {
-    console.log("Eliminar ID:", eventoSeleccionado?.id);
+  const handleEliminarEvento = async () => {
+    if (!eventoSeleccionado) return;
+
+    //Pedimos confirmacion al usuario antes de borrar
+    const confirmar = window.confirm(`¿Estás seguro de que deseas eliminar la actividad "${eventoSeleccionado.title}"?\nEsta acción no se puede deshacer.`);
+    if (confirmar) {
+      try {
+        //llmamos a la Api para elimar
+        const resultado = await eliminarActividad(eventoSeleccionado.id);
+
+        //disparamos el Toast verde
+        customToast.success('¡Eliminado!', resultado?.message || resultado?.mensaje || 'Actividad eliminada exitosamente');
+
+        //cerramos el popover
+        setEventoSeleccionado(null);
+
+        //recargamos la tabla
+        await cargarDatos();
+
+      } catch (error: any) {
+        console.error("Error al eliminar:", error);
+        customToast.error('Error', error.message || 'No se pudo eliminar la actividad');
+      }
+
+
+    }
+
   };
 
-  // ── LA NUEVA FUNCIÓN PARA GUARDAR ACTIVIDADES ──
+  // [MODIFICADO] Decide de forma dinámica si guarda un registro nuevo o actualiza uno viejo
   const handleGuardarActividad = async (datosModal: any) => {
     try {
-      console.log("Guardando actividad:", datosModal);
-      const resultado = await crearActividad(datosModal);
-      
-      // Disparamos el Toast verde de éxito
-      customToast.success('¡Éxito!', resultado?.mensaje || resultado?.message || 'Actividad guardada correctamente');
-      
+      if (actividadAEditar) {
+        // MODO EDICIÓN (PUT)
+        console.log("Actualizando actividad existente ID:", actividadAEditar.id, datosModal);
+        const resultado = await actualizarActividad(actividadAEditar.id, datosModal);
+        customToast.success('¡Modificado!', resultado?.message || resultado?.mensaje || 'Actividad actualizada exitosamente');
+      } else {
+        // MODO CREACIÓN (POST)
+        console.log("Creando nueva actividad:", datosModal);
+        const resultado = await crearActividad(datosModal);
+        customToast.success('¡Éxito!', resultado?.message || resultado?.mensaje || 'Actividad guardada correctamente');
+      }
+
       setModalAbierto(false);
-      await cargarDatos(); // Recargar el calendario con los datos frescos
+      setActividadAEditar(null); // Limpiamos el estado de edición siempre
+      await cargarDatos();
     } catch (error: any) {
-      console.error("Error al guardar actividad:", error);
-      // Disparamos el Toast rojo atrapando el mensaje exacto del backend
-      customToast.error('Operación rechazada', error.message || 'Error desconocido al guardar');
+      console.error("Error en la operación del calendario:", error);
+      customToast.error('Operación rechazada', error.message || 'Error desconocido');
     }
   };
 
@@ -282,18 +321,19 @@ export const CalendarioView = () => {
           </div>
         )}
 
-        {/* ── AQUÍ CONECTAMOS LA FUNCIÓN ── */}
+        {/* [MODIFICADO] Le pasamos los datos del evento si es edición, y limpiamos el estado al cerrar */}
         {modalAbierto && (
           <ModalNuevaActividad
-            onClose={() => setModalAbierto(false)}
+            onClose={() => { setModalAbierto(false); setActividadAEditar(null); }}
             onGuardar={handleGuardarActividad}
+            actividadExistente={actividadAEditar} // Prop opcional que usaremos en el modal
           />
         )}
 
         <div className="calendar-main-container">
           <Calendar
             localizer={localizer}
-            events={eventos} 
+            events={eventos}
             startAccessor="start" endAccessor="end"
             date={fechaActual} onNavigate={setFechaActual}
             view={vistaActual} onView={setVistaActual}
