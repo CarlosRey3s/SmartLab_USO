@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Monitor, Trash2 } from 'lucide-react';
+import { ArrowLeft, Monitor, Trash2, Plus, X } from 'lucide-react';
 import '../../css/espacios.css';
 
 interface Estacion {
@@ -7,6 +7,7 @@ interface Estacion {
   nombre: string;
   capacidad: number;
   estado: string;
+  ocupado?: boolean;
 }
 
 interface VistaEstacionesProps {
@@ -29,6 +30,7 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
   const [nuevaEstacionCapacidad, setNuevaEstacionCapacidad] = useState<number | ''>(1);
   const [nuevaEstacionCantidad, setNuevaEstacionCantidad] = useState<number | ''>(1);
   const [agregando, setAgregando] = useState(false);
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
 
   const fetchEstaciones = async () => {
     if (!laboratorioId) return;
@@ -92,6 +94,7 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
         setNuevaEstacionNombre('');
         setNuevaEstacionCantidad(1);
         setNuevaEstacionCapacidad(1);
+        setMostrarFormulario(false);
       } else {
         setError(json.message);
       }
@@ -129,6 +132,7 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
       case 'en_mantenimiento': return '#F2C94C'; // Amarillo
       case 'clausurado': 
       case 'reservado': return '#EB5757'; // Rojo
+      case 'ocupado': return '#2D9CDB'; // Azul
       default: return '#828282'; // Gris
     }
   };
@@ -140,28 +144,41 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
   return (
     <div className="vista-estaciones-container">
       <div className="vista-estaciones-header">
-        <button className="btn-volver" onClick={onVolver}>
-          <ArrowLeft size={20} />
-          Volver a Laboratorios
+        <div className="header-title-group">
+          <button className="btn-volver" onClick={onVolver}>
+            <ArrowLeft size={20} />
+            Volver a Laboratorios
+          </button>
+          <h2 className="vista-estaciones-title">
+            Estaciones - {laboratorioNombre}
+          </h2>
+        </div>
+        <button 
+          className="btn-save btn-add-station" 
+          onClick={() => setMostrarFormulario(!mostrarFormulario)}
+        >
+          {mostrarFormulario ? (
+            <><X size={18} /> Cancelar</>
+          ) : (
+            <><Plus size={18} /> Añadir Estaciones</>
+          )}
         </button>
-        <h2 className="vista-estaciones-title">
-          Estaciones - {laboratorioNombre}
-        </h2>
       </div>
 
       {error && <div className="error-message">{error}</div>}
 
-      <div className="agregar-estacion-panel">
-        <div className="section-label">Añadir Nuevas Estaciones Rápidamente</div>
-        <div className="form-row">
-          <div className="form-group" style={{ flex: 1.5 }}>
+      {mostrarFormulario && (
+        <div className="agregar-estacion-panel">
+          <div className="section-label">Añadir Nuevas Estaciones Rápidamente</div>
+        <div className="form-row form-row-estacion">
+          <div className="form-group group-prefijo">
             <label>Prefijo (Ej: PC, Mesa)</label>
             <input 
               type="text" className="form-input" 
               value={nuevaEstacionNombre} onChange={e => setNuevaEstacionNombre(e.target.value)} 
             />
           </div>
-          <div className="form-group" style={{ width: '120px' }}>
+          <div className="form-group group-cantidad">
             <label>Cantidad (N)</label>
             <input 
               type="number" min="1" className="form-input" 
@@ -169,7 +186,7 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
               onChange={e => setNuevaEstacionCantidad(e.target.value === '' ? '' : parseInt(e.target.value))} 
             />
           </div>
-          <div className="form-group" style={{ width: '120px' }}>
+          <div className="form-group group-capacidad">
             <label>Capacidad</label>
             <input 
               type="number" min="1" className="form-input" 
@@ -177,13 +194,12 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
               onChange={e => setNuevaEstacionCapacidad(e.target.value === '' ? '' : parseInt(e.target.value))} 
             />
           </div>
-          <div className="form-group" style={{ display: 'flex', alignItems: 'flex-end' }}>
+          <div className="form-group group-btn">
             <button 
               type="button" 
               className="btn-save" 
               onClick={handleAgregarEstaciones} 
               disabled={agregando || !nuevaEstacionNombre.trim()} 
-              style={{ padding: '10px 24px', height: '42px' }}
             >
               {agregando ? 'Añadiendo...' : 'Agregar'}
             </button>
@@ -216,8 +232,9 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
                   : `${prefijo} ${start}, ${prefijo} ${start + 1} ... ${prefijo} ${end}`}
               </div>
             );
-        })()}
-      </div>
+          })()}
+        </div>
+      )}
 
       <div className="estaciones-list-container">
         <h3 className="section-label" style={{ marginBottom: '20px' }}>
@@ -231,7 +248,8 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
         ) : (
           <div className="station-grid">
             {estaciones.map(est => {
-              const color = getStatusColor(est.estado);
+              const displayState = est.ocupado ? 'ocupado' : est.estado;
+              const color = getStatusColor(displayState);
               return (
                 <div key={est.id} className="station-card" style={{ borderTopColor: color }}>
                   <div className="station-card-header">
@@ -253,7 +271,7 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
                     <span className="station-capacity">👥 {est.capacidad} {est.capacidad === 1 ? 'persona' : 'personas'}</span>
                     <div className="station-badge" style={{ backgroundColor: `${color}15`, color: color }}>
                       <span className="badge-dot" style={{ backgroundColor: color }}></span>
-                      {formatEstado(est.estado)}
+                      {formatEstado(displayState)}
                     </div>
                   </div>
                 </div>

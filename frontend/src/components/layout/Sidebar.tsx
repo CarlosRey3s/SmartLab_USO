@@ -38,8 +38,7 @@ const menuItems = [
   { name: 'Usuarios', path: '/admin/usuarios', icon: Users, roles: ['administrador'] },
 
   // SUGERENCIAS (Último)
-  { name: 'Sugerencias', path: '/buzon-sugerencias', icon: MessageSquare, roles: ['estudiante'] },
-  { name: 'Buzón Sugerencias', path: '/admin/buzon-sugerencias', icon: MessageSquare, roles: ['administrador', 'coordinador'] },
+  { name: 'Sugerencias', path: '/buzon-sugerencias', icon: MessageSquare, roles: ['estudiante', 'docente'] },
 ];
 
 export const Sidebar = ({

@@ -6,12 +6,13 @@ export const inventarioService = {
    */
   crearItem: async (itemData: any): Promise<any> => {
     try {
+      const isFormData = itemData instanceof FormData;
       const response = await fetch(`${API_URL}/inventario`, {
         method: "POST",
-        headers: {
+        headers: isFormData ? {} : {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(itemData),
+        body: isFormData ? itemData : JSON.stringify(itemData),
       });
 
       const data = await response.json();
@@ -51,12 +52,13 @@ export const inventarioService = {
    */
   actualizarItem: async (id: string | number, itemData: any): Promise<any> => {
     try {
+      const isFormData = itemData instanceof FormData;
       const response = await fetch(`${API_URL}/inventario/${id}`, {
         method: "PUT",
-        headers: {
+        headers: isFormData ? {} : {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(itemData),
+        body: isFormData ? itemData : JSON.stringify(itemData),
       });
 
       const data = await response.json();

@@ -19,7 +19,7 @@ import { customToast } from '../../components/custom-toast/CustomToast';
 export default function Usuarios() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedUsers, setSelectedUsers] = useState<number[]>([2]);
+  const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [activeTab, setActiveTab] = useState('Todos');
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [selectedNewRole, setSelectedNewRole] = useState<string | null>(null);
@@ -337,14 +337,14 @@ export default function Usuarios() {
             ) : (
               users.map(user => (
               <tr key={user.id}>
-                <td>
+                <td data-label="Seleccionar">
                   <input
                     type="checkbox"
                     checked={selectedUsers.includes(user.id)}
                     onChange={() => toggleUser(user.id)}
                   />
                 </td>
-                <td>
+                <td data-label="Nombre">
                   <div className="name-cell">
                     <div className="avatar-circle">
                       {/* Avatar placeholder */}
@@ -352,13 +352,13 @@ export default function Usuarios() {
                     <span className="name-text">{user.nombre} {user.apellido}</span>
                   </div>
                 </td>
-                <td>{user.correo}</td>
-                <td>{user.rol}</td>
-                <td>
+                <td data-label="Correo">{user.correo}</td>
+                <td data-label="Rol Actual">{user.rol}</td>
+                <td data-label="Estado">
                   <span className="status-badge">{user.estado}</span>
                 </td>
-                <td>{user.fecha_creacion ? new Date(user.fecha_creacion).toLocaleDateString() : 'N/A'}</td>
-                <td>
+                <td data-label="Ultimo Acceso">{user.fecha_creacion ? new Date(user.fecha_creacion).toLocaleDateString() : 'N/A'}</td>
+                <td data-label="Acciones">
                   <div className="actions-cell">
                     <button className="action-icon-btn edit" onClick={() => handleAbrirEdicion(user)}>
                       <Edit3 size={16} />

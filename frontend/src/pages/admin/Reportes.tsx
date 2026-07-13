@@ -39,7 +39,7 @@ export const ReportesView: React.FC = () => {
       const data = await res.json();
       if (data.status === "success") {
         setSugerencias(data.data);
-        if (data.data.length > 0 && !selectedMessage) {
+        if (data.data.length > 0 && !selectedMessage && window.innerWidth > 1024) {
           setSelectedMessage(data.data[0]);
         }
       }
@@ -127,7 +127,7 @@ export const ReportesView: React.FC = () => {
       {/* ================= CONTENIDO DINÁMICO ================= */}
       
       {activeTab === "bandeja" && (
-        <div className="reports-grid">
+        <div className={`reports-grid ${selectedMessage ? 'show-detail' : ''}`}>
           {/* LISTA DE COMENTARIOS */}
           <div className="reports-list card">
             <div className="filters">
@@ -151,7 +151,7 @@ export const ReportesView: React.FC = () => {
               </button>
             </div>
 
-            <div style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 250px)' }}>
+            <div className="messages-list-container">
               {filteredSugerencias.length === 0 ? (
                 <div style={{ padding: '20px', textAlign: 'center', color: '#888' }}>
                   No hay mensajes en esta categoría.
@@ -187,10 +187,17 @@ export const ReportesView: React.FC = () => {
           </div>
 
           {/* DETALLE DEL COMENTARIO */}
-          {selectedMessage ? (
-            <div className="reports-detail card">
-              <div className="detail-tags">
-                <span className="tag-type">
+          <div className="reports-detail card">
+            {selectedMessage ? (
+              <>
+                <button 
+                  className="mobile-back-btn" 
+                  onClick={() => setSelectedMessage(null)}
+                >
+                  ← Volver a la lista
+                </button>
+                <div className="detail-tags">
+                  <span className="tag-type">
                   {selectedMessage.laboratorio_nombre || "General"}
                 </span>
                 <span className={`tag-status ${selectedMessage.estado_gestion === 'atendida' ? 'status-ok' : ''}`}>
@@ -238,12 +245,13 @@ export const ReportesView: React.FC = () => {
                   </div>
                 </>
               )}
-            </div>
+            </>
           ) : (
-            <div className="reports-detail card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#999' }}>
               Selecciona un mensaje para ver los detalles
             </div>
           )}
+          </div>
         </div>
       )}
 

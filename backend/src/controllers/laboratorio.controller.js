@@ -7,7 +7,13 @@ const getAllLaboratorios = async (req, res) => {
             SELECT 
                 l.id, l.nombre, l.descripcion, l.edificio, l.piso, l.aula, l.estado, 
                 l.modo_reserva, l.capacidad_maxima, l.coordinador_id,
-                u.nombre as coordinador_nombre
+                u.nombre as coordinador_nombre,
+                EXISTS (
+                    SELECT 1 FROM actividades a 
+                    WHERE a.laboratorio_id = l.id 
+                    AND a.fecha_hora_inicio <= NOW() 
+                    AND a.fecha_hora_fin >= NOW()
+                ) as ocupado
             FROM laboratorios l
             LEFT JOIN usuarios u ON l.coordinador_id = u.id
             ORDER BY l.nombre ASC
@@ -95,7 +101,23 @@ const getEstaciones = async (req, res) => {
     const { id } = req.params;
     try {
         const result = await pool.query(
-            'SELECT id, nombre, capacidad, estado FROM estaciones_trabajo WHERE laboratorio_id = $1 ORDER BY nombre ASC',
+            `SELECT 
+                e.id, e.nombre, e.capacidad, e.estado,
+                EXISTS (
+                    SELECT 1 
+                    FROM actividades a 
+                    LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id
+                    WHERE a.laboratorio_id = $1 
+                      AND a.fecha_hora_inicio <= NOW() 
+                      AND a.fecha_hora_fin >= NOW()
+                      AND (
+                         a.tipo IN ('clase', 'mantenimiento') OR 
+                         (a.tipo = 'reserva' AND (re.estacion_id IS NULL OR re.estacion_id = e.id))
+                      )
+                ) as ocupado
+             FROM estaciones_trabajo e 
+             WHERE e.laboratorio_id = $1 
+             ORDER BY e.nombre ASC`,
             [id]
         );
         res.json({ status: 'success', data: result.rows });

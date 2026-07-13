@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 const { pool: db } = require('./config/db');
 console.log('DEBUG - tipo de db:', typeof db, '- tiene query?', typeof db.query);
@@ -8,6 +9,9 @@ const port = process.env.PORT || 4000;
 
 app.use(cors());
 app.use(express.json());
+
+// Servir la carpeta de uploads de manera estática
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // Importar rutas
 const authRoutes = require('./routes/auth.routes');

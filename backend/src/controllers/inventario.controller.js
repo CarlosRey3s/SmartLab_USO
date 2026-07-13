@@ -1,4 +1,6 @@
 const inventarioService = require('../services/inventario.service');
+const fs = require('fs');
+const path = require('path');
 
 // Obtener todo el inventario
 const getInventario = async (req, res) => {
@@ -17,6 +19,9 @@ const getInventario = async (req, res) => {
 // Crear un nuevo item de inventario
 const crearItem = async (req, res) => {
   try {
+    if (req.file) {
+      req.body.imagen_url = `/uploads/inventario/${req.file.filename}`;
+    }
     const nuevoItem = await inventarioService.crearItemInventario(req.body);
     
     res.status(201).json({
@@ -65,6 +70,9 @@ const crearMovimiento = async (req, res) => {
 const updateItem = async (req, res) => {
   try {
     const { id } = req.params;
+    if (req.file) {
+      req.body.imagen_url = `/uploads/inventario/${req.file.filename}`;
+    }
     const itemActualizado = await inventarioService.actualizarItemInventario(id, req.body);
     
     if (!itemActualizado) {
@@ -90,6 +98,18 @@ const deleteItem = async (req, res) => {
     
     if (!itemEliminado) {
       return res.status(404).json({ status: 'error', message: 'Item no encontrado' });
+    }
+
+    // Borrar imagen física si existe
+    if (itemEliminado.imagen_url) {
+      try {
+        const filePath = path.join(__dirname, '../../public', itemEliminado.imagen_url);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      } catch (err) {
+        console.error('Error al borrar la imagen:', err);
+      }
     }
 
     res.json({

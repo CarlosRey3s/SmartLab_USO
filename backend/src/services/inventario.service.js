@@ -142,7 +142,7 @@ const actualizarItemInventario = async (id, itemData) => {
 
 // Eliminar un item en el inventario
 const eliminarItemInventario = async (id) => {
-  const query = 'DELETE FROM item_inventario WHERE id = $1 RETURNING id;';
+  const query = 'DELETE FROM item_inventario WHERE id = $1 RETURNING id, imagen_url;';
   const result = await pool.query(query, [id]);
   return result.rows[0];
 };

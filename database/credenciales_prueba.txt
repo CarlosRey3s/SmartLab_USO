@@ -12,3 +12,7 @@ Nota para el equipo:
 Este usuario está programado de forma temporal en el código del servidor (auth.service.js) para facilitar
 las pruebas. Una vez que los usuarios oficiales sean creados desde el menú "Usuarios", 
 se debe eliminar este usuario temporal del código.
+
+
+libreria a instalar 
+npm install multer
