@@ -39,6 +39,7 @@ export interface EventoLaboratorio {
   reserva_titulo?: string;
   reserva_nota?: string;
   estado_reserva?: string;
+  estaciones?: (number | string)[]; // Agregado para soportar múltiples estaciones
 }
 
 // ── 3. COMPONENTES PERSONALIZADOS DEL CALENDARIO ──

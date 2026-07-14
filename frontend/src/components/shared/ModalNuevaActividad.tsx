@@ -176,7 +176,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
 
         // Datos específicos de Reserva
         titulo: actividadExistente.reserva_titulo || "",
-        estaciones: actividadExistente.estacion_id ? [actividadExistente.estacion_id.toString()] : [],
+        estaciones: actividadExistente.estaciones ? actividadExistente.estaciones.map((e: any) => Number(e)) : [],
 
         equipos: [] // Si luego habilitas edición de equipos, aquí iría el mapeo
       });
@@ -236,17 +236,17 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
     estaciones: [],
   });
 
-  const [tecnicosOptions, setTecnicosOptions] = useState<{value: number, label: string}[]>([]);
-  const [docentesOptions, setDocentesOptions] = useState<{value: number, label: string}[]>([]);
+  const [tecnicosOptions, setTecnicosOptions] = useState<{ value: number, label: string }[]>([]);
+  const [docentesOptions, setDocentesOptions] = useState<{ value: number, label: string }[]>([]);
 
   useEffect(() => {
     const fetchUsuarios = async () => {
       try {
         const data = await usuariosService.getUsuarios();
         const usuarios = Array.isArray(data) ? data : data.data || [];
-        
+
         // Filtrar y mapear técnicos
-        const tecnicos = usuarios.filter((u: any) => 
+        const tecnicos = usuarios.filter((u: any) =>
           u.rol === 'técnico' || u.rol === 'tecnico' || u.rol === 'Técnico' || u.rol === 'Tecnico'
         );
         const optionsT = tecnicos.map((t: any) => ({
@@ -256,7 +256,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
         setTecnicosOptions(optionsT);
 
         // Filtrar y mapear docentes
-        const docentes = usuarios.filter((u: any) => 
+        const docentes = usuarios.filter((u: any) =>
           u.rol === 'docente' || u.rol === 'Docente' || u.rol === 'DOCENTE'
         );
         const optionsD = docentes.map((d: any) => ({
@@ -367,13 +367,17 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
   };
 
   // Selección múltiple de estaciones (solo aplica a reserva + modo por_estacion)
+  // Normalizamos siempre a number para evitar mezclas string/number que
+  // provocaban que una estación ya seleccionada no se reconociera como tal
+  // (y terminara duplicada al guardar).
   const toggleEstacion = (id: number | string) => {
+    const idNum = Number(id);
     setForm((prev) => {
-      const actuales = prev.estaciones || [];
-      const yaSeleccionada = actuales.includes(id);
+      const actuales = (prev.estaciones || []).map(Number);
+      const yaSeleccionada = actuales.includes(idNum);
       return {
         ...prev,
-        estaciones: yaSeleccionada ? actuales.filter((e) => e !== id) : [...actuales, id],
+        estaciones: yaSeleccionada ? actuales.filter((e) => e !== idNum) : [...actuales, idNum],
       };
     });
   };

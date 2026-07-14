@@ -8,13 +8,15 @@ const obtenerActividades = async () => {
       -- Campos de clases
       c.materia, c.docente_id, c.num_estudiantes,
       -- Campos de reservas
-      r.usuario_id as reserva_usuario_id, r.estacion_id, r.titulo, r.nota_adicional, r.estado_reserva,
+      r.usuario_id as reserva_usuario_id, COALESCE(array_agg(res_est.estacion_id) FILTER (WHERE res_est.estacion_id IS NOT NULL), ARRAY[]::INTEGER[]) as estaciones, r.titulo, r.nota_adicional, r.estado_reserva,
       -- Campos de mantenimientos
       m.tecnico_id, m.descripcion_ti
     FROM actividades a
     LEFT JOIN clases_academicas c ON a.id = c.actividad_id
     LEFT JOIN reservas_estudiantes r ON a.id = r.actividad_id
+    LEFT JOIN reserva_estaciones res_est ON a.id = res_est.actividad_id
     LEFT JOIN mantenimientos m ON a.id = m.actividad_id
+    GROUP BY a.id, c.materia, c.docente_id, c.num_estudiantes, r.usuario_id, r.titulo, r.nota_adicional, r.estado_reserva, m.tecnico_id, m.descripcion_ti
     ORDER BY a.fecha_hora_inicio ASC
   `;
   
@@ -55,16 +57,30 @@ const crearActividad = async (actividadData) => {
       detallesEspecificos = resClase.rows[0];
     } 
     else if (tipo === 'reserva') {
-      const { usuario_id, estacion_id, titulo, nota_adicional, estado_reserva } = actividadData;
+      const { usuario_id, estaciones, estacion_id, titulo, nota_adicional, estado_reserva } = actividadData;
       const qReserva = `
-        INSERT INTO reservas_estudiantes (actividad_id, usuario_id, estacion_id, titulo, nota_adicional, estado_reserva)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO reservas_estudiantes (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING *;
       `;
       const resReserva = await client.query(qReserva, [
-        actividadId, usuario_id, estacion_id || null, titulo, nota_adicional || '', estado_reserva || 'pendiente'
+        actividadId, usuario_id, titulo, nota_adicional || '', estado_reserva || 'pendiente'
       ]);
       detallesEspecificos = resReserva.rows[0];
+      
+      const arrayEstaciones = Array.isArray(estaciones) && estaciones.length > 0 
+          ? estaciones 
+          : (estacion_id ? [estacion_id] : []);
+      
+      if (arrayEstaciones.length > 0) {
+          const queryEstacion = `INSERT INTO reserva_estaciones (actividad_id, estacion_id) VALUES ($1, $2)`;
+          for (let est of arrayEstaciones) {
+              if (est && est !== 'null') {
+                  await client.query(queryEstacion, [actividadId, parseInt(est, 10)]);
+              }
+          }
+      }
+      detallesEspecificos.estaciones = arrayEstaciones;
     } 
     else if (tipo === 'mantenimiento') {
       const { tecnico_id, descripcion_ti } = actividadData;
