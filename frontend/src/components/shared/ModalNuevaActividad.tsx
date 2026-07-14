@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, X, Monitor, Building2 } from 'lucide-react';
+import Select from 'react-select';
+import { usuariosService } from '../../services/usuarios.service';
 import '../../css/ModalNuevaActividad.css';
 
 type TipoActividad = "clase" | "mantenimiento" | "reserva" | null;
@@ -31,9 +33,9 @@ interface FormData {
   tipo: TipoActividad;
   // Clase
   materia?: string;
-  docente?: string;
+  docente?: string | number;
   // Mantenimiento
-  responsable?: string;
+  responsable?: string | number;
   descripcion?: string;
   // Reserva
   titulo?: string;
@@ -233,6 +235,41 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
     equipos: [],
     estaciones: [],
   });
+
+  const [tecnicosOptions, setTecnicosOptions] = useState<{value: number, label: string}[]>([]);
+  const [docentesOptions, setDocentesOptions] = useState<{value: number, label: string}[]>([]);
+
+  useEffect(() => {
+    const fetchUsuarios = async () => {
+      try {
+        const data = await usuariosService.getUsuarios();
+        const usuarios = Array.isArray(data) ? data : data.data || [];
+        
+        // Filtrar y mapear técnicos
+        const tecnicos = usuarios.filter((u: any) => 
+          u.rol === 'técnico' || u.rol === 'tecnico' || u.rol === 'Técnico' || u.rol === 'Tecnico'
+        );
+        const optionsT = tecnicos.map((t: any) => ({
+          value: t.id,
+          label: `${t.nombre} ${t.apellido || ''}`.trim()
+        }));
+        setTecnicosOptions(optionsT);
+
+        // Filtrar y mapear docentes
+        const docentes = usuarios.filter((u: any) => 
+          u.rol === 'docente' || u.rol === 'Docente' || u.rol === 'DOCENTE'
+        );
+        const optionsD = docentes.map((d: any) => ({
+          value: d.id,
+          label: `${d.nombre} ${d.apellido || ''}`.trim()
+        }));
+        setDocentesOptions(optionsD);
+      } catch (error) {
+        console.error('Error al cargar usuarios:', error);
+      }
+    };
+    fetchUsuarios();
+  }, []);
 
   // 2. Efecto para cargar estaciones dependientes del laboratorio seleccionado
   useEffect(() => {
@@ -484,7 +521,58 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
                 </div>
                 <div className="na-field-group">
                   <label className="na-field-label">DOCENTE</label>
-                  <input className="na-input" placeholder="Nombre del profesor" value={form.docente || ""} onChange={(e) => set("docente", e.target.value)} />
+                  <Select
+                    placeholder="Buscar docente..."
+                    options={docentesOptions}
+                    value={docentesOptions.find(opt => opt.value === form.docente) || null}
+                    onChange={(selected: any) => set("docente", selected ? selected.value : "")}
+                    noOptionsMessage={() => "No se encontraron docentes"}
+                    styles={{
+                      control: (base, state) => ({
+                        ...base,
+                        backgroundColor: '#f8fafc',
+                        borderColor: state.isFocused ? '#1a3a34' : '#e2e8f0',
+                        borderWidth: '1.5px',
+                        borderRadius: '8px',
+                        boxShadow: 'none',
+                        minHeight: '38px',
+                        fontSize: '13px',
+                        '&:hover': {
+                          borderColor: state.isFocused ? '#1a3a34' : '#cbd5e1'
+                        }
+                      }),
+                      menu: (base) => ({
+                        ...base,
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        zIndex: 9999,
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
+                      }),
+                      option: (base, state) => ({
+                        ...base,
+                        backgroundColor: state.isSelected ? '#e2e8f0' : state.isFocused ? '#f1f5f9' : '#ffffff',
+                        color: '#1a1a1a',
+                        cursor: 'pointer',
+                        '&:active': {
+                          backgroundColor: '#cbd5e1'
+                        }
+                      }),
+                      singleValue: (base) => ({
+                        ...base,
+                        color: '#1a1a1a'
+                      }),
+                      input: (base) => ({
+                        ...base,
+                        color: '#1a1a1a'
+                      }),
+                      placeholder: (base) => ({
+                        ...base,
+                        color: '#aaa'
+                      })
+                    }}
+                  />
                 </div>
               </div>
               <div className="na-field-group">
@@ -502,7 +590,58 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
             <div className="na-fields">
               <div className="na-field-group">
                 <label className="na-field-label">RESPONSABLE TÉCNICO</label>
-                <input className="na-input" placeholder="Nombre del técnico" value={form.responsable || ""} onChange={(e) => set("responsable", e.target.value)} />
+                <Select
+                  placeholder="Buscar técnico..."
+                  options={tecnicosOptions}
+                  value={tecnicosOptions.find(opt => opt.value === form.responsable) || null}
+                  onChange={(selected: any) => set("responsable", selected ? selected.value : "")}
+                  noOptionsMessage={() => "No se encontraron técnicos"}
+                  styles={{
+                    control: (base, state) => ({
+                      ...base,
+                      backgroundColor: '#f8fafc',
+                      borderColor: state.isFocused ? '#1a3a34' : '#e2e8f0',
+                      borderWidth: '1.5px',
+                      borderRadius: '8px',
+                      boxShadow: 'none',
+                      minHeight: '38px',
+                      fontSize: '13px',
+                      '&:hover': {
+                        borderColor: state.isFocused ? '#1a3a34' : '#cbd5e1'
+                      }
+                    }),
+                    menu: (base) => ({
+                      ...base,
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      zIndex: 9999,
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
+                    }),
+                    option: (base, state) => ({
+                      ...base,
+                      backgroundColor: state.isSelected ? '#e2e8f0' : state.isFocused ? '#f1f5f9' : '#ffffff',
+                      color: '#1a1a1a',
+                      cursor: 'pointer',
+                      '&:active': {
+                        backgroundColor: '#cbd5e1'
+                      }
+                    }),
+                    singleValue: (base) => ({
+                      ...base,
+                      color: '#1a1a1a'
+                    }),
+                    input: (base) => ({
+                      ...base,
+                      color: '#1a1a1a'
+                    }),
+                    placeholder: (base) => ({
+                      ...base,
+                      color: '#aaa'
+                    })
+                  }}
+                />
               </div>
               <div className="na-field-group">
                 <label className="na-field-label">DESCRIPCIÓN DEL TRABAJO</label>

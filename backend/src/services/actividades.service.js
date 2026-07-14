@@ -330,7 +330,7 @@ const eliminarActividad = async (idActividad) => {
 
     // ejecutar eliminacion gracias al cascade limpia tablas hijas automaticamen
     const queryDelete = `DELETE FROM actividades WHERE id = $1`;
-    await client.query(queryDelete, [idActividad]);
+    await client.quermy(queryDelete, [idActividad]);
 
     //Logica inteligente para mantenimientos
     if(tipo === 'mantenimiento'){
