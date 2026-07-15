@@ -88,3 +88,17 @@ export const eliminarActividad = async (idActividad: number | string): Promise<a
         throw new Error('Error de conexión con el servidor. Por favor, inténtalo de nuevo más tarde.');
     }
 }
+
+// Añade esta función en tu servicio del frontend
+export const chequearDisponibilidad = async (laboratorio_id: number, fecha: string, hora_inicio: string, hora_fin: string, exclude_id?: number) => {
+    try {
+        let url = `http://localhost:4000/api/actividades/disponibilidad?laboratorio_id=${laboratorio_id}&fecha=${fecha}&hora_inicio=${hora_inicio}&hora_fin=${hora_fin}`;
+        if (exclude_id) url += `&exclude_id=${exclude_id}`;
+        
+        const response = await axios.get(url);
+        return response.data.data; // Retorna { bloqueoTotal: boolean, estacionesOcupadas: number[] }
+    } catch (error) {
+        console.error("Error chequeando disponibilidad", error);
+        return { bloqueoTotal: false, estacionesOcupadas: [] }; 
+    }
+};

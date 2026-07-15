@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, X, Monitor, Building2 } from 'lucide-react';
+import { Search, Plus, X, Monitor, Building2, Grid } from 'lucide-react';
+import Select from 'react-select';
+import { usuariosService } from '../../services/usuarios.service';
+import { chequearDisponibilidad } from '../../services/actividades.service';
 import '../../css/ModalNuevaActividad.css';
 
 type TipoActividad = "clase" | "mantenimiento" | "reserva" | null;
@@ -17,6 +20,7 @@ interface LaboratorioDB {
 interface EstacionDB {
   id: number;
   numero: string; // O el campo que tu backend devuelva para nombrar la estación
+  nombre?: string;
   estado: EstadoEstacion;
   capacidad?: number;
 }
@@ -31,9 +35,9 @@ interface FormData {
   tipo: TipoActividad;
   // Clase
   materia?: string;
-  docente?: string;
+  docente?: string | number;
   // Mantenimiento
-  responsable?: string;
+  responsable?: string | number;
   descripcion?: string;
   // Reserva
   titulo?: string;
@@ -115,9 +119,9 @@ const TIPO_LABEL: Record<string, string> = {
 // relación en clases_academicas ni en mantenimientos, solo en
 // reservas_estudiantes), así que su paso "laboratorio" no muestra el mapa.
 const STEPS: Record<Exclude<TipoActividad, null>, string[]> = {
-  clase: ["datos", "laboratorio", "instrumentos", "horario"],
-  mantenimiento: ["datos", "laboratorio", "horario"],
-  reserva: ["datos", "laboratorio", "instrumentos", "horario"],
+  clase: ["datos", "horario", "laboratorio", "instrumentos"],
+  mantenimiento: ["datos", "horario", "laboratorio"],
+  reserva: ["datos", "horario", "laboratorio", "instrumentos"],
 };
 
 // Etiquetas cortas para el stepper numerado (debajo de cada círculo)
@@ -174,7 +178,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
 
         // Datos específicos de Reserva
         titulo: actividadExistente.reserva_titulo || "",
-        estaciones: actividadExistente.estacion_id ? [actividadExistente.estacion_id.toString()] : [],
+        estaciones: actividadExistente.estaciones ? actividadExistente.estaciones.map((e: any) => Number(e)) : [],
 
         equipos: [] // Si luego habilitas edición de equipos, aquí iría el mapeo
       });
@@ -233,6 +237,85 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
     equipos: [],
     estaciones: [],
   });
+
+  const [estacionesOcupadas, setEstacionesOcupadas] = useState<number[]>([]);
+  const [bloqueoTotal, setBloqueoTotal] = useState<boolean>(false);
+  const [verificando, setVerificando] = useState<boolean>(false);
+  const [mostrarSoloDisponibles, setMostrarSoloDisponibles] = useState<boolean>(false);
+
+  useEffect(() => {
+    const verificar = async () => {
+      if (form.laboratorio && form.fecha && form.desde && form.hasta) {
+        setVerificando(true);
+        try {
+          const result = await chequearDisponibilidad(
+            parseInt(form.laboratorio),
+            form.fecha,
+            form.desde,
+            form.hasta,
+            actividadExistente?.id
+          );
+
+          if (result) {
+            setBloqueoTotal(result.bloqueoTotal);
+            setEstacionesOcupadas(result.estacionesOcupadas || []);
+
+            if (result.estacionesOcupadas && result.estacionesOcupadas.length > 0) {
+              setForm(prev => ({
+                ...prev,
+                estaciones: (prev.estaciones || []).filter(id => !result.estacionesOcupadas.includes(typeof id === 'string' ? parseInt(id) : id))
+              }));
+            }
+          }
+        } catch (error) {
+          console.error("Error validando disponibilidad", error);
+        } finally {
+          setVerificando(false);
+        }
+      } else {
+        setBloqueoTotal(false);
+        setEstacionesOcupadas([]);
+      }
+    };
+
+    const timeoutId = setTimeout(() => verificar(), 500);
+    return () => clearTimeout(timeoutId);
+  }, [form.laboratorio, form.fecha, form.desde, form.hasta, actividadExistente]);
+
+  const [tecnicosOptions, setTecnicosOptions] = useState<{ value: number, label: string }[]>([]);
+  const [docentesOptions, setDocentesOptions] = useState<{ value: number, label: string }[]>([]);
+
+  useEffect(() => {
+    const fetchUsuarios = async () => {
+      try {
+        const data = await usuariosService.getUsuarios();
+        const usuarios = Array.isArray(data) ? data : data.data || [];
+
+        // Filtrar y mapear técnicos
+        const tecnicos = usuarios.filter((u: any) =>
+          u.rol === 'técnico' || u.rol === 'tecnico' || u.rol === 'Técnico' || u.rol === 'Tecnico'
+        );
+        const optionsT = tecnicos.map((t: any) => ({
+          value: t.id,
+          label: `${t.nombre} ${t.apellido || ''}`.trim()
+        }));
+        setTecnicosOptions(optionsT);
+
+        // Filtrar y mapear docentes
+        const docentes = usuarios.filter((u: any) =>
+          u.rol === 'docente' || u.rol === 'Docente' || u.rol === 'DOCENTE'
+        );
+        const optionsD = docentes.map((d: any) => ({
+          value: d.id,
+          label: `${d.nombre} ${d.apellido || ''}`.trim()
+        }));
+        setDocentesOptions(optionsD);
+      } catch (error) {
+        console.error('Error al cargar usuarios:', error);
+      }
+    };
+    fetchUsuarios();
+  }, []);
 
   // 2. Efecto para cargar estaciones dependientes del laboratorio seleccionado
   useEffect(() => {
@@ -330,13 +413,17 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
   };
 
   // Selección múltiple de estaciones (solo aplica a reserva + modo por_estacion)
+  // Normalizamos siempre a number para evitar mezclas string/number que
+  // provocaban que una estación ya seleccionada no se reconociera como tal
+  // (y terminara duplicada al guardar).
   const toggleEstacion = (id: number | string) => {
+    const idNum = Number(id);
     setForm((prev) => {
-      const actuales = prev.estaciones || [];
-      const yaSeleccionada = actuales.includes(id);
+      const actuales = (prev.estaciones || []).map(Number);
+      const yaSeleccionada = actuales.includes(idNum);
       return {
         ...prev,
-        estaciones: yaSeleccionada ? actuales.filter((e) => e !== id) : [...actuales, id],
+        estaciones: yaSeleccionada ? actuales.filter((e) => e !== idNum) : [...actuales, idNum],
       };
     });
   };
@@ -484,7 +571,58 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
                 </div>
                 <div className="na-field-group">
                   <label className="na-field-label">DOCENTE</label>
-                  <input className="na-input" placeholder="Nombre del profesor" value={form.docente || ""} onChange={(e) => set("docente", e.target.value)} />
+                  <Select
+                    placeholder="Buscar docente..."
+                    options={docentesOptions}
+                    value={docentesOptions.find(opt => opt.value === form.docente) || null}
+                    onChange={(selected: any) => set("docente", selected ? selected.value : "")}
+                    noOptionsMessage={() => "No se encontraron docentes"}
+                    styles={{
+                      control: (base, state) => ({
+                        ...base,
+                        backgroundColor: '#f8fafc',
+                        borderColor: state.isFocused ? '#1a3a34' : '#e2e8f0',
+                        borderWidth: '1.5px',
+                        borderRadius: '8px',
+                        boxShadow: 'none',
+                        minHeight: '38px',
+                        fontSize: '13px',
+                        '&:hover': {
+                          borderColor: state.isFocused ? '#1a3a34' : '#cbd5e1'
+                        }
+                      }),
+                      menu: (base) => ({
+                        ...base,
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        zIndex: 9999,
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
+                      }),
+                      option: (base, state) => ({
+                        ...base,
+                        backgroundColor: state.isSelected ? '#e2e8f0' : state.isFocused ? '#f1f5f9' : '#ffffff',
+                        color: '#1a1a1a',
+                        cursor: 'pointer',
+                        '&:active': {
+                          backgroundColor: '#cbd5e1'
+                        }
+                      }),
+                      singleValue: (base) => ({
+                        ...base,
+                        color: '#1a1a1a'
+                      }),
+                      input: (base) => ({
+                        ...base,
+                        color: '#1a1a1a'
+                      }),
+                      placeholder: (base) => ({
+                        ...base,
+                        color: '#aaa'
+                      })
+                    }}
+                  />
                 </div>
               </div>
               <div className="na-field-group">
@@ -502,7 +640,58 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
             <div className="na-fields">
               <div className="na-field-group">
                 <label className="na-field-label">RESPONSABLE TÉCNICO</label>
-                <input className="na-input" placeholder="Nombre del técnico" value={form.responsable || ""} onChange={(e) => set("responsable", e.target.value)} />
+                <Select
+                  placeholder="Buscar técnico..."
+                  options={tecnicosOptions}
+                  value={tecnicosOptions.find(opt => opt.value === form.responsable) || null}
+                  onChange={(selected: any) => set("responsable", selected ? selected.value : "")}
+                  noOptionsMessage={() => "No se encontraron técnicos"}
+                  styles={{
+                    control: (base, state) => ({
+                      ...base,
+                      backgroundColor: '#f8fafc',
+                      borderColor: state.isFocused ? '#1a3a34' : '#e2e8f0',
+                      borderWidth: '1.5px',
+                      borderRadius: '8px',
+                      boxShadow: 'none',
+                      minHeight: '38px',
+                      fontSize: '13px',
+                      '&:hover': {
+                        borderColor: state.isFocused ? '#1a3a34' : '#cbd5e1'
+                      }
+                    }),
+                    menu: (base) => ({
+                      ...base,
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      zIndex: 9999,
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
+                    }),
+                    option: (base, state) => ({
+                      ...base,
+                      backgroundColor: state.isSelected ? '#e2e8f0' : state.isFocused ? '#f1f5f9' : '#ffffff',
+                      color: '#1a1a1a',
+                      cursor: 'pointer',
+                      '&:active': {
+                        backgroundColor: '#cbd5e1'
+                      }
+                    }),
+                    singleValue: (base) => ({
+                      ...base,
+                      color: '#1a1a1a'
+                    }),
+                    input: (base) => ({
+                      ...base,
+                      color: '#1a1a1a'
+                    }),
+                    placeholder: (base) => ({
+                      ...base,
+                      color: '#aaa'
+                    })
+                  }}
+                />
               </div>
               <div className="na-field-group">
                 <label className="na-field-label">DESCRIPCIÓN DEL TRABAJO</label>
@@ -562,38 +751,76 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
 
                   {modoReserva === "por_estacion" ? (
                     <div className="na-field-group">
-                      <label className="na-field-label">ESTACIÓN DE TRABAJO · puedes elegir una o varias</label>
+                      <div className="na-field-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>ESTACIÓN DE TRABAJO · puedes elegir una o varias</span>
+                        {estacionesSeleccionadas.length > 0 && (
+                          <span style={{ color: '#3b82f6', fontWeight: 600, fontSize: '13px', textTransform: 'none' }}>
+                            {estacionesSeleccionadas.length} seleccionadas
+                          </span>
+                        )}
+                      </div>
                       {cargandoEstaciones ? (
                         <div className="na-hint">Cargando estaciones...</div>
                       ) : (
-                        <div className="na-estaciones-legend">
-                          <span className="na-leg-item"><span className="na-leg-dot na-leg-disp" />Disponible</span>
-                          <span className="na-leg-item"><span className="na-leg-dot na-leg-sel" />Seleccionada</span>
-                          <span className="na-leg-item"><span className="na-leg-dot na-leg-no" />No disponible</span>
-                        </div>
+                        <>
+                          <div className="na-estaciones-legend">
+                            <span className="na-leg-item"><span className="na-leg-square na-leg-disp" />Disponible</span>
+                            <span className="na-leg-item"><span className="na-leg-square na-leg-sel" />Seleccionada</span>
+                            <span className="na-leg-item"><span className="na-leg-square na-leg-ocu" />Ocupada</span>
+                            <span className="na-leg-item"><span className="na-leg-square na-leg-no" />No disponible</span>
+                          </div>
+                          <div className="na-estaciones-filter">
+                            <label>
+                              <input
+                                type="checkbox"
+                                checked={mostrarSoloDisponibles}
+                                onChange={(e) => setMostrarSoloDisponibles(e.target.checked)}
+                              />
+                              Mostrar solo disponibles
+                            </label>
+                          </div>
+                        </>
                       )}
-                      <div className="na-estaciones-grid">
-                        {estacionesDesdeBD.map((est) => {
-                          const seleccionada = estacionesSeleccionadas.includes(est.id);
-                          const noDisponible = est.estado === "no_disponible";
-                          const clase = noDisponible
-                            ? "na-estacion-btn na-estacion-no"
-                            : seleccionada
-                              ? "na-estacion-btn na-estacion-sel"
-                              : "na-estacion-btn";
-                          return (
-                            <button
-                              key={est.id}
-                              type="button"
-                              className={clase}
-                              disabled={noDisponible}
-                              onClick={() => toggleEstacion(est.id)}
-                            >
-                              <Monitor size={14} />
-                              {est.numero}
-                            </button>
-                          );
-                        })}
+                      <div className="na-estaciones-container">
+                        <div className="na-estaciones-grid">
+                          {estacionesDesdeBD.filter(est => {
+                            const estaOcupada = estacionesOcupadas.includes(est.id) || bloqueoTotal;
+                            const noDisponible = est.estado === "no_disponible" || estaOcupada;
+                            if (mostrarSoloDisponibles && noDisponible) return false;
+                            return true;
+                          }).sort((a, b) => {
+                            const nombreA = a.nombre || a.numero || `Estación ${a.id}`;
+                            const nombreB = b.nombre || b.numero || `Estación ${b.id}`;
+
+                            return nombreA.localeCompare(nombreB, undefined, { numeric: true, sensitivity: 'base' });
+                          }).map((est) => {
+                            const seleccionada = estacionesSeleccionadas.includes(est.id);
+                            const estaOcupada = estacionesOcupadas.includes(est.id) || bloqueoTotal;
+                            const noDisponible = est.estado === "no_disponible";
+                            const nombre = est.nombre || est.numero || `Estación ${est.id}`;
+                            const isMesa = nombre.toLowerCase().includes('mesa');
+
+                            let clase = "na-estacion-btn";
+                            if (seleccionada) clase += " na-estacion-sel";
+                            else if (estaOcupada) clase += " na-estacion-ocu";
+                            else if (noDisponible) clase += " na-estacion-no";
+
+                            return (
+                              <button
+                                key={est.id}
+                                type="button"
+                                className={clase}
+                                disabled={estaOcupada || noDisponible}
+                                onClick={() => toggleEstacion(est.id)}
+                              >
+                                {isMesa ? <Grid size={18} /> : <Monitor size={18} />}
+                                <span className="na-est-name">{nombre}</span>
+                                {estaOcupada && <span className="na-est-sub">Ocupada</span>}
+                                {noDisponible && !estaOcupada && <span className="na-est-sub">No disp.</span>}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   ) : (
@@ -714,18 +941,20 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
                   </select>
                 </div>
               </div>
+            </div>
+          )}
 
-              <div className="na-resumen-card">
-                <div className="na-resumen-line">
-                  {TIPO_LABEL[tipo]} · {laboratorioSeleccionado?.nombre || "sin laboratorio"}
-                  {tipo === "reserva" && modoReserva === "por_estacion"
-                    ? ` · ${estacionesSeleccionadas.length} estación${estacionesSeleccionadas.length === 1 ? "" : "es"}`
-                    : ""}
-                </div>
-                {tipo === "reserva" && (
-                  <div className="na-resumen-note">Se guardará como reserva aprobada automáticamente.</div>
-                )}
+          {isLastStep && tipo && (
+            <div className="na-resumen-card" style={{ marginTop: '20px' }}>
+              <div className="na-resumen-line">
+                {TIPO_LABEL[tipo]} · {laboratorioSeleccionado?.nombre || "sin laboratorio"}
+                {tipo === "reserva" && modoReserva === "por_estacion"
+                  ? ` · ${estacionesSeleccionadas.length} estación${estacionesSeleccionadas.length === 1 ? "" : "es"}`
+                  : ""}
               </div>
+              {tipo === "reserva" && (
+                <div className="na-resumen-note">Se guardará como reserva aprobada automáticamente.</div>
+              )}
             </div>
           )}
 

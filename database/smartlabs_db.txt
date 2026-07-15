@@ -89,7 +89,6 @@ CREATE TABLE clases_academicas (
 CREATE TABLE reservas_estudiantes (
     actividad_id INTEGER PRIMARY KEY REFERENCES actividades(id) ON DELETE CASCADE,
     usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
-    estacion_id INTEGER REFERENCES estaciones_trabajo(id) ON DELETE SET NULL, 
     titulo VARCHAR(150) NOT NULL,
     nota_adicional TEXT,
     estado_reserva estado_reserva_enum NOT NULL DEFAULT 'pendiente'
@@ -101,7 +100,16 @@ CREATE TABLE mantenimientos (
     tecnico_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
     descripcion_ti TEXT NOT NULL
 );
+-- [NUEVA TABLA DETALLE]: reserva_estaciones (Relación 1:N)
+-- Vincula 1 reserva de estudiante con MÚLTIPLES estaciones de trabajo.
+CREATE TABLE reserva_estaciones (
+    id SERIAL PRIMARY KEY,
+    actividad_id INTEGER NOT NULL REFERENCES reservas_estudiantes(actividad_id) ON DELETE CASCADE,
+    estacion_id INTEGER NOT NULL REFERENCES estaciones_trabajo(id) ON DELETE RESTRICT,
+    fecha_asignacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
+    CONSTRAINT uq_reserva_estacion UNIQUE (actividad_id, estacion_id)
+);
 -- ===========================================================================
 -- 4. BLOQUE DE INVENTARIO Y SEGUIMIENTO CONTROLADO
 -- ===========================================================================
