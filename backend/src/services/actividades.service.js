@@ -399,7 +399,7 @@ const eliminarActividad = async (idActividad) => {
 
         // ejecutar eliminacion gracias al cascade limpia tablas hijas automaticamen
         const queryDelete = `DELETE FROM actividades WHERE id = $1`;
-        await client.quermy(queryDelete, [idActividad]);
+        await client.query(queryDelete, [idActividad]);
 
         //Logica inteligente para mantenimientos
         if (tipo === 'mantenimiento') {
@@ -432,4 +432,65 @@ const eliminarActividad = async (idActividad) => {
     }
 };
 
-module.exports = { programarActividad, obtenerActividades, actualizarActividad, eliminarActividad };
+const obtenerDisponibilidad = async (laboratorio, fecha, horaInicio, horaFin, idActividad = null) => {
+    const inicioDatetime = new Date(`${fecha}T${horaInicio}`);
+    const finDatetime = new Date(`${fecha}T${horaFin}`);
+    const client = await db.connect();
+
+    try {
+        // 1 verificar si hay un " bloque total"
+        let queryBloqueo = `
+            SELECT a.tipo
+            FROM actividades a
+            WHERE a.laboratorio_id = $1
+              AND a.fecha_hora_inicio < $2 
+              AND a.fecha_hora_fin > $3
+        `;
+        let params = [laboratorio, finDatetime, inicioDatetime];
+
+        if (idActividad) {
+            queryBloqueo += ` AND a.id != $4`;
+            params.push(idActividad);
+        }
+        const resBloqueo = await client.query(queryBloqueo, params);
+
+        // si hay una clase o mantenimiento solapado, el alb esta 100% bloqueado
+
+        for (const act of resBloqueo.rows) {
+            if (act.tipo === 'clase' || act.tipo === 'mantenimiento') {
+                return { bloqueoTotal: true, estacionesOcupadas: [] };
+            }
+        }
+
+        // 2. Si el lab no está bloqueado totalmente, buscar las PCs específicas reservadas
+        let queryEstaciones = `
+            SELECT re_est.estacion_id
+            FROM actividades a
+            INNER JOIN reserva_estaciones re_est ON a.id = re_est.actividad_id
+            WHERE a.laboratorio_id = $1
+              AND a.fecha_hora_inicio < $2 
+              AND a.fecha_hora_fin > $3
+        `;
+
+        if (idActividad) {
+            queryEstaciones += ` AND a.id != $4`;
+        }
+
+        const resEstaciones = await client.query(queryEstaciones, params);
+        const estacionesOcupadas = resEstaciones.rows.map(row => row.estacion_id);
+        return { bloqueoTotal: false, estacionesOcupadas };
+    } catch (error) {
+        console.error('Error al verificar disponibilidad:', error);
+        throw new Error('Error al consultar disponibilidad.');
+    } finally {
+        if (client) client.release();
+    }
+}
+
+module.exports = {
+    programarActividad,
+    obtenerActividades,
+    actualizarActividad,
+    eliminarActividad,
+    obtenerDisponibilidad
+};

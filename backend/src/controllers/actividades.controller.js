@@ -110,5 +110,23 @@ const eliminarActividad = async (req, res) => {
 
     };
 }
-// Exportamos el controlador
-module.exports = { crearActividad, obtenerTodasLasActividades, actualizarActividad, eliminarActividad };
+
+// Añade esta función:
+const consultarDisponibilidad = async (req, res) => {
+    try {
+        const { laboratorio_id, fecha, hora_inicio, hora_fin, exclude_id } = req.query;
+        if (!laboratorio_id || !fecha || !hora_inicio || !hora_fin) {
+            return res.status(400).json({ exito: false, mensaje: 'Faltan parámetros de tiempo o laboratorio' });
+        }
+
+        const disponibilidad = await actividadesService.obtenerDisponibilidad(
+            laboratorio_id, fecha, hora_inicio, hora_fin, exclude_id
+        );
+        res.status(200).json({ exito: true, data: disponibilidad });
+    } catch (error) {
+        res.status(500).json({ exito: false, mensaje: error.message });
+    }
+};
+
+// Exórtala al final:
+module.exports = { crearActividad, obtenerTodasLasActividades, actualizarActividad, eliminarActividad, consultarDisponibilidad };

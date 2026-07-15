@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, X, Monitor, Building2 } from 'lucide-react';
+import { Search, Plus, X, Monitor, Building2, Grid } from 'lucide-react';
 import Select from 'react-select';
 import { usuariosService } from '../../services/usuarios.service';
+import { chequearDisponibilidad } from '../../services/actividades.service';
 import '../../css/ModalNuevaActividad.css';
 
 type TipoActividad = "clase" | "mantenimiento" | "reserva" | null;
@@ -19,6 +20,7 @@ interface LaboratorioDB {
 interface EstacionDB {
   id: number;
   numero: string; // O el campo que tu backend devuelva para nombrar la estación
+  nombre?: string;
   estado: EstadoEstacion;
   capacidad?: number;
 }
@@ -117,9 +119,9 @@ const TIPO_LABEL: Record<string, string> = {
 // relación en clases_academicas ni en mantenimientos, solo en
 // reservas_estudiantes), así que su paso "laboratorio" no muestra el mapa.
 const STEPS: Record<Exclude<TipoActividad, null>, string[]> = {
-  clase: ["datos", "laboratorio", "instrumentos", "horario"],
-  mantenimiento: ["datos", "laboratorio", "horario"],
-  reserva: ["datos", "laboratorio", "instrumentos", "horario"],
+  clase: ["datos", "horario", "laboratorio", "instrumentos"],
+  mantenimiento: ["datos", "horario", "laboratorio"],
+  reserva: ["datos", "horario", "laboratorio", "instrumentos"],
 };
 
 // Etiquetas cortas para el stepper numerado (debajo de cada círculo)
@@ -235,6 +237,50 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
     equipos: [],
     estaciones: [],
   });
+
+  const [estacionesOcupadas, setEstacionesOcupadas] = useState<number[]>([]);
+  const [bloqueoTotal, setBloqueoTotal] = useState<boolean>(false);
+  const [verificando, setVerificando] = useState<boolean>(false);
+  const [mostrarSoloDisponibles, setMostrarSoloDisponibles] = useState<boolean>(false);
+
+  useEffect(() => {
+    const verificar = async () => {
+      if (form.laboratorio && form.fecha && form.desde && form.hasta) {
+        setVerificando(true);
+        try {
+          const result = await chequearDisponibilidad(
+            parseInt(form.laboratorio),
+            form.fecha,
+            form.desde,
+            form.hasta,
+            actividadExistente?.id
+          );
+
+          if (result) {
+            setBloqueoTotal(result.bloqueoTotal);
+            setEstacionesOcupadas(result.estacionesOcupadas || []);
+
+            if (result.estacionesOcupadas && result.estacionesOcupadas.length > 0) {
+              setForm(prev => ({
+                ...prev,
+                estaciones: (prev.estaciones || []).filter(id => !result.estacionesOcupadas.includes(typeof id === 'string' ? parseInt(id) : id))
+              }));
+            }
+          }
+        } catch (error) {
+          console.error("Error validando disponibilidad", error);
+        } finally {
+          setVerificando(false);
+        }
+      } else {
+        setBloqueoTotal(false);
+        setEstacionesOcupadas([]);
+      }
+    };
+
+    const timeoutId = setTimeout(() => verificar(), 500);
+    return () => clearTimeout(timeoutId);
+  }, [form.laboratorio, form.fecha, form.desde, form.hasta, actividadExistente]);
 
   const [tecnicosOptions, setTecnicosOptions] = useState<{ value: number, label: string }[]>([]);
   const [docentesOptions, setDocentesOptions] = useState<{ value: number, label: string }[]>([]);
@@ -705,38 +751,76 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
 
                   {modoReserva === "por_estacion" ? (
                     <div className="na-field-group">
-                      <label className="na-field-label">ESTACIÓN DE TRABAJO · puedes elegir una o varias</label>
+                      <div className="na-field-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>ESTACIÓN DE TRABAJO · puedes elegir una o varias</span>
+                        {estacionesSeleccionadas.length > 0 && (
+                          <span style={{ color: '#3b82f6', fontWeight: 600, fontSize: '13px', textTransform: 'none' }}>
+                            {estacionesSeleccionadas.length} seleccionadas
+                          </span>
+                        )}
+                      </div>
                       {cargandoEstaciones ? (
                         <div className="na-hint">Cargando estaciones...</div>
                       ) : (
-                        <div className="na-estaciones-legend">
-                          <span className="na-leg-item"><span className="na-leg-dot na-leg-disp" />Disponible</span>
-                          <span className="na-leg-item"><span className="na-leg-dot na-leg-sel" />Seleccionada</span>
-                          <span className="na-leg-item"><span className="na-leg-dot na-leg-no" />No disponible</span>
-                        </div>
+                        <>
+                          <div className="na-estaciones-legend">
+                            <span className="na-leg-item"><span className="na-leg-square na-leg-disp" />Disponible</span>
+                            <span className="na-leg-item"><span className="na-leg-square na-leg-sel" />Seleccionada</span>
+                            <span className="na-leg-item"><span className="na-leg-square na-leg-ocu" />Ocupada</span>
+                            <span className="na-leg-item"><span className="na-leg-square na-leg-no" />No disponible</span>
+                          </div>
+                          <div className="na-estaciones-filter">
+                            <label>
+                              <input
+                                type="checkbox"
+                                checked={mostrarSoloDisponibles}
+                                onChange={(e) => setMostrarSoloDisponibles(e.target.checked)}
+                              />
+                              Mostrar solo disponibles
+                            </label>
+                          </div>
+                        </>
                       )}
-                      <div className="na-estaciones-grid">
-                        {estacionesDesdeBD.map((est) => {
-                          const seleccionada = estacionesSeleccionadas.includes(est.id);
-                          const noDisponible = est.estado === "no_disponible";
-                          const clase = noDisponible
-                            ? "na-estacion-btn na-estacion-no"
-                            : seleccionada
-                              ? "na-estacion-btn na-estacion-sel"
-                              : "na-estacion-btn";
-                          return (
-                            <button
-                              key={est.id}
-                              type="button"
-                              className={clase}
-                              disabled={noDisponible}
-                              onClick={() => toggleEstacion(est.id)}
-                            >
-                              <Monitor size={14} />
-                              {est.numero}
-                            </button>
-                          );
-                        })}
+                      <div className="na-estaciones-container">
+                        <div className="na-estaciones-grid">
+                          {estacionesDesdeBD.filter(est => {
+                            const estaOcupada = estacionesOcupadas.includes(est.id) || bloqueoTotal;
+                            const noDisponible = est.estado === "no_disponible" || estaOcupada;
+                            if (mostrarSoloDisponibles && noDisponible) return false;
+                            return true;
+                          }).sort((a, b) => {
+                            const nombreA = a.nombre || a.numero || `Estación ${a.id}`;
+                            const nombreB = b.nombre || b.numero || `Estación ${b.id}`;
+
+                            return nombreA.localeCompare(nombreB, undefined, { numeric: true, sensitivity: 'base' });
+                          }).map((est) => {
+                            const seleccionada = estacionesSeleccionadas.includes(est.id);
+                            const estaOcupada = estacionesOcupadas.includes(est.id) || bloqueoTotal;
+                            const noDisponible = est.estado === "no_disponible";
+                            const nombre = est.nombre || est.numero || `Estación ${est.id}`;
+                            const isMesa = nombre.toLowerCase().includes('mesa');
+
+                            let clase = "na-estacion-btn";
+                            if (seleccionada) clase += " na-estacion-sel";
+                            else if (estaOcupada) clase += " na-estacion-ocu";
+                            else if (noDisponible) clase += " na-estacion-no";
+
+                            return (
+                              <button
+                                key={est.id}
+                                type="button"
+                                className={clase}
+                                disabled={estaOcupada || noDisponible}
+                                onClick={() => toggleEstacion(est.id)}
+                              >
+                                {isMesa ? <Grid size={18} /> : <Monitor size={18} />}
+                                <span className="na-est-name">{nombre}</span>
+                                {estaOcupada && <span className="na-est-sub">Ocupada</span>}
+                                {noDisponible && !estaOcupada && <span className="na-est-sub">No disp.</span>}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   ) : (
@@ -857,18 +941,20 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
                   </select>
                 </div>
               </div>
+            </div>
+          )}
 
-              <div className="na-resumen-card">
-                <div className="na-resumen-line">
-                  {TIPO_LABEL[tipo]} · {laboratorioSeleccionado?.nombre || "sin laboratorio"}
-                  {tipo === "reserva" && modoReserva === "por_estacion"
-                    ? ` · ${estacionesSeleccionadas.length} estación${estacionesSeleccionadas.length === 1 ? "" : "es"}`
-                    : ""}
-                </div>
-                {tipo === "reserva" && (
-                  <div className="na-resumen-note">Se guardará como reserva aprobada automáticamente.</div>
-                )}
+          {isLastStep && tipo && (
+            <div className="na-resumen-card" style={{ marginTop: '20px' }}>
+              <div className="na-resumen-line">
+                {TIPO_LABEL[tipo]} · {laboratorioSeleccionado?.nombre || "sin laboratorio"}
+                {tipo === "reserva" && modoReserva === "por_estacion"
+                  ? ` · ${estacionesSeleccionadas.length} estación${estacionesSeleccionadas.length === 1 ? "" : "es"}`
+                  : ""}
               </div>
+              {tipo === "reserva" && (
+                <div className="na-resumen-note">Se guardará como reserva aprobada automáticamente.</div>
+              )}
             </div>
           )}
 
