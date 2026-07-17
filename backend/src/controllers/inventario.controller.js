@@ -23,7 +23,7 @@ const crearItem = async (req, res) => {
       req.body.imagen_url = `/uploads/inventario/${req.file.filename}`;
     }
     const nuevoItem = await inventarioService.crearItemInventario(req.body);
-    
+
     res.status(201).json({
       status: 'success',
       message: 'Item de inventario creado exitosamente',
@@ -54,7 +54,7 @@ const getMovimientosPorItem = async (req, res) => {
 const crearMovimiento = async (req, res) => {
   try {
     const nuevoMovimiento = await inventarioService.crearMovimientoInventario(req.body);
-    
+
     res.status(201).json({
       status: 'success',
       message: 'Movimiento registrado exitosamente',
@@ -74,7 +74,7 @@ const updateItem = async (req, res) => {
       req.body.imagen_url = `/uploads/inventario/${req.file.filename}`;
     }
     const itemActualizado = await inventarioService.actualizarItemInventario(id, req.body);
-    
+
     if (!itemActualizado) {
       return res.status(404).json({ status: 'error', message: 'Item no encontrado' });
     }
@@ -95,7 +95,7 @@ const deleteItem = async (req, res) => {
   try {
     const { id } = req.params;
     const itemEliminado = await inventarioService.eliminarItemInventario(id);
-    
+
     if (!itemEliminado) {
       return res.status(404).json({ status: 'error', message: 'Item no encontrado' });
     }
@@ -125,11 +125,45 @@ const deleteItem = async (req, res) => {
   }
 };
 
+
+/**-------------CONTROLLERS PARA EL CALENDARIO-------------*/
+
+// GET /api/inventario/lab/:laboratorioId/disponible
+const getInventarioDisponible = async (req, res) => {
+  try {
+    const { laboratorio_id, fecha, hora_inicio, hora_fin, exclude_actividad_id } = req.query;
+
+
+    if (!laboratorio_id || !fecha || !hora_inicio || !hora_fin) {
+      return res.status(400).json({ status: 'error', message: 'Faltan parametros necesarios' });
+    }
+
+    const inventarioDisponible = await inventarioService.obtenerInventarioConStockDisponible(
+      laboratorio_id,
+      fecha,
+      hora_inicio,
+      hora_fin,
+      exclude_actividad_id
+    );
+    res.status(200).json({
+      status: 'success',
+      data: inventarioDisponible
+    });
+  } catch (error) {
+    console.error('Error al obtener inventario disponible:', error);
+    res.status(500).json({ status: 'error', message: 'Error interno del servidor al obtener inventario disponible' });
+  }
+};
+
+
+
+
 module.exports = {
   getInventario,
   crearItem,
   updateItem,
   deleteItem,
   getMovimientosPorItem,
-  crearMovimiento
+  crearMovimiento,
+  getInventarioDisponible
 };

@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Search, Plus, X, Monitor, Building2, Grid } from 'lucide-react';
 import Select from 'react-select';
 import { usuariosService } from '../../services/usuarios.service';
-import { chequearDisponibilidad } from '../../services/actividades.service';
+import { chequearDisponibilidad, obtenerInventarioDisponible } from '../../services/actividades.service';
 import '../../css/ModalNuevaActividad.css';
+
 
 type TipoActividad = "clase" | "mantenimiento" | "reserva" | null;
 type ModoReserva = "por_estacion" | "espacio_completo";
@@ -55,9 +56,10 @@ interface FormData {
 // ── Inventario ──────────────────────────────────────────
 interface ItemInventarioDB {
   id: number;
-  laboratorio_id: number;
   nombre: string;
   cantidad_actual: number;
+  cantidad_reservada: number;
+  stock_disponible: number;
 }
 
 interface EquipoSeleccionado {
@@ -143,6 +145,21 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
   const [inventarioDesdeBD, setInventarioDesdeBD] = useState<ItemInventarioDB[]>([]);
   const [cargandoInventario, setCargandoInventario] = useState(false);
 
+  const [tipo, setTipo] = useState<TipoActividad>(null);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [form, setForm] = useState<FormData>({
+    tipo: null,
+    numPersonas: 20,
+    recurrencia: "No se repite",
+    equipos: [],
+    estaciones: [],
+  });
+
+  const [estacionesOcupadas, setEstacionesOcupadas] = useState<number[]>([]);
+  const [bloqueoTotal, setBloqueoTotal] = useState<boolean>(false);
+  const [verificando, setVerificando] = useState<boolean>(false);
+  const [mostrarSoloDisponibles, setMostrarSoloDisponibles] = useState<boolean>(false);
+
   // ── EFECTO PARA MODO EDICIÓN ──
   useEffect(() => {
     if (actividadExistente) {
@@ -208,40 +225,42 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
 
   // Efecto para cargar el inventario completo
   useEffect(() => {
-    const fetchInventario = async () => {
-      setCargandoInventario(true);
-      try {
-        const response = await fetch('http://localhost:4000/api/inventario');
-        const result = await response.json();
-
-        if (result.success || result.data) {
-          setInventarioDesdeBD(result.data || result);
-        } else if (Array.isArray(result)) {
-          setInventarioDesdeBD(result);
+    const fetchInventarioDinámico = async () => {
+      // Solo buscamos si el usuario ya definió dónde y cuándo
+      if (form.laboratorio && form.fecha && form.desde && form.hasta) {
+        setCargandoInventario(true);
+        try {
+          const res = await obtenerInventarioDisponible(
+            form.laboratorio,
+            form.fecha,
+            form.desde,
+            form.hasta,
+            actividadExistente?.id
+          );
+          if (res.status === 'success') {
+            setInventarioDesdeBD(res.data);
+          } else {
+            setInventarioDesdeBD([]);
+          }
+        } catch (error) {
+          console.error('Error al cargar inventario dinámico:', error);
+          setInventarioDesdeBD([]);
+        } finally {
+          setCargandoInventario(false);
         }
-      } catch (error) {
-        console.error('Error al cargar inventario:', error);
-      } finally {
-        setCargandoInventario(false);
+      } else {
+        // Si borra la hora o el lab, vaciamos el catálogo por seguridad
+        setInventarioDesdeBD([]);
+        setForm(prev => ({ ...prev, equipos: [] }));
       }
     };
-    fetchInventario();
-  }, []);
+    // Usamos un pequeño retraso (debounce) igual que con las estaciones 
+    // para no saturar al servidor si el usuario teclea rápido las horas.
+    const timeoutId = setTimeout(() => fetchInventarioDinámico(), 500);
+    return () => clearTimeout(timeoutId);
+  }, [form.laboratorio, form.fecha, form.desde, form.hasta, actividadExistente]);
 
-  const [tipo, setTipo] = useState<TipoActividad>(null);
-  const [stepIndex, setStepIndex] = useState(0);
-  const [form, setForm] = useState<FormData>({
-    tipo: null,
-    numPersonas: 20,
-    recurrencia: "No se repite",
-    equipos: [],
-    estaciones: [],
-  });
 
-  const [estacionesOcupadas, setEstacionesOcupadas] = useState<number[]>([]);
-  const [bloqueoTotal, setBloqueoTotal] = useState<boolean>(false);
-  const [verificando, setVerificando] = useState<boolean>(false);
-  const [mostrarSoloDisponibles, setMostrarSoloDisponibles] = useState<boolean>(false);
 
   useEffect(() => {
     const verificar = async () => {
@@ -355,14 +374,13 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
   const resultados = !form.laboratorio ? [] : inventarioDesdeBD
     .filter(
       (e) =>
-        e.laboratorio_id?.toString() === form.laboratorio?.toString() &&
         (query.trim() === "" || e.nombre.toLowerCase().includes(query.toLowerCase())) &&
         !equiposSeleccionados.find((s) => s.id === e.id)
     )
     .map((e) => ({
       id: e.id,
       nombre: e.nombre,
-      disponibles: e.cantidad_actual
+      disponibles: e.stock_disponible // ¡ESTA ES LA LÍNEA CLAVE! Ahora lee el cálculo matemático del backend
     }));
 
   const agregarEquipo = (equipo: EquipoSeleccionado) => {
@@ -841,7 +859,6 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
               )}
             </div>
           )}
-
           {/* ── PASO: INSTRUMENTOS (clase y reserva) ── */}
           {currentStepKey === "instrumentos" && (tipo === "clase" || tipo === "reserva") && (
             <div className="na-fields">

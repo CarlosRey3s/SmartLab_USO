@@ -9,33 +9,42 @@ const API_URL = "http://localhost:4000/api/actividades"
 export const obtenerActividades = async (): Promise<EventoLaboratorio[]> => {
     try {
         const respuesta = await axios.get(API_URL);
+        const datos = respuesta.data.data;
 
-        // 1. Imprimimos en consola exactamente lo que mandó el backend
-        console.log("Respuesta cruda del backend:", respuesta.data);
+        // Transformamos los datos del backend al formato que react-big-calendar entiende        
+        return datos.map((item: any) => ({
+            id: item.id,
+            title: item.title,
+            // convertimos las fechasde texto ISO a objetos Date de JavaScript
+            start: new Date(item.start),
+            end: new Date(item.end),
+            tipo: item.tipo,
 
-        // 2. Ajustamos la ruta. Si tu JSON viene envuelto en una propiedad "data", 
-        // debes usar respuesta.data.data. Si se llama "actividades", usa respuesta.data.actividades.
+            // pasamos los datos del laboratorio ya con su nombre real
+            laboratorio_id: item.laboratorio_id,
+            laboratorio_nombre: item.laboratorio_nombre || 'Laboratorio Desconocido',
 
-        // CAMBIA ESTA LÍNEA basándote en lo que veas en la consola:
-        const datos = respuesta.data.data; // <-- Si es un array directo
-        // const datos = respuesta.data.data; <-- Si viene envuelto en "data"
+            // Datos de Clases Academicas
+            materia: item.materia,
+            docente_id: item.docente_id,
+            docente_nombre: item.docente_nombre,
+            clase_estudiante: item.numero_estudiantes,
 
-        // Transformamos los datos del backend al formato del calendario
-        return datos.map((item: any) => {
-            let nombreLaboratorio = 'Laboratorio Desconocido';
-            if (item.laboratorio_id === 1) nombreLaboratorio = 'Lab de Redes';
-            if (item.laboratorio_id === 2) nombreLaboratorio = 'Lab de Computo';
+            // Datos de Mantenimiento
+            tecnico_responsable: item.tecnico_responsable,
+            tecnico_nombre: item.tecnico_nombre,
+            mant_descripcion: item.mant_descripcion,
 
-            return {
-                ...item,
-                start: new Date(item.start),
-                end: new Date(item.end),
-                laboratorio: nombreLaboratorio
-            };
-        });
+            // Datos de Reserva
+            reserva_titulo: item.reserva_titulo,
+            reserva_nota: item.reserva_nota,
+            estado_reserva: item.estado_reserva,
+            estaciones: item.estaciones || [],
+            equipos: item.equipos || [],
+        }));
     } catch (error) {
-        console.error('Error al obtener las actividades desde el backend:', error);
-        throw error;
+        console.error("error al obtener actividades", error);
+        return [];
     }
 };
 
@@ -94,11 +103,35 @@ export const chequearDisponibilidad = async (laboratorio_id: number, fecha: stri
     try {
         let url = `http://localhost:4000/api/actividades/disponibilidad?laboratorio_id=${laboratorio_id}&fecha=${fecha}&hora_inicio=${hora_inicio}&hora_fin=${hora_fin}`;
         if (exclude_id) url += `&exclude_id=${exclude_id}`;
-        
+
         const response = await axios.get(url);
         return response.data.data; // Retorna { bloqueoTotal: boolean, estacionesOcupadas: number[] }
     } catch (error) {
         console.error("Error chequeando disponibilidad", error);
-        return { bloqueoTotal: false, estacionesOcupadas: [] }; 
+        return { bloqueoTotal: false, estacionesOcupadas: [] };
+    }
+};
+
+// Función para consultar el inventario disponible en tiempo real al backend
+export const obtenerInventarioDisponible = async (
+    laboratorioId: string | number,
+    fecha: string,
+    horaInicio: string,
+    horaFin: string,
+    excludeActividadId?: string | number
+) => {
+    try {
+        let url = `http://localhost:4000/api/inventario/disponibilidad?laboratorio_id=${laboratorioId}&fecha=${fecha}&hora_inicio=${horaInicio}&hora_fin=${horaFin}`;
+
+        // Si estamos editando una actividad, pasamos su ID para no restarnos nuestro propio stock
+        if (excludeActividadId) {
+            url += `&exclude_actividad_id=${excludeActividadId}`;
+        }
+
+        const response = await axios.get(url);
+        return response.data;
+    } catch (error) {
+        console.error("Error al obtener el inventario disponible:", error);
+        throw error;
     }
 };

@@ -16,6 +16,7 @@ router.put('/:id', upload.single('imagen'), inventarioController.updateItem);
 router.delete('/:id', inventarioController.deleteItem);
 
 // Rutas para movimientos de inventario
+router.get('/disponibilidad', inventarioController.getInventarioDisponible);
 router.get('/movimientos/:itemId', inventarioController.getMovimientosPorItem);
 router.post('/movimientos', inventarioController.crearMovimiento);
 

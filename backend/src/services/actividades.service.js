@@ -290,7 +290,7 @@ const obtenerActividades = async () => {
     try {
         // Usamos ARRAY_AGG y GROUP BY para consolidar todas las PCs en una sola fila
         const query = `
-           SELECT 
+         SELECT 
                 a.id, 
                 CASE 
                     WHEN a.tipo = 'clase' THEN ca.materia
@@ -301,28 +301,59 @@ const obtenerActividades = async () => {
                 a.fecha_hora_inicio AS start, 
                 a.fecha_hora_fin AS end, 
                 a.tipo,
+                
+                -- Datos del Laboratorio
                 a.laboratorio_id,
+                l.nombre AS laboratorio_nombre,
+                
+                -- Datos de Clase
                 ca.materia, 
                 ca.docente_id, 
+                u_docente.nombre AS docente_nombre,
                 ca.num_estudiantes AS clase_estudiantes,
+                
+                -- Datos de Mantenimiento
                 m.tecnico_id AS tecnico_responsable, 
+                u_tecnico.nombre AS tecnico_nombre,
                 m.descripcion_ti AS mant_descripcion,
+                
+                -- Datos de Reserva Estudiantil
                 re.titulo AS reserva_titulo,
                 re.nota_adicional AS reserva_nota,
                 re.estado_reserva,
-                COALESCE(array_agg(re_est.estacion_id) FILTER (WHERE re_est.estacion_id IS NOT NULL), '{}') AS estaciones
-            FROM 
-                actividades a
-            LEFT JOIN 
-                clases_academicas ca ON a.id = ca.actividad_id
-            LEFT JOIN 
-                mantenimientos m ON a.id = m.actividad_id
-            LEFT JOIN 
-                reservas_estudiantes re ON a.id = re.actividad_id
-            LEFT JOIN
-                reserva_estaciones re_est ON re.actividad_id = re_est.actividad_id
-            GROUP BY
-                a.id, ca.actividad_id, m.actividad_id, re.actividad_id;
+                
+                -- 1. Subconsulta para agrupar las estaciones en un Array
+                (
+                    SELECT COALESCE(array_agg(estacion_id), '{}') 
+                    FROM reserva_estaciones 
+                    WHERE actividad_id = a.id
+                ) AS estaciones,
+                 
+                -- 2. Subconsulta para agrupar los equipos en un Array de Objetos JSON
+                (
+                    SELECT COALESCE(
+                        json_agg(
+                            json_build_object(
+                                'id', ii.id, 
+                                'nombre', ii.nombre, 
+                                'cantidad', ri.cantidad_solicitada
+                            )
+                        ), '[]'::json
+                    ) 
+                    FROM reserva_items ri 
+                    INNER JOIN item_inventario ii ON ri.item_id = ii.id 
+                    WHERE ri.actividad_id = a.id
+                ) AS equipos
+
+            FROM actividades a
+            
+            -- Uniones para traer los nombres reales
+            LEFT JOIN laboratorios l ON a.laboratorio_id = l.id
+            LEFT JOIN clases_academicas ca ON a.id = ca.actividad_id
+            LEFT JOIN usuarios u_docente ON ca.docente_id = u_docente.id
+            LEFT JOIN mantenimientos m ON a.id = m.actividad_id
+            LEFT JOIN usuarios u_tecnico ON m.tecnico_id = u_tecnico.id
+            LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id;
         `;
         const result = await client.query(query);
         return result.rows;
