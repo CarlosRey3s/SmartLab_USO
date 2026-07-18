@@ -23,6 +23,7 @@ export const obtenerActividades = async (): Promise<EventoLaboratorio[]> => {
             // pasamos los datos del laboratorio ya con su nombre real
             laboratorio_id: item.laboratorio_id,
             laboratorio_nombre: item.laboratorio_nombre || 'Laboratorio Desconocido',
+            coordinador_id: item.coordinador_id,
 
             // Datos de Clases Academicas
             materia: item.materia,
@@ -39,6 +40,7 @@ export const obtenerActividades = async (): Promise<EventoLaboratorio[]> => {
             reserva_titulo: item.reserva_titulo,
             reserva_nota: item.reserva_nota,
             estado_reserva: item.estado_reserva,
+            usuario_id: item.reserva_usuario_id,
             estaciones: item.estaciones || [],
             equipos: item.equipos || [],
         }));

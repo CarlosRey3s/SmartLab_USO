@@ -5,6 +5,7 @@ import { laboratoriosService } from '../../services/laboratorios.service';
 import type { Laboratorio } from '../../types/laboratorio.types';
 import { customToast, CustomToastProvider } from '../custom-toast/CustomToast';
 import { ConfirmModal } from '../confirm-modal/ConfirmModal';
+import { useAuth } from '../../context/AuthContext';
 import '../../css/inventario.css';
 
 interface AgregarItemModalProps {
@@ -15,6 +16,7 @@ interface AgregarItemModalProps {
 }
 
 export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onClose, onSuccess, editData }) => {
+  const { user } = useAuth();
   const [tipoItem, setTipoItem] = useState<'general' | 'instrumentacion'>('general');
   const [loading, setLoading] = useState(false);
   const [laboratorios, setLaboratorios] = useState<Laboratorio[]>([]);
@@ -59,7 +61,12 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onCl
     try {
       const response = await laboratoriosService.getLaboratorios();
       if (response.success || (response as any).status === 'success') {
-        setLaboratorios(response.data);
+        const labs = response.data || (response as any).data;
+        if (user?.rol === 'coordinador') {
+          setLaboratorios(labs.filter((lab: any) => lab.coordinador_id === user.id));
+        } else {
+          setLaboratorios(labs);
+        }
       }
     } catch (error) {
       console.error("Error al cargar laboratorios", error);

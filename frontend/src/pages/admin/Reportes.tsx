@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from "react";
 import "../../css/ReportesComentarios.css";
 import { customToast } from "../../components/custom-toast/CustomToast";
+import { useAuth } from "../../context/AuthContext";
+
+interface LaboratorioDB {
+  id: number;
+  nombre: string;
+  coordinador_id?: number;
+  total_reservas?: number;
+  horas_uso?: number;
+  estado_actual?: string;
+}
 
 interface SugerenciaAdmin {
   id: number;
@@ -19,6 +29,7 @@ type TabType = "uso" | "bandeja";
 type FilterType = "todos" | "pendientes" | "respondidos";
 
 export const ReportesView: React.FC = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>("uso");
   const [filter, setFilter] = useState<FilterType>("todos");
   
@@ -27,11 +38,46 @@ export const ReportesView: React.FC = () => {
   const [respuesta, setRespuesta] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [mesInicio, setMesInicio] = useState("01");
+  const [mesFin, setMesFin] = useState("06");
+  const [anio, setAnio] = useState("2026");
+
+  const [laboratorios, setLaboratorios] = useState<LaboratorioDB[]>([]);
+  const [globalStats, setGlobalStats] = useState({ estudiantesActivos: 0, instrumentosPrestados: 0 });
+
   useEffect(() => {
     if (activeTab === "bandeja") {
       fetchSugerencias();
+    } else if (activeTab === "uso") {
+      fetchLaboratorios();
     }
-  }, [activeTab]);
+  }, [activeTab, mesInicio, mesFin, anio]);
+
+  const fetchLaboratorios = async () => {
+    try {
+      const startDate = `${anio}-${mesInicio}-01`;
+      
+      const nextMonth = parseInt(mesFin) === 12 ? 1 : parseInt(mesFin) + 1;
+      const nextYear = parseInt(mesFin) === 12 ? parseInt(anio) + 1 : parseInt(anio);
+      const endDate = new Date(new Date(`${nextYear}-${String(nextMonth).padStart(2, '0')}-01T00:00:00`).getTime() - 1).toISOString().split('T')[0];
+
+      const response = await fetch(`http://localhost:4000/api/reportes/uso-laboratorios?startDate=${startDate}&endDate=${endDate}`);
+      const result = await response.json();
+      
+      if (result.status === 'success' && result.data) {
+        if (result.data.laboratorios) {
+          setLaboratorios(result.data.laboratorios);
+          if (result.data.globalStats) {
+            setGlobalStats(result.data.globalStats);
+          }
+        } else {
+          setLaboratorios(result.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error al cargar laboratorios:', error);
+    }
+  };
 
   const fetchSugerencias = async () => {
     try {
@@ -102,6 +148,12 @@ export const ReportesView: React.FC = () => {
     if (comentario.includes("Laboratorios") || comentario.includes("Inventario")) return "🧪";
     return "✉️";
   };
+
+  const labsFiltrados = laboratorios.filter(lab => user?.rol === 'coordinador' ? String(lab.coordinador_id) === String(user.id) : true);
+  const horasReservadas = labsFiltrados.reduce((acc, lab) => acc + (lab.horas_uso || 0), 0);
+  const labFrecuente = labsFiltrados.length > 0 
+    ? labsFiltrados.reduce((prev, curr) => (curr.total_reservas || 0) > (prev.total_reservas || 0) ? curr : prev).nombre 
+    : 'N/A';
 
   return (
     <div className="reports-container">
@@ -263,7 +315,7 @@ export const ReportesView: React.FC = () => {
               <div className="stat-icon circle-blue">🕒</div>
               <div className="stat-text">
                 <span>Horas Reservadas (Mes)</span>
-                <h3>1450 h</h3>
+                <h3>{horasReservadas} h</h3>
               </div>
             </div>
 
@@ -271,7 +323,7 @@ export const ReportesView: React.FC = () => {
               <div className="stat-icon circle-green">🧪</div>
               <div className="stat-text">
                 <span>Lab. Más Frecuente</span>
-                <h3>Química Analítica</h3>
+                <h3>{labFrecuente}</h3>
               </div>
             </div>
 
@@ -279,7 +331,7 @@ export const ReportesView: React.FC = () => {
               <div className="stat-icon circle-orange">👥</div>
               <div className="stat-text">
                 <span>Estudiantes Activos</span>
-                <h3>320</h3>
+                <h3>{globalStats.estudiantesActivos}</h3>
               </div>
             </div>
 
@@ -287,7 +339,7 @@ export const ReportesView: React.FC = () => {
               <div className="stat-icon circle-purple">📅</div>
               <div className="stat-text">
                 <span>Instrumentos Prestados</span>
-                <h3>120</h3>
+                <h3>{globalStats.instrumentosPrestados}</h3>
               </div>
             </div>
           </div>
@@ -298,15 +350,39 @@ export const ReportesView: React.FC = () => {
               <h3>Desglose por Laboratorio</h3>
 
               <div className="table-actions">
-                <select className="select-custom">
-                  <option>Enero</option>
+                <select className="select-custom" value={mesInicio} onChange={e => setMesInicio(e.target.value)}>
+                  <option value="01">Enero</option>
+                  <option value="02">Febrero</option>
+                  <option value="03">Marzo</option>
+                  <option value="04">Abril</option>
+                  <option value="05">Mayo</option>
+                  <option value="06">Junio</option>
+                  <option value="07">Julio</option>
+                  <option value="08">Agosto</option>
+                  <option value="09">Septiembre</option>
+                  <option value="10">Octubre</option>
+                  <option value="11">Noviembre</option>
+                  <option value="12">Diciembre</option>
                 </select>
                 <span className="separator">-</span>
-                <select className="select-custom">
-                  <option>Junio</option>
+                <select className="select-custom" value={mesFin} onChange={e => setMesFin(e.target.value)}>
+                  <option value="01">Enero</option>
+                  <option value="02">Febrero</option>
+                  <option value="03">Marzo</option>
+                  <option value="04">Abril</option>
+                  <option value="05">Mayo</option>
+                  <option value="06">Junio</option>
+                  <option value="07">Julio</option>
+                  <option value="08">Agosto</option>
+                  <option value="09">Septiembre</option>
+                  <option value="10">Octubre</option>
+                  <option value="11">Noviembre</option>
+                  <option value="12">Diciembre</option>
                 </select>
-                <select className="select-custom year-select">
-                  <option>2026</option>
+                <select className="select-custom year-select" value={anio} onChange={e => setAnio(e.target.value)}>
+                  <option value="2026">2026</option>
+                  <option value="2025">2025</option>
+                  <option value="2024">2024</option>
                 </select>
 
                 <button className="export">Exportar PDF</button>
@@ -324,26 +400,29 @@ export const ReportesView: React.FC = () => {
               </thead>
 
               <tbody>
-                <tr>
-                  <td>Lab. Química Analítica</td>
-                  <td>45</td>
-                  <td>120 h</td>
-                  <td className="status-cell"><span className="status-ok">Operativo</span></td>
-                </tr>
-
-                <tr>
-                  <td>Lab. Física</td>
-                  <td>38</td>
-                  <td>95 h</td>
-                  <td className="status-cell"><span className="status-ok">Operativo</span></td>
-                </tr>
-
-                <tr>
-                  <td>Lab. Biología</td>
-                  <td>22</td>
-                  <td>60 h</td>
-                  <td className="status-cell"><span className="status-warn">Mantenimiento</span></td>
-                </tr>
+                {labsFiltrados.map(lab => (
+                    <tr key={lab.id}>
+                      <td>{lab.nombre}</td>
+                      <td>{lab.total_reservas || 0}</td>
+                      <td>{lab.horas_uso || 0} h</td>
+                      <td className="status-cell">
+                        <span className={
+                          lab.estado_actual === 'Mantenimiento' ? 'status-warn' :
+                          lab.estado_actual === 'Ocupado' ? 'status-busy' : 'status-ok'
+                        }>
+                          {lab.estado_actual || 'Operativo'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                }
+                {labsFiltrados.length === 0 && (
+                  <tr>
+                    <td colSpan={4} style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
+                      No hay laboratorios asignados a tu cuenta
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

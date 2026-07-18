@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import "../../css/buzonSugerencias.css";
 import { customToast } from "../../components/custom-toast/CustomToast";
 import { useAuth } from "../../context/AuthContext";
+import { laboratoriosService } from "../../services/laboratorios.service";
 
 interface Sugerencia {
   id: number;
@@ -52,8 +53,7 @@ export const BuzonSugerencias: React.FC = () => {
 
   const fetchLaboratorios = async () => {
     try {
-      const res = await fetch('http://localhost:4000/api/laboratorios');
-      const data = await res.json();
+      const data = await laboratoriosService.getLaboratorios();
       if (data.status === 'success') {
         setLaboratorios(data.data);
       }

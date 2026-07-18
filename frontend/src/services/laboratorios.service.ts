@@ -2,24 +2,69 @@ import { type LaboratorioResponse } from "../types/laboratorio.types";
 
 const API_URL = "http://localhost:4000/api";
 
-/**
- * Servicio para gestionar las peticiones relacionadas con los laboratorios.
- */
 export const laboratoriosService = {
-  /**
-   * Obtiene la lista de todos los laboratorios activos desde el backend.
-   * @returns {Promise<LaboratorioResponse>} Respuesta del servidor con los laboratorios.
-   */
-  getLaboratorios: async (): Promise<LaboratorioResponse> => {
+  getLaboratorios: async () => {
     try {
       const response = await fetch(`${API_URL}/laboratorios`);
-      if (!response.ok) {
-        throw new Error("Error al obtener los laboratorios");
-      }
       return await response.json();
     } catch (error) {
-      console.error("Error en laboratoriosService.getLaboratorios:", error);
-      return { success: false, data: [] };
+      console.error("Error en getLaboratorios:", error);
+      return { status: 'error', data: [] };
     }
   },
+
+  createLaboratorio: async (data: any) => {
+    const response = await fetch(`${API_URL}/laboratorios`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return await response.json();
+  },
+
+  updateLaboratorio: async (id: string, data: any) => {
+    const response = await fetch(`${API_URL}/laboratorios/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return await response.json();
+  },
+
+  deleteLaboratorio: async (id: string) => {
+    const response = await fetch(`${API_URL}/laboratorios/${id}`, {
+      method: 'DELETE'
+    });
+    return await response.json();
+  },
+
+  getEstaciones: async (laboratorioId: string) => {
+    const response = await fetch(`${API_URL}/laboratorios/${laboratorioId}/estaciones`);
+    return await response.json();
+  },
+
+  agregarEstaciones: async (laboratorioId: string, estaciones: any[]) => {
+    const response = await fetch(`${API_URL}/laboratorios/${laboratorioId}/estaciones`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estaciones })
+    });
+    return await response.json();
+  },
+
+  updateEstacion: async (estacionId: string, data: any) => {
+    const response = await fetch(`${API_URL}/laboratorios/estacion/${estacionId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return await response.json();
+  },
+
+  deleteEstacion: async (estacionId: string) => {
+    const response = await fetch(`${API_URL}/laboratorios/estacion/${estacionId}`, {
+      method: 'DELETE'
+    });
+    return await response.json();
+  }
 };

@@ -7,6 +7,7 @@ import { inventarioService } from '../../services/inventario.service';
 import { laboratoriosService } from '../../services/laboratorios.service';
 import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
 import { customToast } from '../../components/custom-toast/CustomToast';
+import { useAuth } from '../../context/AuthContext';
 
 interface InventoryItem {
   id: string | number;
@@ -25,6 +26,7 @@ interface InventoryItem {
 }
 
 export const InventarioView: React.FC = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'inventario' | 'reportes'>('inventario');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeMenu, setActiveMenu] = useState<string | number | null>(null);
@@ -130,14 +132,27 @@ export const InventarioView: React.FC = () => {
     setIsAddModalOpen(true);
   };
 
-  // Computar valores únicos de laboratorios sumando todos los espacios reales de la BD
+  // Filtrar laboratorios por rol
+  const laboratoriosDelUsuario = user?.rol === 'coordinador'
+    ? laboratoriosList.filter(lab => lab.coordinador_id === user.id)
+    : laboratoriosList;
+
+  // Filtrar items por rol
+  const itemsDelUsuario = user?.rol === 'coordinador'
+    ? items.filter(item => {
+        const lab = laboratoriosList.find(l => l.id === item.laboratorio_id);
+        return lab && lab.coordinador_id === user.id;
+      })
+    : items;
+
+  // Computar valores únicos de laboratorios sumando todos los espacios reales de la BD (ya filtrados)
   const uniqueLabs = Array.from(new Set([
-    ...laboratoriosList.map(lab => lab.nombre),
-    ...items.map(item => item.laboratorio_nombre || `Lab ID: ${item.laboratorio_id}`)
+    ...laboratoriosDelUsuario.map(lab => lab.nombre),
+    ...itemsDelUsuario.map(item => item.laboratorio_nombre || `Lab ID: ${item.laboratorio_id}`)
   ]));
 
   // Filtrar items
-  const filteredItems = items.filter(item => {
+  const filteredItems = itemsDelUsuario.filter(item => {
     // 1. Search term
     const searchMatch = item.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
                         item.codigo_interno.toLowerCase().includes(searchTerm.toLowerCase());

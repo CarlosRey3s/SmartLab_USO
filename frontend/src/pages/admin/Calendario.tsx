@@ -13,6 +13,7 @@ import { ModalNuevaActividad } from '../../components/shared/ModalNuevaActividad
 import { obtenerActividades, crearActividad, actualizarActividad, eliminarActividad } from '../../services/actividades.service';
 import '../../css/calendario.css';
 import { customToast } from '../../components/custom-toast/CustomToast.tsx';
+import { useAuth } from '../../context/AuthContext';
 
 // ── 1. CONFIGURACIÓN DE FECHAS E IDIOMA ──
 const locales = { 'es': es };
@@ -31,6 +32,7 @@ export interface EventoLaboratorio {
   tipo: 'clase' | 'mantenimiento' | 'reserva';
   laboratorio_id: number;
   laboratorio_nombre: string; // Cambio: Ahora es obligatorio o string directo
+  coordinador_id?: number; // Agregado
   materia?: string;
   docente_id?: number;
   docente_nombre?: string; // ¡Añadir!
@@ -41,6 +43,7 @@ export interface EventoLaboratorio {
   reserva_titulo?: string;
   reserva_nota?: string;
   estado_reserva?: string;
+  usuario_id?: number;
   estaciones?: number[];
   equipos?: Array<{ id: number; nombre: string; cantidad: number }>; // ¡Añadir!
 }
@@ -154,6 +157,7 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
 
 // ── 5. COMPONENTE PRINCIPAL (VISTA) ──
 export const CalendarioView = () => {
+  const { user } = useAuth();
   const [fechaActual, setFechaActual] = useState(new Date());
   const [vistaActual, setVistaActual] = useState<View>('week');
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -278,12 +282,28 @@ export const CalendarioView = () => {
           >
             <div className="popover-header">
               <div className="popover-actions">
-                <button className="btn-popover-action" onClick={handleEditarEvento} title="Editar">
-                  <Edit2 size={16} />
-                </button>
-                <button className="btn-popover-action btn-delete" onClick={handleEliminarEvento} title="Eliminar">
-                  <Trash2 size={16} />
-                </button>
+                {(() => {
+                  if (!user) return false;
+                  if (user.rol === 'administrador') return true;
+                  if (user.rol === 'coordinador') {
+                    // Si el evento tiene coordinador_id, solo el suyo. Si no, permitir (o denegar según política, aquí mantengo el "String(eventoSeleccionado.coordinador_id) === String(user.id)" de antes)
+                    return !eventoSeleccionado.coordinador_id || String(eventoSeleccionado.coordinador_id) === String(user.id);
+                  }
+                  if (user.rol === 'docente') {
+                    // Docente solo puede editar/eliminar si es una reserva y le pertenece
+                    return eventoSeleccionado.tipo === 'reserva' && String(eventoSeleccionado.usuario_id) === String(user.id);
+                  }
+                  return false;
+                })() && (
+                  <>
+                    <button className="btn-popover-action" onClick={handleEditarEvento} title="Editar">
+                      <Edit2 size={16} />
+                    </button>
+                    <button className="btn-popover-action btn-delete" onClick={handleEliminarEvento} title="Eliminar">
+                      <Trash2 size={16} />
+                    </button>
+                  </>
+                )}
                 <button className="btn-popover-action" onClick={() => setEventoSeleccionado(null)} title="Cerrar">
                   <X size={18} />
                 </button>

@@ -184,6 +184,28 @@ const deleteEstacion = async (req, res) => {
     }
 };
 
+// Actualizar estado de una estacion
+const updateEstacion = async (req, res) => {
+    const { id } = req.params;
+    const { estado } = req.body;
+    try {
+        const updateQuery = `
+            UPDATE estaciones_trabajo 
+            SET estado = $1
+            WHERE id = $2
+            RETURNING *
+        `;
+        const result = await pool.query(updateQuery, [estado, id]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ status: 'error', message: 'Estación no encontrada' });
+        }
+        res.json({ status: 'success', message: 'Estación actualizada exitosamente', data: result.rows[0] });
+    } catch (error) {
+        console.error('Error al actualizar estación:', error);
+        res.status(500).json({ status: 'error', message: 'Error interno del servidor' });
+    }
+};
+
 // Actualizar un laboratorio
 const updateLaboratorio = async (req, res) => {
     const { id } = req.params;
@@ -251,5 +273,6 @@ module.exports = {
     deleteLaboratorio,
     getEstaciones,
     addEstaciones,
-    deleteEstacion
+    deleteEstacion,
+    updateEstacion
 };

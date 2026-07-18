@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Minus, Plus, Trash2 } from 'lucide-react';
 import { ConfirmModal } from '../confirm-modal/ConfirmModal';
+import { useAuth } from '../../context/AuthContext';
+import { laboratoriosService } from '../../services/laboratorios.service';
 import '../../css/espacios.css';
 
 interface AgregarEspacioModalProps {
@@ -11,6 +13,7 @@ interface AgregarEspacioModalProps {
 }
 
 export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen, onClose, onSuccess, editData }) => {
+  const { user } = useAuth();
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [edificio, setEdificio] = useState('');
@@ -114,7 +117,7 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
   const executeSave = async () => {
     setLoading(true);
     try {
-      const payload = {
+      const payload: any = {
         nombre,
         descripcion,
         edificio,
@@ -126,20 +129,18 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
         estaciones: modoReserva === 'por_estacion' && !editData ? estaciones : []
       };
 
-      const url = editData 
-        ? `http://localhost:4000/api/laboratorios/${editData.id}`
-        : 'http://localhost:4000/api/laboratorios';
-      const method = editData ? 'PUT' : 'POST';
+      if (user?.rol === 'coordinador') {
+        payload.coordinador_id = user.id;
+      }
 
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      let data;
+      if (editData) {
+        data = await laboratoriosService.updateLaboratorio(editData.id, payload);
+      } else {
+        data = await laboratoriosService.createLaboratorio(payload);
+      }
 
-      const data = await res.json();
-
-      if (!res.ok) {
+      if (data.status !== 'success') {
         throw new Error(data.message || 'Error al guardar el laboratorio');
       }
 

@@ -4,6 +4,8 @@ import { AgregarEspacioModal } from '../../components/shared/AgregarEspacioModal
 import { VistaEstaciones } from '../../components/shared/VistaEstaciones';
 import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
 import { customToast } from '../../components/custom-toast/CustomToast';
+import { useAuth } from '../../context/AuthContext';
+import { laboratoriosService } from '../../services/laboratorios.service';
 import '../../css/inventario.css';
 import '../../css/espacios.css';
 import '../../css/usuarios.css';
@@ -19,9 +21,11 @@ interface EspacioItem {
   estado: string;
   descripcion?: string;
   ocupado?: boolean;
+  coordinador_id?: string;
 }
 
 export const EspacioView: React.FC = () => {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -61,8 +65,7 @@ export const EspacioView: React.FC = () => {
   const fetchEspacios = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:4000/api/laboratorios');
-      const json = await res.json();
+      const json = await laboratoriosService.getLaboratorios();
       if (json.status === 'success') {
         setEspacios(json.data);
       }
@@ -101,10 +104,7 @@ export const EspacioView: React.FC = () => {
     if (!espacioToDelete) return;
     
     try {
-      const res = await fetch(`http://localhost:4000/api/laboratorios/${espacioToDelete}`, {
-        method: 'DELETE'
-      });
-      const data = await res.json();
+      const data = await laboratoriosService.deleteLaboratorio(espacioToDelete);
       if (data.status === 'success') {
         customToast.success('Espacio eliminado correctamente');
         fetchEspacios();
@@ -124,13 +124,17 @@ export const EspacioView: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const totalEspacios = espacios.length;
-  const ocupados = espacios.filter(e => e.ocupado === true).length;
-  const disponibles = espacios.filter(e => e.estado === 'disponible' && !e.ocupado).length;
-  const enMantenimiento = espacios.filter(e => e.estado === 'mantenimiento' || e.estado === 'en_mantenimiento').length;
-  const clausurados = espacios.filter(e => e.estado === 'clausurado').length;
+  const espaciosDelUsuario = user?.rol === 'coordinador' 
+    ? espacios.filter(e => e.coordinador_id === user.id)
+    : espacios;
 
-  const filteredEspacios = espacios.filter(item => {
+  const totalEspacios = espaciosDelUsuario.length;
+  const ocupados = espaciosDelUsuario.filter(e => e.ocupado === true).length;
+  const disponibles = espaciosDelUsuario.filter(e => e.estado === 'disponible' && !e.ocupado).length;
+  const enMantenimiento = espaciosDelUsuario.filter(e => e.estado === 'mantenimiento' || e.estado === 'en_mantenimiento').length;
+  const clausurados = espaciosDelUsuario.filter(e => e.estado === 'clausurado').length;
+
+  const filteredEspacios = espaciosDelUsuario.filter(item => {
     const matchSearch = item.nombre.toLowerCase().includes(searchTerm.toLowerCase());
     const matchFilter = filterMode === 'todos' 
       ? true 

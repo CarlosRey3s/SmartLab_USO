@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getAllLaboratorios, createLaboratorio, updateLaboratorio, deleteLaboratorio, getEstaciones, addEstaciones, deleteEstacion } = require('../controllers/laboratorio.controller');
+const { getAllLaboratorios, createLaboratorio, updateLaboratorio, deleteLaboratorio, getEstaciones, addEstaciones, deleteEstacion, updateEstacion } = require('../controllers/laboratorio.controller');
 
 // RUTAS CRUD DE LABORATORIOS
 // /api/laboratorios
@@ -26,5 +26,8 @@ router.post('/:id/estaciones', addEstaciones);
 
 // Eliminar una estacion
 router.delete('/estacion/:id', deleteEstacion);
+
+// Actualizar una estacion
+router.put('/estacion/:id', updateEstacion);
 
 module.exports = router;

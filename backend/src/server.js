@@ -23,6 +23,7 @@ const laboratorioRoutes = require('./routes/laboratorio.routes');
 // 1. Importamos los nuevos routers
 const actividadesRoutes = require('./routes/actividadesRoutes');
 const sugerenciasRoutes = require('./routes/sugerencia.routes');
+const reportesRoutes = require('./routes/reportes.routes');
 
 
 // Montar rutas
@@ -33,6 +34,7 @@ app.use('/api/calendario', calendarioRoutes);
 app.use('/api/laboratorios', laboratorioRoutes);
 app.use('/api/actividades', actividadesRoutes); // 2. Montamos las nuevas rutas
 app.use('/api/sugerencias', sugerenciasRoutes);
+app.use('/api/reportes', reportesRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {

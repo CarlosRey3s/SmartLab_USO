@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Monitor, Trash2, Plus, X } from 'lucide-react';
+import { laboratoriosService } from '../../services/laboratorios.service';
+import { ConfirmModal } from '../confirm-modal/ConfirmModal';
+import { customToast } from '../custom-toast/CustomToast';
 import '../../css/espacios.css';
 
 interface Estacion {
@@ -31,13 +34,16 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
   const [nuevaEstacionCantidad, setNuevaEstacionCantidad] = useState<number | ''>(1);
   const [agregando, setAgregando] = useState(false);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [actualizandoEstadoId, setActualizandoEstadoId] = useState<string | null>(null);
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [estacionToDelete, setEstacionToDelete] = useState<string | null>(null);
 
   const fetchEstaciones = async () => {
     if (!laboratorioId) return;
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/laboratorios/${laboratorioId}/estaciones`);
-      const json = await res.json();
+      const json = await laboratoriosService.getEstaciones(laboratorioId);
       if (json.status === 'success') {
         setEstaciones(json.data);
       } else {
@@ -82,12 +88,7 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
 
     setAgregando(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/laboratorios/${laboratorioId}/estaciones`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estaciones: payload })
-      });
-      const json = await res.json();
+      const json = await laboratoriosService.agregarEstaciones(laboratorioId, payload);
       
       if (json.status === 'success') {
         fetchEstaciones();
@@ -106,14 +107,35 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
     }
   };
 
-  const handleEliminar = async (estacionId: string) => {
-    if (!window.confirm('¿Seguro que deseas eliminar esta estación?')) return;
+  const handleEliminarClick = (estacionId: string) => {
+    setEstacionToDelete(estacionId);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!estacionToDelete) return;
     
     try {
-      const res = await fetch(`http://localhost:4000/api/laboratorios/estacion/${estacionId}`, {
-        method: 'DELETE'
-      });
-      const json = await res.json();
+      const json = await laboratoriosService.deleteEstacion(estacionToDelete);
+      if (json.status === 'success') {
+        customToast.success('Estación eliminada correctamente');
+        fetchEstaciones();
+      } else {
+        customToast.error(json.message || 'Error al eliminar la estación');
+      }
+    } catch (err) {
+      console.error(err);
+      customToast.error('Error al eliminar');
+    } finally {
+      setIsDeleteModalOpen(false);
+      setEstacionToDelete(null);
+    }
+  };
+
+  const handleCambiarEstado = async (estacionId: string, nuevoEstado: string) => {
+    setActualizandoEstadoId(estacionId);
+    try {
+      const json = await laboratoriosService.updateEstacion(estacionId, { estado: nuevoEstado });
       if (json.status === 'success') {
         fetchEstaciones();
       } else {
@@ -121,7 +143,9 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
       }
     } catch (err) {
       console.error(err);
-      alert('Error al eliminar');
+      alert('Error al actualizar estado');
+    } finally {
+      setActualizandoEstadoId(null);
     }
   };
 
@@ -247,7 +271,7 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
           <div className="empty-state">No hay estaciones registradas en este espacio. Añade algunas arriba.</div>
         ) : (
           <div className="station-grid">
-            {estaciones.map(est => {
+            {[...estaciones].sort((a, b) => a.nombre.localeCompare(b.nombre, undefined, { numeric: true, sensitivity: 'base' })).map(est => {
               const displayState = est.ocupado ? 'ocupado' : est.estado;
               const color = getStatusColor(displayState);
               return (
@@ -257,9 +281,9 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
                       <Monitor size={24} color={color} />
                     </div>
                     <button 
-                      className="btn-delete-station" 
-                      onClick={() => handleEliminar(est.id)}
-                      title="Eliminar estación"
+                      className="action-icon-btn delete" 
+                      onClick={() => handleEliminarClick(est.id)}
+                      title="Eliminar"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -269,10 +293,28 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
                   
                   <div className="station-details">
                     <span className="station-capacity">👥 {est.capacidad} {est.capacidad === 1 ? 'persona' : 'personas'}</span>
-                    <div className="station-badge" style={{ backgroundColor: `${color}15`, color: color }}>
-                      <span className="badge-dot" style={{ backgroundColor: color }}></span>
-                      {formatEstado(displayState)}
-                    </div>
+                    
+                    {actualizandoEstadoId === est.id ? (
+                      <div className="station-badge" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }}>
+                        Actualizando...
+                      </div>
+                    ) : est.ocupado ? (
+                      <div className="station-badge" style={{ backgroundColor: `${color}15`, color: color }}>
+                        <span className="badge-dot" style={{ backgroundColor: color }}></span>
+                        Ocupado
+                      </div>
+                    ) : (
+                      <select 
+                        className="station-badge" 
+                        style={{ backgroundColor: `${color}15`, color: color, border: 'none', cursor: 'pointer', outline: 'none', appearance: 'none', paddingRight: '16px' }}
+                        value={est.estado}
+                        onChange={(e) => handleCambiarEstado(est.id, e.target.value)}
+                        title="Cambiar estado"
+                      >
+                        <option value="disponible">Disponible</option>
+                        <option value="no_disponible">No Disponible</option>
+                      </select>
+                    )}
                   </div>
                 </div>
               );
@@ -280,6 +322,16 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Eliminar Estación"
+        message="¿Estás seguro que deseas eliminar esta estación? Esta acción no se puede deshacer."
+        confirmText="Eliminar"
+        confirmColor="#EB5757"
+      />
     </div>
   );
 };

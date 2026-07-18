@@ -305,6 +305,7 @@ const obtenerActividades = async () => {
                 -- Datos del Laboratorio
                 a.laboratorio_id,
                 l.nombre AS laboratorio_nombre,
+                l.coordinador_id,
                 
                 -- Datos de Clase
                 ca.materia, 
@@ -321,6 +322,7 @@ const obtenerActividades = async () => {
                 re.titulo AS reserva_titulo,
                 re.nota_adicional AS reserva_nota,
                 re.estado_reserva,
+                re.usuario_id AS reserva_usuario_id,
                 
                 -- 1. Subconsulta para agrupar las estaciones en un Array
                 (

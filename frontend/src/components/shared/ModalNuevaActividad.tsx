@@ -3,6 +3,8 @@ import { Search, Plus, X, Monitor, Building2, Grid } from 'lucide-react';
 import Select from 'react-select';
 import { usuariosService } from '../../services/usuarios.service';
 import { chequearDisponibilidad, obtenerInventarioDisponible } from '../../services/actividades.service';
+import { laboratoriosService } from '../../services/laboratorios.service';
+import { useAuth } from '../../context/AuthContext';
 import '../../css/ModalNuevaActividad.css';
 
 
@@ -15,6 +17,7 @@ interface LaboratorioDB {
   nombre: string;
   modo_reserva: ModoReserva;
   capacidad_maxima?: number;
+  coordinador_id?: number;
 }
 
 // Estaciones ahora incluyen estado y capacidad (según estaciones_trabajo en la BD)
@@ -135,6 +138,7 @@ const STEP_SHORT_LABELS: Record<string, string> = {
 };
 
 export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: NuevaActividadProps) {
+  const { user } = useAuth();
   // ── Estados para llamadas a BD ──
   const [labsDesdeBD, setLabsDesdeBD] = useState<LaboratorioDB[]>([]);
   const [cargandoLabs, setCargandoLabs] = useState(true);
@@ -206,10 +210,9 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
   useEffect(() => {
     const fetchlaboratorios = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/laboratorios');
-        const result = await response.json();
+        const result = await laboratoriosService.getLaboratorios();
 
-        if (result.success || result.data) {
+        if (result.status === 'success' || result.data) {
           setLabsDesdeBD(result.data || result);
         } else if (Array.isArray(result)) {
           setLabsDesdeBD(result);
@@ -346,10 +349,9 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
     const fetchEstaciones = async () => {
       setCargandoEstaciones(true);
       try {
-        const response = await fetch(`http://localhost:4000/api/laboratorios/${form.laboratorio}/estaciones`);
-        const result = await response.json();
+        const result = await laboratoriosService.getEstaciones(form.laboratorio);
 
-        if (result.success || result.data) {
+        if (result.status === 'success' || result.data) {
           setEstacionesDesdeBD(result.data || result);
         } else if (Array.isArray(result)) {
           setEstacionesDesdeBD(result);
@@ -469,7 +471,17 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
   const currentStepKey = steps[stepIndex];
   const isLastStep = stepIndex === steps.length - 1;
 
-  const laboratorioSeleccionado = labsDesdeBD.find((l) => l.id.toString() === form.laboratorio?.toString());
+  // Filtrar laboratorios a mostrar según el rol y el tipo
+  const laboratoriosAMostrar = labsDesdeBD.filter(lab => {
+    // Si el usuario es coordinador y NO está haciendo una reserva, solo ve sus laboratorios
+    if (user && user.rol === 'coordinador' && tipo !== 'reserva') {
+      return String(lab.coordinador_id) === String(user.id);
+    }
+    // Si es una reserva directa (tipo === 'reserva') o tiene otro rol (admin), ve todos
+    return true; 
+  });
+
+  const laboratorioSeleccionado = laboratoriosAMostrar.find((l) => l.id.toString() === form.laboratorio?.toString());
   const modoReserva: ModoReserva = laboratorioSeleccionado?.modo_reserva || "por_estacion";
 
   const handleAtras = () => {
@@ -482,7 +494,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
   };
 
   const handleGuardar = () => {
-    onGuardar({ ...form, tipo });
+    onGuardar({ ...form, tipo, usuario_id: user?.id });
     onClose();
   };
 
@@ -558,17 +570,21 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
             <>
               <div className="na-field-label">TIPO DE ACTIVIDAD</div>
               <div className="na-tipo-selector">
-                <button className="na-tipo-btn na-tipo-clase" onClick={() => handleTipo("clase")}>
-                  <div className="na-tipo-ico na-ico-clase"><CalendarIcon color="#0F6E56" /></div>
-                  <div className="na-tipo-name">Clase regular</div>
-                  <div className="na-tipo-desc">Clase con docente asignado</div>
-                </button>
+                {user?.rol !== 'docente' && (
+                  <>
+                    <button className="na-tipo-btn na-tipo-clase" onClick={() => handleTipo("clase")}>
+                      <div className="na-tipo-ico na-ico-clase"><CalendarIcon color="#0F6E56" /></div>
+                      <div className="na-tipo-name">Clase regular</div>
+                      <div className="na-tipo-desc">Clase con docente asignado</div>
+                    </button>
 
-                <button className="na-tipo-btn na-tipo-mant" onClick={() => handleTipo("mantenimiento")}>
-                  <div className="na-tipo-ico na-ico-mant"><WrenchIcon color="#A32D2D" /></div>
-                  <div className="na-tipo-name">Cierre técnico</div>
-                  <div className="na-tipo-desc">Cierre técnico del laboratorio</div>
-                </button>
+                    <button className="na-tipo-btn na-tipo-mant" onClick={() => handleTipo("mantenimiento")}>
+                      <div className="na-tipo-ico na-ico-mant"><WrenchIcon color="#A32D2D" /></div>
+                      <div className="na-tipo-name">Cierre técnico</div>
+                      <div className="na-tipo-desc">Cierre técnico del laboratorio</div>
+                    </button>
+                  </>
+                )}
 
                 <button className="na-tipo-btn na-tipo-res" onClick={() => handleTipo("reserva")}>
                   <div className="na-tipo-ico na-ico-res"><UserIcon color="#854F0B" /></div>
@@ -739,7 +755,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
                   disabled={cargandoLabs}
                 >
                   <option value="">{cargandoLabs ? "Cargando laboratorios..." : "Selecciona un laboratorio"}</option>
-                  {labsDesdeBD.map((lab) => (
+                  {laboratoriosAMostrar.map((lab) => (
                     <option key={lab.id} value={lab.id}>{lab.nombre}</option>
                   ))}
                 </select>
