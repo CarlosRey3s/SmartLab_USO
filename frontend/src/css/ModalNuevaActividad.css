@@ -981,3 +981,25 @@
   color: #a36a00;
   margin-top: 6px;
 }
+
+/* ============================================
+   BUSCADOR DE INVENTARIO
+   ============================================ */
+.inv-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.inv-search-icon {
+  position: absolute;
+  left: 12px;
+  color: #64748b;
+  pointer-events: none;
+}
+
+.inv-search-input {
+  width: 100%;
+  padding-left: 36px !important;
+}

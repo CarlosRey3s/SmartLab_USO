@@ -1,86 +1,11 @@
-import { useState, useEffect } from 'react';
 import { Search, Plus, X, Monitor, Building2, Grid } from 'lucide-react';
-import Select from 'react-select';
-import { usuariosService } from '../../services/usuarios.service';
-import { chequearDisponibilidad, obtenerInventarioDisponible } from '../../services/actividades.service';
 import '../../css/ModalNuevaActividad.css';
+import { FormularioMantenimiento } from './ModalActividades/FormularioMantenimiento';
+import { FormularioClase } from './ModalActividades/FormularioClase';
+import { FormularioReserva } from './ModalActividades/FormularioReserva';
+import { SelectorInventario } from './ModalActividades/SelectorInventario';
 
-
-type TipoActividad = "clase" | "mantenimiento" | "reserva" | null;
-type ModoReserva = "por_estacion" | "espacio_completo";
-type EstadoEstacion = "disponible" | "no_disponible";
-
-interface LaboratorioDB {
-  id: number;
-  nombre: string;
-  modo_reserva: ModoReserva;
-  capacidad_maxima?: number;
-}
-
-// Estaciones ahora incluyen estado y capacidad (según estaciones_trabajo en la BD)
-interface EstacionDB {
-  id: number;
-  numero: string; // O el campo que tu backend devuelva para nombrar la estación
-  nombre?: string;
-  estado: EstadoEstacion;
-  capacidad?: number;
-}
-
-interface NuevaActividadProps {
-  onClose: () => void;
-  onGuardar: (data: any) => void;
-  actividadExistente?: any; // Para editar, si es necesario
-}
-
-interface FormData {
-  tipo: TipoActividad;
-  // Clase
-  materia?: string;
-  docente?: string | number;
-  // Mantenimiento
-  responsable?: string | number;
-  descripcion?: string;
-  // Reserva
-  titulo?: string;
-  estaciones?: (number | string)[]; // ahora es multi-selección
-  equipos?: EquipoSeleccionado[];
-  // Compartidos
-  laboratorio?: string;
-  numPersonas?: number;
-  fecha?: string;
-  desde?: string;
-  hasta?: string;
-  recurrencia?: string;
-}
-
-// ── Inventario ──────────────────────────────────────────
-interface ItemInventarioDB {
-  id: number;
-  nombre: string;
-  cantidad_actual: number;
-  cantidad_reservada: number;
-  stock_disponible: number;
-}
-
-interface EquipoSeleccionado {
-  id: number | string;
-  nombre: string;
-  disponibles: number;
-  cantidad?: number;
-}
-
-function badgeClass(disponibles: number) {
-  if (disponibles === 0) return "inv-badge-no";
-  if (disponibles <= 2) return "inv-badge-lim";
-  return "inv-badge-ok";
-}
-
-function badgeLabel(disponibles: number) {
-  if (disponibles === 0) return "No disponible";
-  if (disponibles <= 2) return `Stock bajo (${disponibles})`;
-  return `Disponible (${disponibles})`;
-}
-// ────────────────────────────────────────────────────────
+import { useActividadForm, type FormData } from '../../hooks/useActividadForm';
 
 const RECURRENCIA_CLASE = [
   "No se repite",
@@ -116,17 +41,6 @@ const TIPO_LABEL: Record<string, string> = {
   reserva: "Reserva directa",
 };
 
-// ── Pasos por tipo de actividad ──────────────────────────
-// clase y mantenimiento no usan estación individual (no existe esa
-// relación en clases_academicas ni en mantenimientos, solo en
-// reservas_estudiantes), así que su paso "laboratorio" no muestra el mapa.
-const STEPS: Record<Exclude<TipoActividad, null>, string[]> = {
-  clase: ["datos", "horario", "laboratorio", "instrumentos"],
-  mantenimiento: ["datos", "horario", "laboratorio"],
-  reserva: ["datos", "horario", "laboratorio", "instrumentos"],
-};
-
-// Etiquetas cortas para el stepper numerado (debajo de cada círculo)
 const STEP_SHORT_LABELS: Record<string, string> = {
   datos: "General",
   laboratorio: "Espacio",
@@ -134,383 +48,27 @@ const STEP_SHORT_LABELS: Record<string, string> = {
   horario: "Fecha y hora",
 };
 
+interface NuevaActividadProps {
+  onClose: () => void;
+  onGuardar: (data: any) => void;
+  actividadExistente?: any;
+}
+
 export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: NuevaActividadProps) {
-  // ── Estados para llamadas a BD ──
-  const [labsDesdeBD, setLabsDesdeBD] = useState<LaboratorioDB[]>([]);
-  const [cargandoLabs, setCargandoLabs] = useState(true);
+  const {
+    form, set, tipo, stepIndex,
+    labsDesdeBD, cargandoLabs,
+    estacionesDesdeBD, cargandoEstaciones,
+    inventarioDesdeBD, cargandoInventario,
+    tecnicosOptions, docentesOptions,
+    estacionesOcupadas, bloqueoTotal, verificando, mostrarSoloDisponibles, setMostrarSoloDisponibles,
+    equiposSeleccionados, estacionesSeleccionadas,
+    agregarEquipo, quitarEquipo, aumentarCantidad, disminuirCantidad, toggleEstacion,
+    handleTipo, handleAtras, handleSiguiente, canSave,
+    steps, currentStepKey, isLastStep, laboratorioSeleccionado, modoReserva
+  } = useActividadForm({ actividadExistente, onGuardar, onClose });
 
-  const [estacionesDesdeBD, setEstacionesDesdeBD] = useState<EstacionDB[]>([]);
-  const [cargandoEstaciones, setCargandoEstaciones] = useState(false);
-
-  const [inventarioDesdeBD, setInventarioDesdeBD] = useState<ItemInventarioDB[]>([]);
-  const [cargandoInventario, setCargandoInventario] = useState(false);
-
-  const [tipo, setTipo] = useState<TipoActividad>(null);
-  const [stepIndex, setStepIndex] = useState(0);
-  const [form, setForm] = useState<FormData>({
-    tipo: null,
-    numPersonas: 20,
-    recurrencia: "No se repite",
-    equipos: [],
-    estaciones: [],
-  });
-
-  const [estacionesOcupadas, setEstacionesOcupadas] = useState<number[]>([]);
-  const [bloqueoTotal, setBloqueoTotal] = useState<boolean>(false);
-  const [verificando, setVerificando] = useState<boolean>(false);
-  const [mostrarSoloDisponibles, setMostrarSoloDisponibles] = useState<boolean>(false);
-
-  // ── EFECTO PARA MODO EDICIÓN ──
-  useEffect(() => {
-    if (actividadExistente) {
-      // 1. Convertir los objetos Date a formato de input (YYYY-MM-DD y HH:mm)
-      const start = new Date(actividadExistente.start);
-      const end = new Date(actividadExistente.end);
-
-      // Usamos métodos locales para evitar saltos de zona horaria
-      const fechaLocal = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
-      const desdeLocal = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`;
-      const hastaLocal = `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
-
-      // 2. Establecer el tipo principal
-      setTipo(actividadExistente.tipo);
-
-      // 3. Rellenar el formulario con todos los campos correspondientes a la BD
-      setForm({
-        tipo: actividadExistente.tipo,
-        laboratorio: actividadExistente.laboratorio_id ? actividadExistente.laboratorio_id.toString() : "",
-        fecha: fechaLocal,
-        desde: desdeLocal,
-        hasta: hastaLocal,
-        recurrencia: actividadExistente.recurrencia || "No se repite",
-
-        // Datos específicos de Clase
-        materia: actividadExistente.materia || "",
-        docente: actividadExistente.docente_id || "",
-        numPersonas: actividadExistente.clase_estudiantes || 20,
-
-        // Datos específicos de Mantenimiento
-        responsable: actividadExistente.tecnico_responsable || "",
-        descripcion: actividadExistente.mant_descripcion || actividadExistente.reserva_nota || "",
-
-        // Datos específicos de Reserva
-        titulo: actividadExistente.reserva_titulo || "",
-        estaciones: actividadExistente.estaciones ? actividadExistente.estaciones.map((e: any) => Number(e)) : [],
-
-        equipos: [] // Si luego habilitas edición de equipos, aquí iría el mapeo
-      });
-    }
-  }, [actividadExistente]);
-
-  // 1. Efecto para cargar los laboratorios al inicio
-  useEffect(() => {
-    const fetchlaboratorios = async () => {
-      try {
-        const response = await fetch('http://localhost:4000/api/laboratorios');
-        const result = await response.json();
-
-        if (result.success || result.data) {
-          setLabsDesdeBD(result.data || result);
-        } else if (Array.isArray(result)) {
-          setLabsDesdeBD(result);
-        }
-      } catch (error) {
-        console.error('Error al cargar laboratorios:', error);
-      } finally {
-        setCargandoLabs(false);
-      }
-    };
-    fetchlaboratorios();
-  }, []);
-
-  // Efecto para cargar el inventario completo
-  useEffect(() => {
-    const fetchInventarioDinámico = async () => {
-      // Solo buscamos si el usuario ya definió dónde y cuándo
-      if (form.laboratorio && form.fecha && form.desde && form.hasta) {
-        setCargandoInventario(true);
-        try {
-          const res = await obtenerInventarioDisponible(
-            form.laboratorio,
-            form.fecha,
-            form.desde,
-            form.hasta,
-            actividadExistente?.id
-          );
-          if (res.status === 'success') {
-            setInventarioDesdeBD(res.data);
-          } else {
-            setInventarioDesdeBD([]);
-          }
-        } catch (error) {
-          console.error('Error al cargar inventario dinámico:', error);
-          setInventarioDesdeBD([]);
-        } finally {
-          setCargandoInventario(false);
-        }
-      } else {
-        // Si borra la hora o el lab, vaciamos el catálogo por seguridad
-        setInventarioDesdeBD([]);
-        setForm(prev => ({ ...prev, equipos: [] }));
-      }
-    };
-    // Usamos un pequeño retraso (debounce) igual que con las estaciones 
-    // para no saturar al servidor si el usuario teclea rápido las horas.
-    const timeoutId = setTimeout(() => fetchInventarioDinámico(), 500);
-    return () => clearTimeout(timeoutId);
-  }, [form.laboratorio, form.fecha, form.desde, form.hasta, actividadExistente]);
-
-
-
-  useEffect(() => {
-    const verificar = async () => {
-      if (form.laboratorio && form.fecha && form.desde && form.hasta) {
-        setVerificando(true);
-        try {
-          const result = await chequearDisponibilidad(
-            parseInt(form.laboratorio),
-            form.fecha,
-            form.desde,
-            form.hasta,
-            actividadExistente?.id
-          );
-
-          if (result) {
-            setBloqueoTotal(result.bloqueoTotal);
-            setEstacionesOcupadas(result.estacionesOcupadas || []);
-
-            if (result.estacionesOcupadas && result.estacionesOcupadas.length > 0) {
-              setForm(prev => ({
-                ...prev,
-                estaciones: (prev.estaciones || []).filter(id => !result.estacionesOcupadas.includes(typeof id === 'string' ? parseInt(id) : id))
-              }));
-            }
-          }
-        } catch (error) {
-          console.error("Error validando disponibilidad", error);
-        } finally {
-          setVerificando(false);
-        }
-      } else {
-        setBloqueoTotal(false);
-        setEstacionesOcupadas([]);
-      }
-    };
-
-    const timeoutId = setTimeout(() => verificar(), 500);
-    return () => clearTimeout(timeoutId);
-  }, [form.laboratorio, form.fecha, form.desde, form.hasta, actividadExistente]);
-
-  const [tecnicosOptions, setTecnicosOptions] = useState<{ value: number, label: string }[]>([]);
-  const [docentesOptions, setDocentesOptions] = useState<{ value: number, label: string }[]>([]);
-
-  useEffect(() => {
-    const fetchUsuarios = async () => {
-      try {
-        const data = await usuariosService.getUsuarios();
-        const usuarios = Array.isArray(data) ? data : data.data || [];
-
-        // Filtrar y mapear técnicos
-        const tecnicos = usuarios.filter((u: any) =>
-          u.rol === 'técnico' || u.rol === 'tecnico' || u.rol === 'Técnico' || u.rol === 'Tecnico'
-        );
-        const optionsT = tecnicos.map((t: any) => ({
-          value: t.id,
-          label: `${t.nombre} ${t.apellido || ''}`.trim()
-        }));
-        setTecnicosOptions(optionsT);
-
-        // Filtrar y mapear docentes
-        const docentes = usuarios.filter((u: any) =>
-          u.rol === 'docente' || u.rol === 'Docente' || u.rol === 'DOCENTE'
-        );
-        const optionsD = docentes.map((d: any) => ({
-          value: d.id,
-          label: `${d.nombre} ${d.apellido || ''}`.trim()
-        }));
-        setDocentesOptions(optionsD);
-      } catch (error) {
-        console.error('Error al cargar usuarios:', error);
-      }
-    };
-    fetchUsuarios();
-  }, []);
-
-  // 2. Efecto para cargar estaciones dependientes del laboratorio seleccionado
-  useEffect(() => {
-    if (!form.laboratorio) {
-      setEstacionesDesdeBD([]);
-      return;
-    }
-
-    const fetchEstaciones = async () => {
-      setCargandoEstaciones(true);
-      try {
-        const response = await fetch(`http://localhost:4000/api/laboratorios/${form.laboratorio}/estaciones`);
-        const result = await response.json();
-
-        if (result.success || result.data) {
-          setEstacionesDesdeBD(result.data || result);
-        } else if (Array.isArray(result)) {
-          setEstacionesDesdeBD(result);
-        }
-      } catch (error) {
-        console.error(`Error al cargar estaciones del lab ${form.laboratorio}:`, error);
-      } finally {
-        setCargandoEstaciones(false);
-      }
-    };
-
-    fetchEstaciones();
-  }, [form.laboratorio]);
-
-  // ── Inventario state ──
-  const [query, setQuery] = useState("");
-  const [showResults, setShowResults] = useState(false);
-
-  const equiposSeleccionados: EquipoSeleccionado[] = form.equipos || [];
-  const estacionesSeleccionadas: (number | string)[] = form.estaciones || [];
-
-  const resultados = !form.laboratorio ? [] : inventarioDesdeBD
-    .filter(
-      (e) =>
-        (query.trim() === "" || e.nombre.toLowerCase().includes(query.toLowerCase())) &&
-        !equiposSeleccionados.find((s) => s.id === e.id)
-    )
-    .map((e) => ({
-      id: e.id,
-      nombre: e.nombre,
-      disponibles: e.stock_disponible // ¡ESTA ES LA LÍNEA CLAVE! Ahora lee el cálculo matemático del backend
-    }));
-
-  const agregarEquipo = (equipo: EquipoSeleccionado) => {
-    setForm((prev) => ({
-      ...prev,
-      equipos: [
-        ...(prev.equipos || []),
-        { ...equipo, cantidad: 1 }
-      ]
-    }));
-    setQuery("");
-    setShowResults(false);
-  };
-
-  const quitarEquipo = (id: string | number) => {
-    setForm((prev) => ({
-      ...prev,
-      equipos: (prev.equipos || []).filter((e) => e.id !== id)
-    }));
-  };
-
-  const aumentarCantidad = (id: string | number) => {
-    setForm((prev) => ({
-      ...prev,
-      equipos: (prev.equipos || []).map((equipo) => {
-        if (equipo.id !== id) return equipo;
-        const cantidadActual = equipo.cantidad ?? 1;
-        return {
-          ...equipo,
-          cantidad: cantidadActual < equipo.disponibles ? cantidadActual + 1 : cantidadActual,
-        };
-      }),
-    }));
-  };
-
-  const disminuirCantidad = (id: string | number) => {
-    setForm((prev) => ({
-      ...prev,
-      equipos: (prev.equipos || []).map((equipo) => {
-        if (equipo.id !== id) return equipo;
-        const cantidadActual = equipo.cantidad ?? 1;
-        return {
-          ...equipo,
-          cantidad: cantidadActual > 1 ? cantidadActual - 1 : 1,
-        };
-      }),
-    }));
-  };
-
-  // Selección múltiple de estaciones (solo aplica a reserva + modo por_estacion)
-  // Normalizamos siempre a number para evitar mezclas string/number que
-  // provocaban que una estación ya seleccionada no se reconociera como tal
-  // (y terminara duplicada al guardar).
-  const toggleEstacion = (id: number | string) => {
-    const idNum = Number(id);
-    setForm((prev) => {
-      const actuales = (prev.estaciones || []).map(Number);
-      const yaSeleccionada = actuales.includes(idNum);
-      return {
-        ...prev,
-        estaciones: yaSeleccionada ? actuales.filter((e) => e !== idNum) : [...actuales, idNum],
-      };
-    });
-  };
-  // ─────────────────────
-
-  const set = (field: keyof FormData, value: string | number) =>
-    setForm((prev) => ({ ...prev, [field]: value }));
-
-  const handleTipo = (t: TipoActividad) => {
-    setTipo(t);
-    setStepIndex(0);
-    setForm({
-      tipo: t,
-      numPersonas: t === "clase" ? 20 : 3,
-      recurrencia: "No se repite",
-      equipos: [],
-      estaciones: [],
-      desde: t === "clase" ? "08:00" : t === "mantenimiento" ? "14:00" : "09:00",
-      hasta: t === "clase" ? "10:00" : t === "mantenimiento" ? "17:00" : "11:00",
-    });
-    setQuery("");
-  };
-
-  const steps = tipo ? STEPS[tipo] : [];
-  const currentStepKey = steps[stepIndex];
-  const isLastStep = stepIndex === steps.length - 1;
-
-  const laboratorioSeleccionado = labsDesdeBD.find((l) => l.id.toString() === form.laboratorio?.toString());
-  const modoReserva: ModoReserva = laboratorioSeleccionado?.modo_reserva || "por_estacion";
-
-  const handleAtras = () => {
-    if (stepIndex === 0) {
-      setTipo(null);
-      setForm({ tipo: null, numPersonas: 20, recurrencia: "No se repite", equipos: [], estaciones: [] });
-    } else {
-      setStepIndex((i) => i - 1);
-    }
-  };
-
-  const handleGuardar = () => {
-    onGuardar({ ...form, tipo });
-    onClose();
-  };
-
-  const handleSiguiente = () => {
-    if (isLastStep) {
-      handleGuardar();
-    } else {
-      setStepIndex((i) => i + 1);
-    }
-  };
-
-  const canAvanzar = (): boolean => {
-    if (!tipo) return false;
-    if (currentStepKey === "datos") {
-      if (tipo === "clase") return !!form.materia && !!form.docente;
-      if (tipo === "mantenimiento") return !!form.responsable && !!form.descripcion;
-      if (tipo === "reserva") return !!form.titulo;
-    }
-    if (currentStepKey === "laboratorio") {
-      if (!form.laboratorio) return false;
-      if (tipo === "reserva" && modoReserva === "por_estacion") return estacionesSeleccionadas.length > 0;
-    }
-    if (currentStepKey === "horario") return !!form.fecha;
-    return true;
-  };
-
-  const canSave = canAvanzar();
-
+  // ... AQUÍ EMPIEZA TU HTML/JSX INTACTO COMO LO TENÍAS ...
   return (
     <div className="na-overlay">
       <div className="na-modal">
@@ -579,152 +137,31 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
             </>
           )}
 
-          {/* ── PASO: DATOS ── */}
+          {/* ── CONEXION CON FORMULARIO CLASE ── */}
           {tipo === "clase" && currentStepKey === "datos" && (
-            <div className="na-fields">
-              <div className="na-row2">
-                <div className="na-field-group">
-                  <label className="na-field-label">MATERIA / TÍTULO</label>
-                  <input className="na-input" placeholder="Ej: Física I, Electrónica Digital..." value={form.materia || ""} onChange={(e) => set("materia", e.target.value)} />
-                </div>
-                <div className="na-field-group">
-                  <label className="na-field-label">DOCENTE</label>
-                  <Select
-                    placeholder="Buscar docente..."
-                    options={docentesOptions}
-                    value={docentesOptions.find(opt => opt.value === form.docente) || null}
-                    onChange={(selected: any) => set("docente", selected ? selected.value : "")}
-                    noOptionsMessage={() => "No se encontraron docentes"}
-                    styles={{
-                      control: (base, state) => ({
-                        ...base,
-                        backgroundColor: '#f8fafc',
-                        borderColor: state.isFocused ? '#1a3a34' : '#e2e8f0',
-                        borderWidth: '1.5px',
-                        borderRadius: '8px',
-                        boxShadow: 'none',
-                        minHeight: '38px',
-                        fontSize: '13px',
-                        '&:hover': {
-                          borderColor: state.isFocused ? '#1a3a34' : '#cbd5e1'
-                        }
-                      }),
-                      menu: (base) => ({
-                        ...base,
-                        backgroundColor: '#ffffff',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        zIndex: 9999,
-                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
-                      }),
-                      option: (base, state) => ({
-                        ...base,
-                        backgroundColor: state.isSelected ? '#e2e8f0' : state.isFocused ? '#f1f5f9' : '#ffffff',
-                        color: '#1a1a1a',
-                        cursor: 'pointer',
-                        '&:active': {
-                          backgroundColor: '#cbd5e1'
-                        }
-                      }),
-                      singleValue: (base) => ({
-                        ...base,
-                        color: '#1a1a1a'
-                      }),
-                      input: (base) => ({
-                        ...base,
-                        color: '#1a1a1a'
-                      }),
-                      placeholder: (base) => ({
-                        ...base,
-                        color: '#aaa'
-                      })
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="na-field-group">
-                <label className="na-field-label">N° DE ESTUDIANTES</label>
-                <div className="na-num-row">
-                  <button className="na-num-btn" onClick={() => set("numPersonas", Math.max(1, (form.numPersonas || 1) - 1))}>−</button>
-                  <span className="na-num-val">{form.numPersonas}</span>
-                  <button className="na-num-btn" onClick={() => set("numPersonas", (form.numPersonas || 0) + 1)}>+</button>
-                </div>
-              </div>
-            </div>
+            <FormularioClase
+              materia={form.materia}
+              docente={form.docente}
+              numPersonas={form.numPersonas}
+              docentesOptions={docentesOptions}
+              onChange={(field, value) => set(field as keyof FormData, value)}
+            />
           )}
-
+          {/* ── CONEXIÓN CON FORMULARIO MANTENIMIENTO ── */}
           {tipo === "mantenimiento" && currentStepKey === "datos" && (
-            <div className="na-fields">
-              <div className="na-field-group">
-                <label className="na-field-label">RESPONSABLE TÉCNICO</label>
-                <Select
-                  placeholder="Buscar técnico..."
-                  options={tecnicosOptions}
-                  value={tecnicosOptions.find(opt => opt.value === form.responsable) || null}
-                  onChange={(selected: any) => set("responsable", selected ? selected.value : "")}
-                  noOptionsMessage={() => "No se encontraron técnicos"}
-                  styles={{
-                    control: (base, state) => ({
-                      ...base,
-                      backgroundColor: '#f8fafc',
-                      borderColor: state.isFocused ? '#1a3a34' : '#e2e8f0',
-                      borderWidth: '1.5px',
-                      borderRadius: '8px',
-                      boxShadow: 'none',
-                      minHeight: '38px',
-                      fontSize: '13px',
-                      '&:hover': {
-                        borderColor: state.isFocused ? '#1a3a34' : '#cbd5e1'
-                      }
-                    }),
-                    menu: (base) => ({
-                      ...base,
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      fontSize: '13px',
-                      zIndex: 9999,
-                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
-                    }),
-                    option: (base, state) => ({
-                      ...base,
-                      backgroundColor: state.isSelected ? '#e2e8f0' : state.isFocused ? '#f1f5f9' : '#ffffff',
-                      color: '#1a1a1a',
-                      cursor: 'pointer',
-                      '&:active': {
-                        backgroundColor: '#cbd5e1'
-                      }
-                    }),
-                    singleValue: (base) => ({
-                      ...base,
-                      color: '#1a1a1a'
-                    }),
-                    input: (base) => ({
-                      ...base,
-                      color: '#1a1a1a'
-                    }),
-                    placeholder: (base) => ({
-                      ...base,
-                      color: '#aaa'
-                    })
-                  }}
-                />
-              </div>
-              <div className="na-field-group">
-                <label className="na-field-label">DESCRIPCIÓN DEL TRABAJO</label>
-                <textarea className="na-textarea" placeholder="Ej: Revisión general de equipos, cambio de fuente de poder #3..." value={form.descripcion || ""} onChange={(e) => set("descripcion", e.target.value)} />
-              </div>
-            </div>
+            <FormularioMantenimiento
+              responsable={form.responsable}
+              descripcion={form.descripcion}
+              tecnicosOptions={tecnicosOptions}
+              onChange={(field, value) => set(field as keyof FormData, value)}
+            />
           )}
-
+          {/* ── CONEXIÓN CON FORMULARIO RESERVA ── */}
           {tipo === "reserva" && currentStepKey === "datos" && (
-            <div className="na-fields">
-              <div className="na-field-group">
-                <label className="na-field-label">TÍTULO / MOTIVO</label>
-                <input className="na-input" placeholder="Ej: Demostración para visita académica, Práctica docente..." value={form.titulo || ""} onChange={(e) => set("titulo", e.target.value)} />
-              </div>
-            </div>
+            <FormularioReserva
+              titulo={form.titulo}
+              onChange={(field, value) => set(field as keyof FormData, value)}
+            />
           )}
 
           {/* ── PASO: LABORATORIO (y estación, solo para reserva) ── */}
@@ -859,77 +296,18 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
               )}
             </div>
           )}
-          {/* ── PASO: INSTRUMENTOS (clase y reserva) ── */}
+
+          {/* ── PASO: INSTRUMENTOS (clase y reserva) ──  CONEXION FORMULARIO*/}
           {currentStepKey === "instrumentos" && (tipo === "clase" || tipo === "reserva") && (
-            <div className="na-fields">
-              <div className="na-field-group">
-                <div className="inv-search-wrapper">
-                  <Search size={14} className="inv-search-icon" />
-                  <input
-                    className="na-input inv-search-input"
-                    type="text"
-                    placeholder="Buscar equipo o activo..."
-                    value={query}
-                    onChange={(e) => {
-                      setQuery(e.target.value);
-                      setShowResults(true);
-                    }}
-                    onFocus={() => setShowResults(true)}
-                    onBlur={() => setTimeout(() => setShowResults(false), 150)}
-                  />
-
-                  {showResults && resultados.length > 0 && (
-                    <ul className="inv-results">
-                      {resultados.map((equipo) => (
-                        <li
-                          key={equipo.id}
-                          className="inv-result-item"
-                          onMouseDown={() => agregarEquipo(equipo)}
-                        >
-                          <span className="inv-result-nombre">{equipo.nombre}</span>
-                          <span className={`inv-result-badge ${badgeClass(equipo.disponibles)}`}>
-                            {badgeLabel(equipo.disponibles)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                {equiposSeleccionados.length > 0 && (
-                  <ul className="inv-selected-list">
-                    {equiposSeleccionados.map((equipo) => (
-                      <li key={equipo.id} className="inv-selected-item">
-                        <div className="inv-selected-info">
-                          <span className="inv-selected-nombre">{equipo.nombre}</span>
-                          <span className={`inv-result-badge ${badgeClass(equipo.disponibles)}`}>
-                            {badgeLabel(equipo.disponibles)}
-                          </span>
-                        </div>
-                        <div className="inv-selected-actions">
-                          <div className="inv-cantidad-wrapper">
-                            <span className="inv-cantidad-label">Cantidad</span>
-                            <div className="inv-cantidad">
-                              <button type="button" onClick={() => disminuirCantidad(equipo.id)} disabled={(equipo.cantidad || 1) <= 1}>−</button>
-                              <span>{equipo.cantidad || 1}</span>
-                              <button type="button" onClick={() => aumentarCantidad(equipo.id)} disabled={(equipo.cantidad || 1) >= equipo.disponibles}>+</button>
-                            </div>
-                          </div>
-                          <button type="button" className="inv-quitar-btn" onClick={() => quitarEquipo(equipo.id)}>
-                            <X size={14} />
-                          </button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                <button type="button" className="inv-add-btn" onClick={() => setShowResults(true)}>
-                  <Plus size={13} />
-                  Añadir ítem
-                </button>
-              </div>
-            </div>
+            <SelectorInventario
+              inventario={inventarioDesdeBD}
+              equiposSeleccionados={equiposSeleccionados}
+              tieneLaboratorio={!!form.laboratorio}
+              onAgregar={agregarEquipo}
+              onQuitar={quitarEquipo}
+              onAumentar={aumentarCantidad}
+              onDisminuir={disminuirCantidad}
+            />
           )}
 
           {/* ── PASO: FECHA, HORA Y RESUMEN ── */}
@@ -960,7 +338,6 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
               </div>
             </div>
           )}
-
           {isLastStep && tipo && (
             <div className="na-resumen-card" style={{ marginTop: '20px' }}>
               <div className="na-resumen-line">
@@ -974,7 +351,6 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
               )}
             </div>
           )}
-
         </div>
 
         {/* Footer */}
@@ -1005,7 +381,6 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
     </div>
   );
 }
-
 /* ── Íconos inline ── */
 function CalendarIcon({ color }: { color: string }) {
   return (
