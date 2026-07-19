@@ -11,6 +11,7 @@ export interface LaboratorioDB {
     nombre: string;
     modo_reserva: ModoReserva;
     capacidad_maxima?: number;
+    coordinador_id?: number;
 }
 
 export interface EstacionDB {
