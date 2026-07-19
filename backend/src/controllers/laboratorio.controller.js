@@ -210,15 +210,15 @@ const updateEstacion = async (req, res) => {
 const updateLaboratorio = async (req, res) => {
     const { id } = req.params;
     const { 
-        nombre, descripcion, edificio, piso, aula, estado, capacidad_maxima 
+        nombre, descripcion, edificio, piso, aula, estado, capacidad_maxima, coordinador_id
     } = req.body;
 
     try {
         const updateQuery = `
             UPDATE laboratorios 
             SET nombre = $1, descripcion = $2, edificio = $3, piso = $4, 
-                aula = $5, estado = $6, capacidad_maxima = $7
-            WHERE id = $8
+                aula = $5, estado = $6, capacidad_maxima = $7, coordinador_id = $8
+            WHERE id = $9
             RETURNING *
         `;
         const values = [
@@ -229,6 +229,7 @@ const updateLaboratorio = async (req, res) => {
             aula, 
             estado || 'disponible', 
             capacidad_maxima || 0,
+            coordinador_id || null,
             id
         ];
 

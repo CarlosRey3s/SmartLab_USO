@@ -218,54 +218,56 @@ export const EspacioView: React.FC = () => {
               />
             </div>
             
-            <div style={{ position: 'relative' }} ref={filterRef}>
-              <button 
-                className="btn-filter" 
-                style={{ borderRadius: '20px' }}
-                onClick={() => setIsFilterOpen(!isFilterOpen)}
-              >
-                <Filter size={16} />
-                <span>Filtros</span>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+              <div style={{ position: 'relative' }} ref={filterRef}>
+                <button 
+                  className="btn-filter" 
+                  style={{ borderRadius: '20px' }}
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                >
+                  <Filter size={16} />
+                  <span>Filtros</span>
+                </button>
+
+                {isFilterOpen && (
+                  <div className="filter-dropdown-menu">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: '600', fontSize: '14px', color: '#334155' }}>Filtros</span>
+                      <button 
+                        onClick={() => { setFilterMode('todos'); setIsFilterOpen(false); }}
+                        style={{ fontSize: '12px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                      >
+                        Limpiar
+                      </button>
+                    </div>
+                    
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>Por Tipo de Espacio</label>
+                      <select
+                        value={filterMode}
+                        onChange={(e) => setFilterMode(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px',
+                          borderRadius: '6px',
+                          border: '1px solid #e2e8f0',
+                          fontSize: '14px'
+                        }}
+                      >
+                        <option value="todos">Todos</option>
+                        <option value="por_estacion">Por Estación de Trabajo</option>
+                        <option value="espacio_completo">Espacio Completo</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button className="btn-add-item" style={{ borderRadius: '20px', backgroundColor: '#32886c' }} onClick={openAddModal}>
+                <Plus size={16} />
+                <span>Item</span>
               </button>
-
-              {isFilterOpen && (
-                <div className="filter-dropdown-menu">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: '600', fontSize: '14px', color: '#334155' }}>Filtros</span>
-                    <button 
-                      onClick={() => { setFilterMode('todos'); setIsFilterOpen(false); }}
-                      style={{ fontSize: '12px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                    >
-                      Limpiar
-                    </button>
-                  </div>
-                  
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>Por Tipo de Espacio</label>
-                    <select
-                      value={filterMode}
-                      onChange={(e) => setFilterMode(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '8px',
-                        borderRadius: '6px',
-                        border: '1px solid #e2e8f0',
-                        fontSize: '14px'
-                      }}
-                    >
-                      <option value="todos">Todos</option>
-                      <option value="por_estacion">Por Estación de Trabajo</option>
-                      <option value="espacio_completo">Espacio Completo</option>
-                    </select>
-                  </div>
-                </div>
-              )}
             </div>
-
-            <button className="btn-add-item" style={{ borderRadius: '20px', backgroundColor: '#32886c' }} onClick={openAddModal}>
-              <Plus size={16} />
-              <span>Item</span>
-            </button>
           </div>
 
           <div className="table-container" style={{ overflow: 'visible' }}>

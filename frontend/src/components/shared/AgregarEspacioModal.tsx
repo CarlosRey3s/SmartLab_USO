@@ -3,6 +3,7 @@ import { X, Minus, Plus, Trash2 } from 'lucide-react';
 import { ConfirmModal } from '../confirm-modal/ConfirmModal';
 import { useAuth } from '../../context/AuthContext';
 import { laboratoriosService } from '../../services/laboratorios.service';
+import { usuariosService } from '../../services/usuarios.service';
 import '../../css/espacios.css';
 
 interface AgregarEspacioModalProps {
@@ -32,6 +33,23 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isConfirmUpdateOpen, setIsConfirmUpdateOpen] = useState(false);
+  const [coordinadores, setCoordinadores] = useState<any[]>([]);
+  const [coordinadorId, setCoordinadorId] = useState<string>('');
+  const [searchTermCoordinador, setSearchTermCoordinador] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -44,15 +62,36 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
         setEstado(editData.estado || 'disponible');
         setModoReserva(editData.modo_reserva || 'espacio_completo');
         setCapacidadMaxima(editData.capacidad_maxima || 20);
+        setCoordinadorId(editData.coordinador_id || '');
+        if (!editData.coordinador_id) setSearchTermCoordinador('');
         setEstaciones([]); 
       } else {
         setNombre(''); setDescripcion(''); setEdificio(''); setPiso(''); setAula('');
         setEstaciones([]); setCapacidadMaxima(20); setModoReserva('espacio_completo');
-        setEstado('disponible');
+        setEstado('disponible'); setCoordinadorId(''); setSearchTermCoordinador('');
       }
       setError('');
     }
   }, [isOpen, editData]);
+
+  useEffect(() => {
+    if (user?.rol === 'administrador') {
+      const fetchCoordinadores = async () => {
+        const data = await usuariosService.getUsuarios();
+        if (data.status === 'success') {
+          const coords = data.data.filter((u: any) => u.rol === 'coordinador');
+          setCoordinadores(coords);
+          if (editData && editData.coordinador_id) {
+            const found = coords.find((c: any) => c.id === editData.coordinador_id);
+            if (found) {
+              setSearchTermCoordinador(`${found.nombre} ${found.apellido}`);
+            }
+          }
+        }
+      };
+      fetchCoordinadores();
+    }
+  }, [user, editData]);
 
   if (!isOpen) return null;
 
@@ -131,6 +170,8 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
 
       if (user?.rol === 'coordinador') {
         payload.coordinador_id = user.id;
+      } else if (user?.rol === 'administrador' && coordinadorId) {
+        payload.coordinador_id = coordinadorId;
       }
 
       let data;
@@ -221,6 +262,64 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
               <input type="text" placeholder="Ej Aula L2" className="form-input" value={aula} onChange={e => setAula(e.target.value)} />
             </div>
           </div>
+
+          {user?.rol === 'administrador' && (
+            <div className="form-group" style={{ marginBottom: '16px' }} ref={dropdownRef}>
+              <label>ASIGNAR COORDINADOR (OPCIONAL)</label>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder="Buscar coordinador..." 
+                  value={searchTermCoordinador}
+                  onChange={(e) => {
+                    setSearchTermCoordinador(e.target.value);
+                    setCoordinadorId(''); 
+                    setIsDropdownOpen(true);
+                  }}
+                  onFocus={() => setIsDropdownOpen(true)}
+                />
+                {isDropdownOpen && (
+                  <div className="dropdown-options" style={{
+                    position: 'absolute', top: '100%', left: 0, right: 0, 
+                    backgroundColor: 'white', border: '1px solid #ccc', borderRadius: '4px',
+                    zIndex: 10, maxHeight: '150px', overflowY: 'auto', marginTop: '4px',
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                  }}>
+                    <div 
+                      style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
+                      onMouseDown={() => {
+                        setCoordinadorId('');
+                        setSearchTermCoordinador('');
+                        setIsDropdownOpen(false);
+                      }}
+                    >
+                      <em>Ninguno</em>
+                    </div>
+                    {coordinadores
+                      .filter(c => `${c.nombre} ${c.apellido}`.toLowerCase().includes(searchTermCoordinador.toLowerCase()))
+                      .map(c => (
+                        <div 
+                          key={c.id} 
+                          style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
+                          onMouseDown={() => {
+                            setCoordinadorId(c.id);
+                            setSearchTermCoordinador(`${c.nombre} ${c.apellido}`);
+                            setIsDropdownOpen(false);
+                          }}
+                        >
+                          {c.nombre} {c.apellido}
+                        </div>
+                      ))
+                    }
+                    {coordinadores.filter(c => `${c.nombre} ${c.apellido}`.toLowerCase().includes(searchTermCoordinador.toLowerCase())).length === 0 && (
+                      <div style={{ padding: '8px 12px', color: '#888' }}>No se encontraron resultados</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* CAPACIDAD GLOBAL (Sólo para Espacio Completo) */}
           {modoReserva === 'espacio_completo' && (
