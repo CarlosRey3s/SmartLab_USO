@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { Search, Plus, X, Monitor, Building2, Grid } from 'lucide-react';
 import Select from 'react-select';
 import { usuariosService } from '../../services/usuarios.service';
@@ -6,6 +5,12 @@ import { chequearDisponibilidad, obtenerInventarioDisponible } from '../../servi
 import { laboratoriosService } from '../../services/laboratorios.service';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/ModalNuevaActividad.css';
+import { FormularioMantenimiento } from './ModalActividades/FormularioMantenimiento';
+import { FormularioClase } from './ModalActividades/FormularioClase';
+import { FormularioReserva } from './ModalActividades/FormularioReserva';
+import { SelectorInventario } from './ModalActividades/SelectorInventario';
+
+import { useActividadForm, type FormData } from '../../hooks/useActividadForm';
 
 
 type TipoActividad = "clase" | "mantenimiento" | "reserva" | null;
@@ -119,17 +124,6 @@ const TIPO_LABEL: Record<string, string> = {
   reserva: "Reserva directa",
 };
 
-// ── Pasos por tipo de actividad ──────────────────────────
-// clase y mantenimiento no usan estación individual (no existe esa
-// relación en clases_academicas ni en mantenimientos, solo en
-// reservas_estudiantes), así que su paso "laboratorio" no muestra el mapa.
-const STEPS: Record<Exclude<TipoActividad, null>, string[]> = {
-  clase: ["datos", "horario", "laboratorio", "instrumentos"],
-  mantenimiento: ["datos", "horario", "laboratorio"],
-  reserva: ["datos", "horario", "laboratorio", "instrumentos"],
-};
-
-// Etiquetas cortas para el stepper numerado (debajo de cada círculo)
 const STEP_SHORT_LABELS: Record<string, string> = {
   datos: "General",
   laboratorio: "Espacio",
@@ -137,7 +131,27 @@ const STEP_SHORT_LABELS: Record<string, string> = {
   horario: "Fecha y hora",
 };
 
+interface NuevaActividadProps {
+  onClose: () => void;
+  onGuardar: (data: any) => void;
+  actividadExistente?: any;
+}
+
 export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: NuevaActividadProps) {
+  const {
+    form, set, tipo, stepIndex,
+    labsDesdeBD, cargandoLabs,
+    estacionesDesdeBD, cargandoEstaciones,
+    inventarioDesdeBD, cargandoInventario,
+    tecnicosOptions, docentesOptions,
+    estacionesOcupadas, bloqueoTotal, verificando, mostrarSoloDisponibles, setMostrarSoloDisponibles,
+    equiposSeleccionados, estacionesSeleccionadas,
+    agregarEquipo, quitarEquipo, aumentarCantidad, disminuirCantidad, toggleEstacion,
+    handleTipo, handleAtras, handleSiguiente, canSave,
+    steps, currentStepKey, isLastStep, laboratorioSeleccionado, modoReserva
+  } = useActividadForm({ actividadExistente, onGuardar, onClose });
+
+  // ... AQUÍ EMPIEZA TU HTML/JSX INTACTO COMO LO TENÍAS ...
   const { user } = useAuth();
   // ── Estados para llamadas a BD ──
   const [labsDesdeBD, setLabsDesdeBD] = useState<LaboratorioDB[]>([]);
@@ -478,7 +492,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
       return String(lab.coordinador_id) === String(user.id);
     }
     // Si es una reserva directa (tipo === 'reserva') o tiene otro rol (admin), ve todos
-    return true; 
+    return true;
   });
 
   const laboratorioSeleccionado = laboratoriosAMostrar.find((l) => l.id.toString() === form.laboratorio?.toString());
@@ -595,152 +609,31 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
             </>
           )}
 
-          {/* ── PASO: DATOS ── */}
+          {/* ── CONEXION CON FORMULARIO CLASE ── */}
           {tipo === "clase" && currentStepKey === "datos" && (
-            <div className="na-fields">
-              <div className="na-row2">
-                <div className="na-field-group">
-                  <label className="na-field-label">MATERIA / TÍTULO</label>
-                  <input className="na-input" placeholder="Ej: Física I, Electrónica Digital..." value={form.materia || ""} onChange={(e) => set("materia", e.target.value)} />
-                </div>
-                <div className="na-field-group">
-                  <label className="na-field-label">DOCENTE</label>
-                  <Select
-                    placeholder="Buscar docente..."
-                    options={docentesOptions}
-                    value={docentesOptions.find(opt => opt.value === form.docente) || null}
-                    onChange={(selected: any) => set("docente", selected ? selected.value : "")}
-                    noOptionsMessage={() => "No se encontraron docentes"}
-                    styles={{
-                      control: (base, state) => ({
-                        ...base,
-                        backgroundColor: '#f8fafc',
-                        borderColor: state.isFocused ? '#1a3a34' : '#e2e8f0',
-                        borderWidth: '1.5px',
-                        borderRadius: '8px',
-                        boxShadow: 'none',
-                        minHeight: '38px',
-                        fontSize: '13px',
-                        '&:hover': {
-                          borderColor: state.isFocused ? '#1a3a34' : '#cbd5e1'
-                        }
-                      }),
-                      menu: (base) => ({
-                        ...base,
-                        backgroundColor: '#ffffff',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        zIndex: 9999,
-                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
-                      }),
-                      option: (base, state) => ({
-                        ...base,
-                        backgroundColor: state.isSelected ? '#e2e8f0' : state.isFocused ? '#f1f5f9' : '#ffffff',
-                        color: '#1a1a1a',
-                        cursor: 'pointer',
-                        '&:active': {
-                          backgroundColor: '#cbd5e1'
-                        }
-                      }),
-                      singleValue: (base) => ({
-                        ...base,
-                        color: '#1a1a1a'
-                      }),
-                      input: (base) => ({
-                        ...base,
-                        color: '#1a1a1a'
-                      }),
-                      placeholder: (base) => ({
-                        ...base,
-                        color: '#aaa'
-                      })
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="na-field-group">
-                <label className="na-field-label">N° DE ESTUDIANTES</label>
-                <div className="na-num-row">
-                  <button className="na-num-btn" onClick={() => set("numPersonas", Math.max(1, (form.numPersonas || 1) - 1))}>−</button>
-                  <span className="na-num-val">{form.numPersonas}</span>
-                  <button className="na-num-btn" onClick={() => set("numPersonas", (form.numPersonas || 0) + 1)}>+</button>
-                </div>
-              </div>
-            </div>
+            <FormularioClase
+              materia={form.materia}
+              docente={form.docente}
+              numPersonas={form.numPersonas}
+              docentesOptions={docentesOptions}
+              onChange={(field, value) => set(field as keyof FormData, value)}
+            />
           )}
-
+          {/* ── CONEXIÓN CON FORMULARIO MANTENIMIENTO ── */}
           {tipo === "mantenimiento" && currentStepKey === "datos" && (
-            <div className="na-fields">
-              <div className="na-field-group">
-                <label className="na-field-label">RESPONSABLE TÉCNICO</label>
-                <Select
-                  placeholder="Buscar técnico..."
-                  options={tecnicosOptions}
-                  value={tecnicosOptions.find(opt => opt.value === form.responsable) || null}
-                  onChange={(selected: any) => set("responsable", selected ? selected.value : "")}
-                  noOptionsMessage={() => "No se encontraron técnicos"}
-                  styles={{
-                    control: (base, state) => ({
-                      ...base,
-                      backgroundColor: '#f8fafc',
-                      borderColor: state.isFocused ? '#1a3a34' : '#e2e8f0',
-                      borderWidth: '1.5px',
-                      borderRadius: '8px',
-                      boxShadow: 'none',
-                      minHeight: '38px',
-                      fontSize: '13px',
-                      '&:hover': {
-                        borderColor: state.isFocused ? '#1a3a34' : '#cbd5e1'
-                      }
-                    }),
-                    menu: (base) => ({
-                      ...base,
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      fontSize: '13px',
-                      zIndex: 9999,
-                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
-                    }),
-                    option: (base, state) => ({
-                      ...base,
-                      backgroundColor: state.isSelected ? '#e2e8f0' : state.isFocused ? '#f1f5f9' : '#ffffff',
-                      color: '#1a1a1a',
-                      cursor: 'pointer',
-                      '&:active': {
-                        backgroundColor: '#cbd5e1'
-                      }
-                    }),
-                    singleValue: (base) => ({
-                      ...base,
-                      color: '#1a1a1a'
-                    }),
-                    input: (base) => ({
-                      ...base,
-                      color: '#1a1a1a'
-                    }),
-                    placeholder: (base) => ({
-                      ...base,
-                      color: '#aaa'
-                    })
-                  }}
-                />
-              </div>
-              <div className="na-field-group">
-                <label className="na-field-label">DESCRIPCIÓN DEL TRABAJO</label>
-                <textarea className="na-textarea" placeholder="Ej: Revisión general de equipos, cambio de fuente de poder #3..." value={form.descripcion || ""} onChange={(e) => set("descripcion", e.target.value)} />
-              </div>
-            </div>
+            <FormularioMantenimiento
+              responsable={form.responsable}
+              descripcion={form.descripcion}
+              tecnicosOptions={tecnicosOptions}
+              onChange={(field, value) => set(field as keyof FormData, value)}
+            />
           )}
-
+          {/* ── CONEXIÓN CON FORMULARIO RESERVA ── */}
           {tipo === "reserva" && currentStepKey === "datos" && (
-            <div className="na-fields">
-              <div className="na-field-group">
-                <label className="na-field-label">TÍTULO / MOTIVO</label>
-                <input className="na-input" placeholder="Ej: Demostración para visita académica, Práctica docente..." value={form.titulo || ""} onChange={(e) => set("titulo", e.target.value)} />
-              </div>
-            </div>
+            <FormularioReserva
+              titulo={form.titulo}
+              onChange={(field, value) => set(field as keyof FormData, value)}
+            />
           )}
 
           {/* ── PASO: LABORATORIO (y estación, solo para reserva) ── */}
@@ -875,77 +768,18 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
               )}
             </div>
           )}
-          {/* ── PASO: INSTRUMENTOS (clase y reserva) ── */}
+
+          {/* ── PASO: INSTRUMENTOS (clase y reserva) ──  CONEXION FORMULARIO*/}
           {currentStepKey === "instrumentos" && (tipo === "clase" || tipo === "reserva") && (
-            <div className="na-fields">
-              <div className="na-field-group">
-                <div className="inv-search-wrapper">
-                  <Search size={14} className="inv-search-icon" />
-                  <input
-                    className="na-input inv-search-input"
-                    type="text"
-                    placeholder="Buscar equipo o activo..."
-                    value={query}
-                    onChange={(e) => {
-                      setQuery(e.target.value);
-                      setShowResults(true);
-                    }}
-                    onFocus={() => setShowResults(true)}
-                    onBlur={() => setTimeout(() => setShowResults(false), 150)}
-                  />
-
-                  {showResults && resultados.length > 0 && (
-                    <ul className="inv-results">
-                      {resultados.map((equipo) => (
-                        <li
-                          key={equipo.id}
-                          className="inv-result-item"
-                          onMouseDown={() => agregarEquipo(equipo)}
-                        >
-                          <span className="inv-result-nombre">{equipo.nombre}</span>
-                          <span className={`inv-result-badge ${badgeClass(equipo.disponibles)}`}>
-                            {badgeLabel(equipo.disponibles)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                {equiposSeleccionados.length > 0 && (
-                  <ul className="inv-selected-list">
-                    {equiposSeleccionados.map((equipo) => (
-                      <li key={equipo.id} className="inv-selected-item">
-                        <div className="inv-selected-info">
-                          <span className="inv-selected-nombre">{equipo.nombre}</span>
-                          <span className={`inv-result-badge ${badgeClass(equipo.disponibles)}`}>
-                            {badgeLabel(equipo.disponibles)}
-                          </span>
-                        </div>
-                        <div className="inv-selected-actions">
-                          <div className="inv-cantidad-wrapper">
-                            <span className="inv-cantidad-label">Cantidad</span>
-                            <div className="inv-cantidad">
-                              <button type="button" onClick={() => disminuirCantidad(equipo.id)} disabled={(equipo.cantidad || 1) <= 1}>−</button>
-                              <span>{equipo.cantidad || 1}</span>
-                              <button type="button" onClick={() => aumentarCantidad(equipo.id)} disabled={(equipo.cantidad || 1) >= equipo.disponibles}>+</button>
-                            </div>
-                          </div>
-                          <button type="button" className="inv-quitar-btn" onClick={() => quitarEquipo(equipo.id)}>
-                            <X size={14} />
-                          </button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                <button type="button" className="inv-add-btn" onClick={() => setShowResults(true)}>
-                  <Plus size={13} />
-                  Añadir ítem
-                </button>
-              </div>
-            </div>
+            <SelectorInventario
+              inventario={inventarioDesdeBD}
+              equiposSeleccionados={equiposSeleccionados}
+              tieneLaboratorio={!!form.laboratorio}
+              onAgregar={agregarEquipo}
+              onQuitar={quitarEquipo}
+              onAumentar={aumentarCantidad}
+              onDisminuir={disminuirCantidad}
+            />
           )}
 
           {/* ── PASO: FECHA, HORA Y RESUMEN ── */}
@@ -976,7 +810,6 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
               </div>
             </div>
           )}
-
           {isLastStep && tipo && (
             <div className="na-resumen-card" style={{ marginTop: '20px' }}>
               <div className="na-resumen-line">
@@ -990,7 +823,6 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
               )}
             </div>
           )}
-
         </div>
 
         {/* Footer */}
@@ -1021,7 +853,6 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
     </div>
   );
 }
-
 /* ── Íconos inline ── */
 function CalendarIcon({ color }: { color: string }) {
   return (
