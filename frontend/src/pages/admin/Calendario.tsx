@@ -2,7 +2,7 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import {
   Search, Calendar as CalendarIcon, ChevronLeft, ChevronRight,
   ChevronDown, ChevronUp, Plus, Printer, X, User, Wrench, FileText, Info,
-  Edit2, Trash2
+  Edit2, Trash2, Filter
 } from 'lucide-react';
 import { Calendar, dateFnsLocalizer, type ToolbarProps, type View } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isToday } from 'date-fns';
@@ -88,10 +88,14 @@ const eventStyleGetter = (event: EventoLaboratorio) => {
 // ── 4. BARRA DE HERRAMIENTAS CON BUSCADOR TIPO GOOGLE ──
 interface CustomToolbarProps extends ToolbarProps<EventoLaboratorio> {
   eventos: EventoLaboratorio[];
+  filtros: any;
+  setFiltros: any;
+  laboratoriosUnicos: string[];
 }
 
 const CustomToolbar = (toolbar: CustomToolbarProps) => {
   const [MenuVistaAbierto, setMenuVistaAbierto] = useState(false);
+  const [MenuFiltroAbierto, setMenuFiltroAbierto] = useState(false);
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [mostrarResultados, setMostrarResultados] = useState(false);
   const { irAFecha } = useContext(NavegacionContext);
@@ -101,6 +105,20 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
   const resultadosBusqueda = terminoBusqueda.trim() === ''
     ? []
     : toolbar.eventos.filter(e => e.title.toLowerCase().includes(terminoBusqueda.toLowerCase()));
+
+  const toggleFiltroActividad = (tipo: 'clases' | 'mantenimientos' | 'reservas') => {
+    toolbar.setFiltros((prev: any) => ({ ...prev, [tipo]: !prev[tipo] }));
+  };
+
+  const limpiarFiltros = () => {
+    toolbar.setFiltros({
+      clases: true,
+      mantenimientos: true,
+      reservas: true,
+      laboratorio: 'Todos',
+      tipoEspacio: 'Todos'
+    });
+  };
 
   return (
     <div className="calendar-toolbar-custom">
@@ -137,18 +155,83 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
           )}
         </div>
 
-        <div className="dropdown-container">
-          <button onClick={() => setMenuVistaAbierto(!MenuVistaAbierto)} className="btn-view active">
-            {{ month: 'Mes', week: 'Semana', work_week: 'Semana', day: 'Día', agenda: 'Agenda' }[toolbar.view] || 'Vista'}
-            {MenuVistaAbierto ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </button>
-          {MenuVistaAbierto && (
-            <div className="dropdown-menu">
-              <button onClick={() => cambiarVista('day')} className="dropdown-item">Día</button>
-              <button onClick={() => cambiarVista('week')} className="dropdown-item">Semana</button>
-              <button onClick={() => cambiarVista('month')} className="dropdown-item">Mes</button>
-            </div>
-          )}
+        <div className="toolbar-actions">
+          <div className="dropdown-container">
+            <button onClick={() => { setMenuFiltroAbierto(!MenuFiltroAbierto); setMenuVistaAbierto(false); }} className={`btn-view ${MenuFiltroAbierto ? 'active' : ''}`}>
+              <Filter size={16} /> Filtro
+            </button>
+            {MenuFiltroAbierto && (
+              <div className="filter-dropdown-menu">
+                <div className="filter-header">
+                  <span className="filter-title">Filtros</span>
+                  <button className="btn-limpiar" onClick={limpiarFiltros}>Limpiar</button>
+                </div>
+                
+                <div className="filter-section">
+                  <span className="filter-subtitle">Por Tipo de Actividad</span>
+                  <div className="filter-pills">
+                    <button 
+                      className={`filter-pill ${toolbar.filtros.clases ? 'active-clases' : 'inactive-clases'}`}
+                      onClick={() => toggleFiltroActividad('clases')}
+                    >
+                      <span className="pill-dot dot-clases"></span> Clases
+                    </button>
+                    <button 
+                      className={`filter-pill ${toolbar.filtros.mantenimientos ? 'active-mantenimientos' : 'inactive-mantenimientos'}`}
+                      onClick={() => toggleFiltroActividad('mantenimientos')}
+                    >
+                      <span className="pill-dot dot-mantenimientos"></span> Mantenimientos
+                    </button>
+                    <button 
+                      className={`filter-pill ${toolbar.filtros.reservas ? 'active-reservas' : 'inactive-reservas'}`}
+                      onClick={() => toggleFiltroActividad('reservas')}
+                    >
+                      <span className="pill-dot dot-reservas"></span> Reservas
+                    </button>
+                  </div>
+                </div>
+
+                <div className="filter-section">
+                  <span className="filter-subtitle">Por Laboratorio</span>
+                  <select 
+                    className="filter-select"
+                    value={toolbar.filtros.laboratorio}
+                    onChange={(e) => toolbar.setFiltros({ ...toolbar.filtros, laboratorio: e.target.value })}
+                  >
+                    <option value="Todos">Todos</option>
+                    {toolbar.laboratoriosUnicos.map((lab, i) => (
+                      <option key={i} value={lab}>{lab}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="filter-section">
+                  <span className="filter-subtitle">Por Tipo de Espacio</span>
+                  <select 
+                    className="filter-select"
+                    value={toolbar.filtros.tipoEspacio}
+                    onChange={(e) => toolbar.setFiltros({ ...toolbar.filtros, tipoEspacio: e.target.value })}
+                  >
+                    <option value="Todos">Todos</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="dropdown-container">
+            <button onClick={() => { setMenuVistaAbierto(!MenuVistaAbierto); setMenuFiltroAbierto(false); }} className="btn-view active">
+              {{ month: 'Mes', week: 'Semana', work_week: 'Semana', day: 'Día', agenda: 'Agenda' }[toolbar.view] || 'Vista'}
+              {MenuVistaAbierto ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+            {MenuVistaAbierto && (
+              <div className="dropdown-menu">
+                <button onClick={() => cambiarVista('day')} className="dropdown-item">Día</button>
+                <button onClick={() => cambiarVista('week')} className="dropdown-item">Semana</button>
+                <button onClick={() => cambiarVista('month')} className="dropdown-item">Mes</button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -170,6 +253,15 @@ export const CalendarioView = () => {
 
   // ESTADO NUEVO: Guarda qué actividad se va a editar
   const [actividadAEditar, setActividadAEditar] = useState<EventoLaboratorio | null>(null);
+
+  // ESTADO NUEVO: Filtros del calendario
+  const [filtros, setFiltros] = useState({
+    clases: true,
+    mantenimientos: true,
+    reservas: true,
+    laboratorio: 'Todos',
+    tipoEspacio: 'Todos'
+  });
 
   const cargarDatos = async () => {
     try {
@@ -267,6 +359,22 @@ export const CalendarioView = () => {
       customToast.error('Operación rechazada', error.message || 'Error desconocido');
     }
   };
+
+  // Filtrado de eventos basado en los filtros seleccionados
+  const eventosFiltrados = eventos.filter(evento => {
+    if (evento.tipo === 'clase' && !filtros.clases) return false;
+    if (evento.tipo === 'mantenimiento' && !filtros.mantenimientos) return false;
+    if (evento.tipo === 'reserva' && !filtros.reservas) return false;
+
+    if (filtros.laboratorio !== 'Todos' && evento.laboratorio_nombre !== filtros.laboratorio) return false;
+    
+    // Si existiera "tipoEspacio" en los eventos, se filtraría aquí
+    // if (filtros.tipoEspacio !== 'Todos' && evento.tipoEspacio !== filtros.tipoEspacio) return false;
+    
+    return true;
+  });
+
+  const laboratoriosUnicos = Array.from(new Set(eventos.map(e => e.laboratorio_nombre))).filter(Boolean);
 
   return (
     <NavegacionContext.Provider value={{ irAFecha: (fecha) => setFechaActual(fecha) }}>
@@ -385,7 +493,7 @@ export const CalendarioView = () => {
         <div className="calendar-main-container">
           <Calendar
             localizer={localizer}
-            events={eventos}
+            events={eventosFiltrados}
             startAccessor="start" endAccessor="end"
             date={fechaActual} onNavigate={setFechaActual}
             view={vistaActual} onView={setVistaActual}
@@ -394,7 +502,7 @@ export const CalendarioView = () => {
             eventPropGetter={eventStyleGetter}
             onSelectEvent={handleSelectEvent}
             components={{
-              toolbar: (props) => <CustomToolbar {...props} eventos={eventos} />,
+              toolbar: (props) => <CustomToolbar {...props} eventos={eventos} filtros={filtros} setFiltros={setFiltros} laboratoriosUnicos={laboratoriosUnicos} />,
               week: { header: CustomHeader }, day: { header: CustomHeader },
               month: { header: CustomMonthHeader, dateHeader: CustomDateHeader }, event: CustomEvent
             }}

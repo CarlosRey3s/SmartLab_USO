@@ -1133,3 +1133,160 @@
     transform: scale(0.98);
   }
 }
+/* =======================================================
+   ESTILOS DEL MENÚ DE FILTROS
+   ======================================================= */
+.toolbar-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.filter-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background-color: #27272a; /* Dark gray */
+  border: 1px solid #3f3f46;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  z-index: 99999;
+  padding: 1.25rem;
+  color: #fff;
+}
+
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.filter-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.btn-limpiar {
+  background: transparent;
+  border: none;
+  color: #fca5a5; /* Red/pink */
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.btn-limpiar:hover {
+  text-decoration: underline;
+}
+
+.filter-section {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1.25rem;
+}
+
+.filter-section:last-child {
+  margin-bottom: 0;
+}
+
+.filter-subtitle {
+  color: #0d9488; /* Teal */
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+
+.filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filter-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-clases { background-color: #059669; }
+.dot-mantenimientos { background-color: #ea580c; }
+.dot-reservas { background-color: #be123c; }
+
+/* Clases - Activo e Inactivo */
+.active-clases {
+  background-color: #d1fae5;
+  color: #064e3b;
+  border-color: #d1fae5;
+}
+.inactive-clases {
+  background-color: transparent;
+  color: #a1a1aa;
+  border-color: #3f3f46;
+}
+
+/* Mantenimientos - Activo e Inactivo */
+.active-mantenimientos {
+  background-color: #ffedd5;
+  color: #9a3412;
+  border-color: #ffedd5;
+}
+.inactive-mantenimientos {
+  background-color: transparent;
+  color: #a1a1aa;
+  border-color: #3f3f46;
+}
+
+/* Reservas - Activo e Inactivo */
+.active-reservas {
+  background-color: #ffe4e6;
+  color: #881337;
+  border-color: #ffe4e6;
+}
+.inactive-reservas {
+  background-color: transparent;
+  color: #a1a1aa;
+  border-color: #3f3f46;
+}
+
+.filter-select {
+  background-color: #18181b;
+  color: #fff;
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  padding: 0.625rem;
+  font-size: 0.875rem;
+  width: 100%;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.25rem;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #0d9488;
+}
+
+.filter-select option {
+  background-color: #18181b;
+  color: #fff;
+}
