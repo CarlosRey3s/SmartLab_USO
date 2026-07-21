@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Monitor, FlaskConical, X } from 'lucide-react';
+import { Calendar, Monitor, FlaskConical, X, Upload } from 'lucide-react';
 import { inventarioService } from '../../services/inventario.service';
 import { laboratoriosService } from '../../services/laboratorios.service';
 import type { Laboratorio } from '../../types/laboratorio.types';
 import { customToast, CustomToastProvider } from '../custom-toast/CustomToast';
 import { ConfirmModal } from '../confirm-modal/ConfirmModal';
+import { useAuth } from '../../context/AuthContext';
 import '../../css/inventario.css';
 
 interface AgregarItemModalProps {
@@ -15,6 +16,7 @@ interface AgregarItemModalProps {
 }
 
 export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onClose, onSuccess, editData }) => {
+  const { user } = useAuth();
   const [tipoItem, setTipoItem] = useState<'general' | 'instrumentacion'>('general');
   const [loading, setLoading] = useState(false);
   const [laboratorios, setLaboratorios] = useState<Laboratorio[]>([]);
@@ -30,6 +32,8 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onCl
   const [cantidad, setCantidad] = useState(0);
   const [stockMinimo, setStockMinimo] = useState(0);
   const [unidadMedida, setUnidadMedida] = useState('Unidad');
+  const [imagenFile, setImagenFile] = useState<File | null>(null);
+  const [imagenPreview, setImagenPreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -45,6 +49,8 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onCl
         setCantidad(editData.cantidad_actual || 0);
         setStockMinimo(editData.stock_minimo || 0);
         setUnidadMedida(editData.unidad_medida || 'Unidad');
+        setImagenPreview(editData.imagen_url ? (editData.imagen_url.startsWith('http') ? editData.imagen_url : `http://localhost:4000${editData.imagen_url}`) : null);
+        setImagenFile(null);
       } else {
         limpiarFormulario();
       }
@@ -55,7 +61,12 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onCl
     try {
       const response = await laboratoriosService.getLaboratorios();
       if (response.success || (response as any).status === 'success') {
-        setLaboratorios(response.data);
+        const labs = response.data || (response as any).data;
+        if (user?.rol === 'coordinador') {
+          setLaboratorios(labs.filter((lab: any) => lab.coordinador_id === user.id));
+        } else {
+          setLaboratorios(labs);
+        }
       }
     } catch (error) {
       console.error("Error al cargar laboratorios", error);
@@ -72,6 +83,8 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onCl
     setCantidad(0);
     setStockMinimo(0);
     setUnidadMedida('Unidad');
+    setImagenFile(null);
+    setImagenPreview(null);
   };
 
   const handleGuardar = () => {
@@ -90,25 +103,29 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onCl
   const executeGuardar = async () => {
     setLoading(true);
     try {
-      const payload = {
-        laboratorio_id: laboratorioId,
-        nombre,
-        codigo_interno: codigoInterno,
-        numero_cas: tipoItem === 'instrumentacion' ? numeroCas : null,
-        categoria,
-        ubicacion_fisica: ubicacionFisica,
-        unidad_medida: unidadMedida,
-        tipo_control: tipoItem === 'instrumentacion' ? 'instrumentacion' : 'general',
-        cantidad_actual: Number(cantidad),
-        stock_minimo: Number(stockMinimo),
-        imagen_url: editData?.imagen_url || null
-      };
+      const formData = new FormData();
+      formData.append('laboratorio_id', laboratorioId);
+      formData.append('nombre', nombre);
+      formData.append('codigo_interno', codigoInterno);
+      if (tipoItem === 'instrumentacion' && numeroCas) formData.append('numero_cas', numeroCas);
+      formData.append('categoria', categoria);
+      formData.append('ubicacion_fisica', ubicacionFisica);
+      formData.append('unidad_medida', unidadMedida);
+      formData.append('tipo_control', tipoItem === 'instrumentacion' ? 'instrumentacion' : 'general');
+      formData.append('cantidad_actual', cantidad.toString());
+      formData.append('stock_minimo', stockMinimo.toString());
+      
+      if (imagenFile) {
+        formData.append('imagen', imagenFile);
+      } else if (editData?.imagen_url) {
+        formData.append('imagen_url', editData.imagen_url);
+      }
 
       if (editData) {
-        await inventarioService.actualizarItem(editData.id, payload);
+        await inventarioService.actualizarItem(editData.id, formData);
         customToast.success("¡Éxito!", "Ítem actualizado exitosamente");
       } else {
-        await inventarioService.crearItem(payload);
+        await inventarioService.crearItem(formData);
         customToast.success("¡Éxito!", "Ítem guardado exitosamente");
       }
       
@@ -120,6 +137,18 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onCl
     } finally {
       setLoading(false);
       setIsConfirmUpdateOpen(false);
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImagenFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagenPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -247,6 +276,8 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onCl
             </div>
           </div>
 
+
+
           {/* UBICACIÓN FÍSICA (Solo en ítem general) */}
           {tipoItem === 'general' && (
             <div className="form-section">
@@ -304,6 +335,28 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onCl
                   <option value="Galones">Galones</option>
                 </select>
               </div>
+            </div>
+          </div>
+
+          {/* IMAGEN */}
+          <div className="form-section">
+            <h3 className="section-title">IMAGEN (OPCIONAL)</h3>
+            <div className="image-upload-area" onClick={() => document.getElementById('item-image-upload')?.click()}>
+              {imagenPreview ? (
+                <img src={imagenPreview} alt="Preview" style={{ maxHeight: '150px', borderRadius: '6px' }} />
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                  <Upload size={24} />
+                  <span>Haz clic para subir una imagen</span>
+                </div>
+              )}
+              <input 
+                id="item-image-upload" 
+                type="file" 
+                accept="image/*" 
+                style={{ display: 'none' }} 
+                onChange={handleImageChange}
+              />
             </div>
           </div>
 

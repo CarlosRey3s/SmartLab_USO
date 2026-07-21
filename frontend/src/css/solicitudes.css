@@ -1,0 +1,191 @@
+.panel-solicitudes {
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  /* Adjusting height to fit nicely in sidebar */
+  flex: 1;
+  overflow: hidden;
+}
+
+.solicitudes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.solicitudes-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.badge-pendientes {
+  background-color: #fef3c7; /* Light yellow from system */
+  color: #92400e; /* Darker yellow/brown text */
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.solicitudes-tabs {
+  display: flex;
+  gap: 0.25rem;
+  background-color: #f3f4f6;
+  padding: 0.25rem;
+  border-radius: 6px;
+}
+
+.tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 0.375rem 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #4b5563;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  background-color: #ffffff;
+  color: #0f766e; /* System teal */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  font-weight: 600;
+}
+
+.solicitudes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+/* Scrollbar for list */
+.solicitudes-list::-webkit-scrollbar {
+  width: 4px;
+}
+.solicitudes-list::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+  border-radius: 4px;
+}
+
+.solicitud-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background-color: #f9fafb;
+}
+
+.solicitud-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.solicitud-card-header h4 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.2;
+}
+
+.rol-badge {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.rol-badge.coordinador {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.rol-badge.administrador {
+  background-color: #ede9fe; /* Light purple */
+  color: #5b21b6;
+}
+
+.solicitud-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.solicitud-nombre {
+  font-size: 0.75rem;
+  color: #4b5563;
+}
+
+.solicitud-hora {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.solicitud-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.btn-aprobar, .btn-rechazar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.4rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: white;
+  transition: opacity 0.2s;
+}
+
+.btn-aprobar:hover, .btn-rechazar:hover {
+  opacity: 0.9;
+}
+
+.btn-aprobar {
+  background-color: #0f766e; /* System teal (could also use #22c55e green if preferred, but teal fits system better) */
+}
+
+.btn-rechazar {
+  background-color: #AD868A; /* System pink/red */
+}
+
+.btn-detalle {
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  font-size: 0.75rem;
+  padding: 0.25rem;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-top: 0.25rem;
+}
+
+.btn-detalle:hover {
+  color: #374151;
+}

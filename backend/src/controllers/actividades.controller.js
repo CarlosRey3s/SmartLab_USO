@@ -7,14 +7,12 @@ const crearActividad = async (req, res) => {
         //const idAdminLogueado = req.usuario.id;
         //Cambiarlo cuando se tenga el middleware de autenticación implementado. Por ahora, lo dejamos hardcodeado para pruebas.
         // Y tambien cuando se trabaje con el login de usuatio y la interfaz.
-        const idAdminLogueado = "1";
-
-        console.log("ID del usuario logueado en el controlador:", idAdminLogueado);
-        // o si viene del request:
-        console.log("Usuario en el req:", req.user);
-
         // 2. Extraer la información que viene del modal de React
         const datosModal = req.body;
+
+        const idAdminLogueado = datosModal.usuario_id || "1";
+
+        console.log("ID del usuario logueado en el controlador:", idAdminLogueado);
 
         // 3. Llamaremos al servicio para que procese la información y guarde
         const nuevaActividad = await actividadesService.programarActividad(datosModal, idAdminLogueado);
@@ -65,8 +63,8 @@ const actualizarActividad = async (req, res) => {
     try {
 
         const idactividad = req.params.id; // extraer el id de la URL
-        const idAdminLogueado = "1"; // Cambiar cuando se tenga el middleware de autenticación implementado
         const datosModal = req.body; // extraer los datos del cuerpo de la solicitud
+        const idAdminLogueado = datosModal.usuario_id || "1"; // Cambiar cuando se tenga el middleware de autenticación implementado
 
         // Llamar al servicio para actualizar la actividad
         const resultado = await actividadesService.actualizarActividad(idactividad, datosModal, idAdminLogueado);
@@ -110,5 +108,23 @@ const eliminarActividad = async (req, res) => {
 
     };
 }
-// Exportamos el controlador
-module.exports = { crearActividad, obtenerTodasLasActividades, actualizarActividad, eliminarActividad };
+
+// Añade esta función:
+const consultarDisponibilidad = async (req, res) => {
+    try {
+        const { laboratorio_id, fecha, hora_inicio, hora_fin, exclude_id } = req.query;
+        if (!laboratorio_id || !fecha || !hora_inicio || !hora_fin) {
+            return res.status(400).json({ exito: false, mensaje: 'Faltan parámetros de tiempo o laboratorio' });
+        }
+
+        const disponibilidad = await actividadesService.obtenerDisponibilidad(
+            laboratorio_id, fecha, hora_inicio, hora_fin, exclude_id
+        );
+        res.status(200).json({ exito: true, data: disponibilidad });
+    } catch (error) {
+        res.status(500).json({ exito: false, mensaje: error.message });
+    }
+};
+
+// Exórtala al final:
+module.exports = { crearActividad, obtenerTodasLasActividades, actualizarActividad, eliminarActividad, consultarDisponibilidad };

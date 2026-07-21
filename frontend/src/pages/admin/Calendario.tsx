@@ -6,13 +6,14 @@ import {
 } from 'lucide-react';
 import { Calendar, dateFnsLocalizer, type ToolbarProps, type View } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isToday } from 'date-fns';
-import { MiniCalendario } from './MiniCalendario.tsx';
 import { es } from 'date-fns/locale/es';
+import { PanelSolicitudes } from './PanelSolicitudes.tsx';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { ModalNuevaActividad } from '../../components/shared/ModalNuevaActividad';
 import { obtenerActividades, crearActividad, actualizarActividad, eliminarActividad } from '../../services/actividades.service';
 import '../../css/calendario.css';
 import { customToast } from '../../components/custom-toast/CustomToast.tsx';
+import { useAuth } from '../../context/AuthContext';
 
 // ── 1. CONFIGURACIÓN DE FECHAS E IDIOMA ──
 const locales = { 'es': es };
@@ -28,17 +29,23 @@ export interface EventoLaboratorio {
   title: string;
   start: Date;
   end: Date;
-  laboratorio: string;
-  laboratorio_id?: number; // Asegúrate de tener este campo mapeado desde tu backend
   tipo: 'clase' | 'mantenimiento' | 'reserva';
+  laboratorio_id: number;
+  laboratorio_nombre: string; // Cambio: Ahora es obligatorio o string directo
+  coordinador_id?: number; // Agregado
   materia?: string;
-  docente_id?: string;
+  docente_id?: number;
+  docente_nombre?: string; // ¡Añadir!
   clase_estudiantes?: number;
-  tecnico_responsable?: string;
+  tecnico_responsable?: number;
+  tecnico_nombre?: string; // ¡Añadir!
   mant_descripcion?: string;
   reserva_titulo?: string;
   reserva_nota?: string;
   estado_reserva?: string;
+  usuario_id?: number;
+  estaciones?: number[];
+  equipos?: Array<{ id: number; nombre: string; cantidad: number }>; // ¡Añadir!
 }
 
 // ── 3. COMPONENTES PERSONALIZADOS DEL CALENDARIO ──
@@ -72,8 +79,8 @@ const CustomEvent = ({ event }: any) => (
 const eventStyleGetter = (event: EventoLaboratorio) => {
   let className = 'evento-base';
   if (event.tipo === 'mantenimiento') className += ' evento-mantenimiento';
-  else if (event.laboratorio === 'Lab de Redes') className += ' evento-sistema-teal';
-  else if (event.laboratorio === 'Lab de Computo') className += ' evento-sistema-amarillo';
+  else if (event.laboratorio_nombre === 'Lab de Redes') className += ' evento-sistema-teal';
+  else if (event.laboratorio_nombre === 'Lab de Computo') className += ' evento-sistema-amarillo';
   else className += ' evento-sistema-teal';
   return { className };
 };
@@ -150,7 +157,8 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
 
 // ── 5. COMPONENTE PRINCIPAL (VISTA) ──
 export const CalendarioView = () => {
-  const [fechaActual, setFechaActual] = useState(new Date(2026, 6, 6));
+  const { user } = useAuth();
+  const [fechaActual, setFechaActual] = useState(new Date());
   const [vistaActual, setVistaActual] = useState<View>('week');
   const [modalAbierto, setModalAbierto] = useState(false);
 
@@ -274,12 +282,28 @@ export const CalendarioView = () => {
           >
             <div className="popover-header">
               <div className="popover-actions">
-                <button className="btn-popover-action" onClick={handleEditarEvento} title="Editar">
-                  <Edit2 size={16} />
-                </button>
-                <button className="btn-popover-action btn-delete" onClick={handleEliminarEvento} title="Eliminar">
-                  <Trash2 size={16} />
-                </button>
+                {(() => {
+                  if (!user) return false;
+                  if (user.rol === 'administrador') return true;
+                  if (user.rol === 'coordinador') {
+                    // Si el evento tiene coordinador_id, solo el suyo. Si no, permitir (o denegar según política, aquí mantengo el "String(eventoSeleccionado.coordinador_id) === String(user.id)" de antes)
+                    return !eventoSeleccionado.coordinador_id || String(eventoSeleccionado.coordinador_id) === String(user.id);
+                  }
+                  if (user.rol === 'docente') {
+                    // Docente solo puede editar/eliminar si es una reserva y le pertenece
+                    return eventoSeleccionado.tipo === 'reserva' && String(eventoSeleccionado.usuario_id) === String(user.id);
+                  }
+                  return false;
+                })() && (
+                  <>
+                    <button className="btn-popover-action" onClick={handleEditarEvento} title="Editar">
+                      <Edit2 size={16} />
+                    </button>
+                    <button className="btn-popover-action btn-delete" onClick={handleEliminarEvento} title="Eliminar">
+                      <Trash2 size={16} />
+                    </button>
+                  </>
+                )}
                 <button className="btn-popover-action" onClick={() => setEventoSeleccionado(null)} title="Cerrar">
                   <X size={18} />
                 </button>
@@ -292,21 +316,24 @@ export const CalendarioView = () => {
             </div>
 
             <div className="popover-body">
+              {/* 1. Aquí cambiamos .laboratorio por .laboratorio_nombre */}
               <div className="popover-row">
                 <CalendarIcon size={16} className="popover-icon" />
-                <span>{eventoSeleccionado.laboratorio}</span>
+                <span>{eventoSeleccionado.laboratorio_nombre}</span>
               </div>
 
               {eventoSeleccionado.tipo === 'clase' && (
                 <>
                   <div className="popover-row"><FileText size={16} className="popover-icon" /> <span>Materia: {eventoSeleccionado.materia}</span></div>
-                  <div className="popover-row"><User size={16} className="popover-icon" /> <span>Docente ID: {eventoSeleccionado.docente_id}</span></div>
+                  {/* 2. Aquí quitamos el ID y ponemos el nombre del Docente */}
+                  <div className="popover-row"><User size={16} className="popover-icon" /> <span>Docente: {eventoSeleccionado.docente_nombre || 'No asignado'}</span></div>
                 </>
               )}
 
               {eventoSeleccionado.tipo === 'mantenimiento' && (
                 <>
-                  <div className="popover-row"><Wrench size={16} className="popover-icon text-red" /> <span>Técnico ID: {eventoSeleccionado.tecnico_responsable}</span></div>
+                  {/* 3. Aquí quitamos el ID y ponemos el nombre del Técnico */}
+                  <div className="popover-row"><Wrench size={16} className="popover-icon text-red" /> <span>Técnico: {eventoSeleccionado.tecnico_nombre || 'No asignado'}</span></div>
                   <div className="popover-row"><FileText size={16} className="popover-icon" /> <span className="text-sm">{eventoSeleccionado.mant_descripcion}</span></div>
                 </>
               )}
@@ -315,9 +342,34 @@ export const CalendarioView = () => {
                 <>
                   <div className="popover-row"><User size={16} className="popover-icon" /> <span>Reserva: {eventoSeleccionado.reserva_titulo}</span></div>
                   <div className="popover-row"><FileText size={16} className="popover-icon" /> <span className="text-sm">Nota: {eventoSeleccionado.reserva_nota}</span></div>
+
+                  {/* Estaciones Reservadas */}
+                  {eventoSeleccionado.estaciones && eventoSeleccionado.estaciones.length > 0 && (
+                    <div className="popover-row">
+                      <span className="text-sm text-gray-700">🖥️ Estaciones: {eventoSeleccionado.estaciones.join(', ')}</span>
+                    </div>
+                  )}
+
+                  {/* 4. EL INVENTARIO: Aquí inyectamos la lista dinámica de equipos */}
+                  {eventoSeleccionado.equipos && eventoSeleccionado.equipos.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-gray-200">
+                      <p className="text-xs font-semibold text-gray-500 mb-1">
+                        📦 MATERIALES SOLICITADOS:
+                      </p>
+                      <ul className="space-y-1">
+                        {eventoSeleccionado.equipos.map((equipo: any) => (
+                          <li key={equipo.id} className="text-sm text-gray-700 flex justify-between bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
+                            <span>• {equipo.nombre}</span>
+                            <strong className="text-indigo-600">Cant: {equipo.cantidad}</strong>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </>
               )}
             </div>
+
           </div>
         )}
 
@@ -355,7 +407,7 @@ export const CalendarioView = () => {
             <Plus size={20} /> Crear
           </button>
 
-          <MiniCalendario fechaSeleccionada={fechaActual} onFechaCambiada={setFechaActual} />
+          <PanelSolicitudes />
 
           <button className="btn-exportar"><Printer size={20} /> Exportar</button>
         </div>

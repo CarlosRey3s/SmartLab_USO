@@ -7,7 +7,13 @@ const getAllLaboratorios = async (req, res) => {
             SELECT 
                 l.id, l.nombre, l.descripcion, l.edificio, l.piso, l.aula, l.estado, 
                 l.modo_reserva, l.capacidad_maxima, l.coordinador_id,
-                u.nombre as coordinador_nombre
+                u.nombre as coordinador_nombre,
+                EXISTS (
+                    SELECT 1 FROM actividades a 
+                    WHERE a.laboratorio_id = l.id 
+                    AND a.fecha_hora_inicio <= NOW() 
+                    AND a.fecha_hora_fin >= NOW()
+                ) as ocupado
             FROM laboratorios l
             LEFT JOIN usuarios u ON l.coordinador_id = u.id
             ORDER BY l.nombre ASC
@@ -95,7 +101,23 @@ const getEstaciones = async (req, res) => {
     const { id } = req.params;
     try {
         const result = await pool.query(
-            'SELECT id, nombre, capacidad, estado FROM estaciones_trabajo WHERE laboratorio_id = $1 ORDER BY nombre ASC',
+            `SELECT 
+                e.id, e.nombre, e.capacidad, e.estado,
+                EXISTS (
+                    SELECT 1 
+                    FROM actividades a 
+                    LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id
+                    WHERE a.laboratorio_id = $1 
+                      AND a.fecha_hora_inicio <= NOW() 
+                      AND a.fecha_hora_fin >= NOW()
+                      AND (
+                         a.tipo IN ('clase', 'mantenimiento') OR 
+                         (a.tipo = 'reserva' AND (re.estacion_id IS NULL OR re.estacion_id = e.id))
+                      )
+                ) as ocupado
+             FROM estaciones_trabajo e 
+             WHERE e.laboratorio_id = $1 
+             ORDER BY e.nombre ASC`,
             [id]
         );
         res.json({ status: 'success', data: result.rows });
@@ -162,19 +184,41 @@ const deleteEstacion = async (req, res) => {
     }
 };
 
+// Actualizar estado de una estacion
+const updateEstacion = async (req, res) => {
+    const { id } = req.params;
+    const { estado } = req.body;
+    try {
+        const updateQuery = `
+            UPDATE estaciones_trabajo 
+            SET estado = $1
+            WHERE id = $2
+            RETURNING *
+        `;
+        const result = await pool.query(updateQuery, [estado, id]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ status: 'error', message: 'Estación no encontrada' });
+        }
+        res.json({ status: 'success', message: 'Estación actualizada exitosamente', data: result.rows[0] });
+    } catch (error) {
+        console.error('Error al actualizar estación:', error);
+        res.status(500).json({ status: 'error', message: 'Error interno del servidor' });
+    }
+};
+
 // Actualizar un laboratorio
 const updateLaboratorio = async (req, res) => {
     const { id } = req.params;
     const { 
-        nombre, descripcion, edificio, piso, aula, estado, capacidad_maxima 
+        nombre, descripcion, edificio, piso, aula, estado, capacidad_maxima, coordinador_id
     } = req.body;
 
     try {
         const updateQuery = `
             UPDATE laboratorios 
             SET nombre = $1, descripcion = $2, edificio = $3, piso = $4, 
-                aula = $5, estado = $6, capacidad_maxima = $7
-            WHERE id = $8
+                aula = $5, estado = $6, capacidad_maxima = $7, coordinador_id = $8
+            WHERE id = $9
             RETURNING *
         `;
         const values = [
@@ -185,6 +229,7 @@ const updateLaboratorio = async (req, res) => {
             aula, 
             estado || 'disponible', 
             capacidad_maxima || 0,
+            coordinador_id || null,
             id
         ];
 
@@ -229,5 +274,6 @@ module.exports = {
     deleteLaboratorio,
     getEstaciones,
     addEstaciones,
-    deleteEstacion
+    deleteEstacion,
+    updateEstacion
 };

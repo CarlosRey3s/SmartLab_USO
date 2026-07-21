@@ -4,7 +4,7 @@ const router = express.Router();
 // 1. Importamos el controlador
 const actividadesController = require('../controllers/actividades.controller.js');
 
-// 2. Importamos el middleware (¡Asegúrate de que en el archivo de origen se llame exactamente igual y se exporte en un objeto!)
+// 2. Importamos el middleware 
 const { validarActividades } = require('../middlewares/validarActividades.js');
 
 // 3. Middleware dummy de prueba
@@ -23,4 +23,6 @@ router.post('/', dummyAuth, validarActividades, actividadesController.crearActiv
 router.get('/', actividadesController.obtenerTodasLasActividades);
 router.put('/:id', dummyAuth, validarActividades, actividadesController.actualizarActividad);
 router.delete('/:id', dummyAuth, actividadesController.eliminarActividad);
+router.get('/disponibilidad', dummyAuth, actividadesController.consultarDisponibilidad);
+
 module.exports = router;

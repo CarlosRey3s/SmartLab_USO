@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import "../../css/buzonSugerencias.css";
 import { customToast } from "../../components/custom-toast/CustomToast";
+import { useAuth } from "../../context/AuthContext";
+import { laboratoriosService } from "../../services/laboratorios.service";
 
 interface Sugerencia {
   id: number;
+  usuario_id: number;
   titulo: string;
   comentario: string;
   estado_gestion: string;
@@ -17,6 +20,8 @@ interface Laboratorio {
 }
 
 export const BuzonSugerencias: React.FC = () => {
+  const { user } = useAuth();
+  
   const [titulo, setTitulo] = useState("");
   const [categoria, setCategoria] = useState("");
   const [laboratorioId, setLaboratorioId] = useState("");
@@ -25,6 +30,8 @@ export const BuzonSugerencias: React.FC = () => {
   const [sugerencias, setSugerencias] = useState<Sugerencia[]>([]);
   const [laboratorios, setLaboratorios] = useState<Laboratorio[]>([]);
   const [loading, setLoading] = useState(false);
+  const [mostrarTodas, setMostrarTodas] = useState(false);
+  const [sugerenciaExpandida, setSugerenciaExpandida] = useState<number | null>(null);
 
   useEffect(() => {
     fetchSugerencias();
@@ -36,7 +43,8 @@ export const BuzonSugerencias: React.FC = () => {
       const res = await fetch('http://localhost:4000/api/sugerencias');
       const data = await res.json();
       if (data.status === 'success') {
-        setSugerencias(data.data);
+        const mySugerencias = data.data.filter((sug: Sugerencia) => sug.usuario_id === parseInt(user?.id || '0'));
+        setSugerencias(mySugerencias);
       }
     } catch (error) {
       console.error("Error cargando sugerencias", error);
@@ -45,8 +53,7 @@ export const BuzonSugerencias: React.FC = () => {
 
   const fetchLaboratorios = async () => {
     try {
-      const res = await fetch('http://localhost:4000/api/laboratorios');
-      const data = await res.json();
+      const data = await laboratoriosService.getLaboratorios();
       if (data.status === 'success') {
         setLaboratorios(data.data);
       }
@@ -69,7 +76,7 @@ export const BuzonSugerencias: React.FC = () => {
     const comentarioFinal = `[Categoría: ${categoria}]\n${descripcion}`;
 
     const payload = {
-      usuario_id: 2, // Hardcoded para la demostración (Estudiante)
+      usuario_id: user?.id ? parseInt(user.id) : 2, // Se envía el id del usuario logueado
       laboratorio_id: laboratorioId ? parseInt(laboratorioId) : null,
       titulo,
       comentario: comentarioFinal
@@ -184,51 +191,87 @@ export const BuzonSugerencias: React.FC = () => {
 
         {/* HISTORIAL */}
         <div className="buzon-historial">
-
           <h3>Mis sugerencias</h3>
 
           {sugerencias.length === 0 ? (
             <p style={{ color: '#666', fontStyle: 'italic', marginTop: '10px' }}>No has enviado ninguna sugerencia aún.</p>
           ) : (
-            sugerencias.map((sug) => {
-              // Extraer categoría del comentario (si existe) para mostrarla más limpia
-              const match = sug.comentario.match(/\[Categoría:\s(.*?)\]\n([\s\S]*)/);
-              const comentarioLimpio = match ? match[2] : sug.comentario;
-              
-              let estadoClase = '';
-              let estadoTexto = '';
-              
-              switch(sug.estado_gestion) {
-                case 'pendiente': estadoClase = 'pendiente'; estadoTexto = 'En revisión'; break;
-                case 'en_revisión': estadoClase = 'pendiente'; estadoTexto = 'En revisión'; break;
-                case 'atendida': estadoClase = 'respondida'; estadoTexto = 'Respondida'; break;
-                case 'archivada': estadoClase = 'archivada'; estadoTexto = 'Archivada'; break;
-                default: estadoClase = 'pendiente'; estadoTexto = 'Pendiente';
-              }
+            <>
+              {(mostrarTodas ? sugerencias : sugerencias.slice(0, 2)).map((sug) => {
+                const match = sug.comentario.match(/\[Categoría:\s(.*?)\]\n([\s\S]*)/);
+                const comentarioLimpio = match ? match[2] : sug.comentario;
+                
+                let estadoClase = '';
+                let estadoTexto = '';
+                
+                switch(sug.estado_gestion) {
+                  case 'pendiente': estadoClase = 'pendiente'; estadoTexto = 'En revisión'; break;
+                  case 'en_revisión': estadoClase = 'pendiente'; estadoTexto = 'En revisión'; break;
+                  case 'atendida': estadoClase = 'respondida'; estadoTexto = 'Respondida'; break;
+                  case 'archivada': estadoClase = 'archivada'; estadoTexto = 'Archivada'; break;
+                  default: estadoClase = 'pendiente'; estadoTexto = 'Pendiente';
+                }
 
-              return (
-                <div className="sugerencia-card" key={sug.id}>
-                  <div className={`estado ${estadoClase}`}>
-                    {estadoTexto}
-                  </div>
+                const isExpanded = sugerenciaExpandida === sug.id;
 
-                  <h4>{sug.titulo}</h4>
-
-                  <p>{comentarioLimpio}</p>
-
-                  {sug.respuesta_coordinador && (
-                    <div style={{ marginTop: '10px', padding: '10px', background: '#f5f5f5', borderRadius: '5px', borderLeft: '3px solid #219653' }}>
-                      <strong>Respuesta oficial:</strong>
-                      <p style={{ margin: '5px 0 0 0', color: '#333' }}>{sug.respuesta_coordinador}</p>
+                return (
+                  <div 
+                    className="sugerencia-card" 
+                    key={sug.id}
+                    onClick={() => setSugerenciaExpandida(isExpanded ? null : sug.id)}
+                    style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <div className={`estado ${estadoClase}`}>
+                        {estadoTexto}
+                      </div>
+                      <span className="fecha" style={{ fontSize: '0.8rem', color: '#888' }}>
+                        {formatearFecha(sug.fecha_envio)}
+                      </span>
                     </div>
-                  )}
 
-                  <span className="fecha">
-                    {formatearFecha(sug.fecha_envio)}
-                  </span>
-                </div>
-              );
-            })
+                    <h4 style={{ margin: '0 0 10px 0', display: 'flex', justifyContent: 'space-between' }}>
+                      {sug.titulo}
+                      <span style={{ color: '#005b4f', fontSize: '1.2rem' }}>
+                        {isExpanded ? '−' : '+'}
+                      </span>
+                    </h4>
+
+                    {isExpanded && (
+                      <div style={{ marginTop: '15px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                        <p style={{ color: '#555', lineHeight: '1.5' }}>{comentarioLimpio}</p>
+
+                        {sug.respuesta_coordinador && (
+                          <div style={{ marginTop: '15px', padding: '10px', background: '#f5f5f5', borderRadius: '5px', borderLeft: '3px solid #219653' }}>
+                            <strong style={{ display: 'block', marginBottom: '5px', color: '#333' }}>Respuesta oficial:</strong>
+                            <p style={{ margin: '0', color: '#444' }}>{sug.respuesta_coordinador}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              
+              {sugerencias.length > 2 && (
+                <button 
+                  onClick={() => setMostrarTodas(!mostrarTodas)}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    marginTop: '15px',
+                    background: 'none',
+                    border: '1px solid #ccc',
+                    borderRadius: '5px',
+                    color: '#555',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  {mostrarTodas ? 'Ver menos' : `Ver más (${sugerencias.length - 2} restantes)`}
+                </button>
+              )}
+            </>
           )}
         </div>
 

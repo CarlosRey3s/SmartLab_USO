@@ -55,9 +55,10 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
 
     // 2. Consulta de choques en el mismo laboratorio
     let queryChoques = `
-        SELECT a.id, a.tipo, re.estacion_id
+        SELECT a.id, a.tipo, 
+               COALESCE(array_agg(res_est.estacion_id) FILTER (WHERE res_est.estacion_id IS NOT NULL), ARRAY[]::INTEGER[]) as estaciones
         FROM actividades a
-        LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id
+        LEFT JOIN reserva_estaciones res_est ON a.id = res_est.actividad_id
         WHERE a.laboratorio_id = $1
           AND a.fecha_hora_inicio < $2 
           AND a.fecha_hora_fin > $3
@@ -69,6 +70,8 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
         queryChoques += ` AND a.id != $4`;
         parametros.push(idActividadExcluir);
     }
+
+    queryChoques += ` GROUP BY a.id, a.tipo`;
 
     const resChoques = await client.query(queryChoques, parametros);
     const actividadesConflictivas = resChoques.rows;
@@ -92,13 +95,16 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
                 throw new Error('No puedes reservar porque el laboratorio estará bajo Mantenimiento.');
             }
             if (act.tipo === 'reserva') {
-                // Si el laboratorio es de espacio completo (o la reserva actual abarca todo el lab), bloqueamos.
-                if (modoReservaLab === 'espacio_completo' || act.estacion_id === null || estacionesNuevas.includes(null)) {
+                // Si la reserva conflictiva es de espacio completo (array vacio) o queremos reservar completo (null)
+                if (modoReservaLab === 'espacio_completo' || act.estaciones.length === 0 || estacionesNuevas.includes(null)) {
                     throw new Error('El laboratorio ya ha sido reservado en su totalidad por otro usuario en este horario.');
                 }
-                // Si es por estación, bloqueamos solo si intentan usar la misma PC
-                if (modoReservaLab === 'por_estacion' && estacionesNuevas.includes(act.estacion_id)) {
-                    throw new Error('La estación de trabajo seleccionada ya está reservada por otro estudiante en este horario.');
+                // Si es por estación, buscamos intersecciones
+                if (modoReservaLab === 'por_estacion') {
+                    const interseccion = estacionesNuevas.filter(e => act.estaciones.includes(e));
+                    if (interseccion.length > 0) {
+                        throw new Error('Una o más estaciones de trabajo seleccionadas ya están reservadas por otro estudiante en este horario.');
+                    }
                 }
             }
         }
@@ -159,15 +165,20 @@ const programarActividad = async (datosModal, idUsuarioLogueado) => {
             const tecnicoId = datosModal.responsable || idUsuarioLogueado;
             await client.query(queryHija, [idGenerado, tecnicoId, datosModal.descripcion || 'Sin descripción']);
         } else if (tipo === 'reserva') {
-            const queryHija = `INSERT INTO reservas_estudiantes (actividad_id, usuario_id, estacion_id, titulo, nota_adicional, estado_reserva) VALUES ($1, $2, $3, $4, $5, $6)`;
-            
-            const estaciones = Array.isArray(datosModal.estaciones) && datosModal.estaciones.length > 0 
-                ? datosModal.estaciones 
-                : (datosModal.estacion ? [datosModal.estacion] : [null]);
+            const queryHija = `INSERT INTO reservas_estudiantes (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva) VALUES ($1, $2, $3, $4, $5)`;
+            await client.query(queryHija, [idGenerado, idUsuarioLogueado, datosModal.titulo, datosModal.descripcion || null, 'aprobada']);
 
-            for (let est of estaciones) {
-                const estId = est ? parseInt(est, 10) : null;
-                await client.query(queryHija, [idGenerado, idUsuarioLogueado, estId, datosModal.titulo, datosModal.descripcion || null, 'aprobada']);
+            const estaciones = Array.isArray(datosModal.estaciones) && datosModal.estaciones.length > 0
+                ? datosModal.estaciones
+                : (datosModal.estacion ? [datosModal.estacion] : []);
+
+            if (estaciones.length > 0) {
+                const queryEstacion = `INSERT INTO reserva_estaciones (actividad_id, estacion_id) VALUES ($1, $2)`;
+                for (let est of estaciones) {
+                    if (est && est !== 'null') {
+                        await client.query(queryEstacion, [idGenerado, parseInt(est, 10)]);
+                    }
+                }
             }
         }
 
@@ -229,17 +240,23 @@ const actualizarActividad = async (idActividad, datosModal, idUsuarioLogueado) =
             const queryHija = `UPDATE mantenimientos SET tecnico_id = $1, descripcion_ti = $2 WHERE actividad_id = $3`;
             await client.query(queryHija, [tecnicoId, datosModal.descripcion || 'Sin descripción', idActividad]);
         } else if (tipo === 'reserva') {
-            // Eliminar las reservas actuales de estaciones para esta actividad
-            await client.query(`DELETE FROM reservas_estudiantes WHERE actividad_id = $1`, [idActividad]);
-            
-            const estaciones = Array.isArray(datosModal.estaciones) && datosModal.estaciones.length > 0 
-                ? datosModal.estaciones 
-                : (datosModal.estacion ? [datosModal.estacion] : [null]);
+            const queryHija = `UPDATE reservas_estudiantes SET titulo = $1, nota_adicional = $2 WHERE actividad_id = $3`;
+            await client.query(queryHija, [datosModal.titulo, datosModal.descripcion || null, idActividad]);
 
-            const queryHija = `INSERT INTO reservas_estudiantes (actividad_id, usuario_id, estacion_id, titulo, nota_adicional, estado_reserva) VALUES ($1, $2, $3, $4, $5, $6)`;
-            for (let est of estaciones) {
-                const estId = est ? parseInt(est, 10) : null;
-                await client.query(queryHija, [idActividad, idUsuarioLogueado, estId, datosModal.titulo, datosModal.descripcion || null, 'aprobada']);
+            // Eliminar y re-insertar estaciones
+            await client.query(`DELETE FROM reserva_estaciones WHERE actividad_id = $1`, [idActividad]);
+
+            const estaciones = Array.isArray(datosModal.estaciones) && datosModal.estaciones.length > 0
+                ? datosModal.estaciones
+                : (datosModal.estacion ? [datosModal.estacion] : []);
+
+            if (estaciones.length > 0) {
+                const queryEstacion = `INSERT INTO reserva_estaciones (actividad_id, estacion_id) VALUES ($1, $2)`;
+                for (let est of estaciones) {
+                    if (est && est !== 'null') {
+                        await client.query(queryEstacion, [idActividad, parseInt(est, 10)]);
+                    }
+                }
             }
         }
 
@@ -271,6 +288,87 @@ const actualizarActividad = async (idActividad, datosModal, idUsuarioLogueado) =
 const obtenerActividades = async () => {
     const client = await db.connect();
     try {
+        // Usamos ARRAY_AGG y GROUP BY para consolidar todas las PCs en una sola fila
+        const query = `
+         SELECT 
+                a.id, 
+                CASE 
+                    WHEN a.tipo = 'clase' THEN ca.materia
+                    WHEN a.tipo = 'reserva' THEN re.titulo
+                    WHEN a.tipo = 'mantenimiento' THEN 'Mantenimiento Preventivo'
+                    ELSE 'Actividad'
+                END AS title, 
+                a.fecha_hora_inicio AS start, 
+                a.fecha_hora_fin AS end, 
+                a.tipo,
+                
+                -- Datos del Laboratorio
+                a.laboratorio_id,
+                l.nombre AS laboratorio_nombre,
+                l.coordinador_id,
+                
+                -- Datos de Clase
+                ca.materia, 
+                ca.docente_id, 
+                u_docente.nombre AS docente_nombre,
+                ca.num_estudiantes AS clase_estudiantes,
+                
+                -- Datos de Mantenimiento
+                m.tecnico_id AS tecnico_responsable, 
+                u_tecnico.nombre AS tecnico_nombre,
+                m.descripcion_ti AS mant_descripcion,
+                
+                -- Datos de Reserva Estudiantil
+                re.titulo AS reserva_titulo,
+                re.nota_adicional AS reserva_nota,
+                re.estado_reserva,
+                re.usuario_id AS reserva_usuario_id,
+                
+                -- 1. Subconsulta para agrupar las estaciones en un Array
+                (
+                    SELECT COALESCE(array_agg(estacion_id), '{}') 
+                    FROM reserva_estaciones 
+                    WHERE actividad_id = a.id
+                ) AS estaciones,
+                 
+                -- 2. Subconsulta para agrupar los equipos en un Array de Objetos JSON
+                (
+                    SELECT COALESCE(
+                        json_agg(
+                            json_build_object(
+                                'id', ii.id, 
+                                'nombre', ii.nombre, 
+                                'cantidad', ri.cantidad_solicitada
+                            )
+                        ), '[]'::json
+                    ) 
+                    FROM reserva_items ri 
+                    INNER JOIN item_inventario ii ON ri.item_id = ii.id 
+                    WHERE ri.actividad_id = a.id
+                ) AS equipos
+
+            FROM actividades a
+            
+            -- Uniones para traer los nombres reales
+            LEFT JOIN laboratorios l ON a.laboratorio_id = l.id
+            LEFT JOIN clases_academicas ca ON a.id = ca.actividad_id
+            LEFT JOIN usuarios u_docente ON ca.docente_id = u_docente.id
+            LEFT JOIN mantenimientos m ON a.id = m.actividad_id
+            LEFT JOIN usuarios u_tecnico ON m.tecnico_id = u_tecnico.id
+            LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id;
+        `;
+        const result = await client.query(query);
+        return result.rows;
+    } catch (error) {
+        console.error('Error al obtener actividades:', error);
+        throw new Error('Error al obtener las actividades.');
+    } finally {
+        if (client) client.release();
+    }
+};
+/*const obtenerActividades = async () => {
+    const client = await db.connect();
+    try {
         const query = `
            SELECT 
                 a.id, 
@@ -290,7 +388,7 @@ const obtenerActividades = async () => {
                 m.tecnico_id AS tecnico_responsable, 
                 m.descripcion_ti AS mant_descripcion,
                 re.titulo AS reserva_titulo,
-                re.estacion_id,
+                COALESCE(array_agg(res_est.estacion_id) FILTER (WHERE res_est.estacion_id IS NOT NULL), ARRAY[]::INTEGER[]) as estaciones,
                 re.nota_adicional AS reserva_nota,
                 re.estado_reserva
             FROM 
@@ -300,7 +398,11 @@ const obtenerActividades = async () => {
             LEFT JOIN 
                 mantenimientos m ON a.id = m.actividad_id
             LEFT JOIN 
-                reservas_estudiantes re ON a.id = re.actividad_id;
+                reservas_estudiantes re ON a.id = re.actividad_id
+            LEFT JOIN 
+                reserva_estaciones res_est ON a.id = res_est.actividad_id
+            GROUP BY 
+                a.id, ca.materia, ca.docente_id, ca.num_estudiantes, m.tecnico_id, m.descripcion_ti, re.titulo, re.nota_adicional, re.estado_reserva;
         `;
         const result = await client.query(query);
         return result.rows;
@@ -311,7 +413,7 @@ const obtenerActividades = async () => {
         if (client) client.release();
     }
 };
-
+*/
 /**
  * Función para eliminar una actividad existente
  */
@@ -323,36 +425,36 @@ const eliminarActividad = async (idActividad) => {
         //antes de borrar, obtenemos a que laboratorio pertenece y a que tipo de actividad es
         const querySelect = `SELECT laboratorio_id, tipo FROM actividades WHERE id = $1`;
         const resSelect = await client.query(querySelect, [idActividad]);
-        if(resSelect.rows.length === 0) {
+        if (resSelect.rows.length === 0) {
             throw new Error('La actividad que intentas eliminar no existe.');
         }
-    const {laboratorio_id, tipo } = resSelect.rows[0];
+        const { laboratorio_id, tipo } = resSelect.rows[0];
 
-    // ejecutar eliminacion gracias al cascade limpia tablas hijas automaticamen
-    const queryDelete = `DELETE FROM actividades WHERE id = $1`;
-    await client.query(queryDelete, [idActividad]);
+        // ejecutar eliminacion gracias al cascade limpia tablas hijas automaticamen
+        const queryDelete = `DELETE FROM actividades WHERE id = $1`;
+        await client.query(queryDelete, [idActividad]);
 
-    //Logica inteligente para mantenimientos
-    if(tipo === 'mantenimiento'){
-    //verificamos si quedan otros mantenimientos activos para este laboratorio
-    const checkMantenimientos = await client.query(
+        //Logica inteligente para mantenimientos
+        if (tipo === 'mantenimiento') {
+            //verificamos si quedan otros mantenimientos activos para este laboratorio
+            const checkMantenimientos = await client.query(
                 `SELECT id FROM actividades WHERE laboratorio_id = $1 AND tipo = 'mantenimiento'`,
                 [laboratorio_id]
             );
 
             // si ya no hay mas mantenimientos programados, entonces si liberamos el laboratorio
-            if(checkMantenimientos.rows.length === 0){
+            if (checkMantenimientos.rows.length === 0) {
                 await client.query(
-                    `UPDATE laboratorios SET estado = 'disponible' WHERE id = $1`, 
+                    `UPDATE laboratorios SET estado = 'disponible' WHERE id = $1`,
                     [laboratorio_id]
                 );
                 console.log(`-> Mantenimiento eliminado. Estado del laboratorio ${laboratorio_id} devuelto a 'disponible'`);
-            }else{
+            } else {
                 console.log(`-> Mantenimiento eliminado, pero el lab ${laboratorio_id} sigue en mantenimiento por otras actividades pendientes.`);
             }
-    }
-    await client.query('COMMIT');
-    return { exito: true, mensaje: 'Actividad eliminada exitosamente y estados sincronizados.' };
+        }
+        await client.query('COMMIT');
+        return { exito: true, mensaje: 'Actividad eliminada exitosamente y estados sincronizados.' };
 
     } catch (error) {
         await client.query('ROLLBACK');
@@ -363,4 +465,65 @@ const eliminarActividad = async (idActividad) => {
     }
 };
 
-module.exports = { programarActividad, obtenerActividades, actualizarActividad, eliminarActividad };
+const obtenerDisponibilidad = async (laboratorio, fecha, horaInicio, horaFin, idActividad = null) => {
+    const inicioDatetime = new Date(`${fecha}T${horaInicio}`);
+    const finDatetime = new Date(`${fecha}T${horaFin}`);
+    const client = await db.connect();
+
+    try {
+        // 1 verificar si hay un " bloque total"
+        let queryBloqueo = `
+            SELECT a.tipo
+            FROM actividades a
+            WHERE a.laboratorio_id = $1
+              AND a.fecha_hora_inicio < $2 
+              AND a.fecha_hora_fin > $3
+        `;
+        let params = [laboratorio, finDatetime, inicioDatetime];
+
+        if (idActividad) {
+            queryBloqueo += ` AND a.id != $4`;
+            params.push(idActividad);
+        }
+        const resBloqueo = await client.query(queryBloqueo, params);
+
+        // si hay una clase o mantenimiento solapado, el alb esta 100% bloqueado
+
+        for (const act of resBloqueo.rows) {
+            if (act.tipo === 'clase' || act.tipo === 'mantenimiento') {
+                return { bloqueoTotal: true, estacionesOcupadas: [] };
+            }
+        }
+
+        // 2. Si el lab no está bloqueado totalmente, buscar las PCs específicas reservadas
+        let queryEstaciones = `
+            SELECT re_est.estacion_id
+            FROM actividades a
+            INNER JOIN reserva_estaciones re_est ON a.id = re_est.actividad_id
+            WHERE a.laboratorio_id = $1
+              AND a.fecha_hora_inicio < $2 
+              AND a.fecha_hora_fin > $3
+        `;
+
+        if (idActividad) {
+            queryEstaciones += ` AND a.id != $4`;
+        }
+
+        const resEstaciones = await client.query(queryEstaciones, params);
+        const estacionesOcupadas = resEstaciones.rows.map(row => row.estacion_id);
+        return { bloqueoTotal: false, estacionesOcupadas };
+    } catch (error) {
+        console.error('Error al verificar disponibilidad:', error);
+        throw new Error('Error al consultar disponibilidad.');
+    } finally {
+        if (client) client.release();
+    }
+}
+
+module.exports = {
+    programarActividad,
+    obtenerActividades,
+    actualizarActividad,
+    eliminarActividad,
+    obtenerDisponibilidad
+};

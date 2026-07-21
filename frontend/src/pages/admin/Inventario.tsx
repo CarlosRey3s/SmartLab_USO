@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal, Plus, MoreVertical, CheckCircle, ArrowUp, ArrowDown } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, SlidersHorizontal, Plus, MoreVertical, CheckCircle, ArrowUp, ArrowDown, Monitor } from 'lucide-react';
 import '../../css/inventario.css';
 import '../../css/usuarios.css';
 import { AgregarItemModal } from '../../components/shared/AgregarItemModal';
@@ -7,6 +7,7 @@ import { inventarioService } from '../../services/inventario.service';
 import { laboratoriosService } from '../../services/laboratorios.service';
 import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
 import { customToast } from '../../components/custom-toast/CustomToast';
+import { useAuth } from '../../context/AuthContext';
 
 interface InventoryItem {
   id: string | number;
@@ -25,6 +26,7 @@ interface InventoryItem {
 }
 
 export const InventarioView: React.FC = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'inventario' | 'reportes'>('inventario');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeMenu, setActiveMenu] = useState<string | number | null>(null);
@@ -42,6 +44,27 @@ export const InventarioView: React.FC = () => {
   // Estado para modal de confirmación de eliminación
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | number | null>(null);
+
+  // Ref para el dropdown de filtros
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    }
+    
+    if (isFilterOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isFilterOpen]);
 
   // Datos de la pestaña Inventario traídos de la base de datos
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -109,14 +132,27 @@ export const InventarioView: React.FC = () => {
     setIsAddModalOpen(true);
   };
 
-  // Computar valores únicos de laboratorios sumando todos los espacios reales de la BD
+  // Filtrar laboratorios por rol
+  const laboratoriosDelUsuario = user?.rol === 'coordinador'
+    ? laboratoriosList.filter(lab => lab.coordinador_id === user.id)
+    : laboratoriosList;
+
+  // Filtrar items por rol
+  const itemsDelUsuario = user?.rol === 'coordinador'
+    ? items.filter(item => {
+        const lab = laboratoriosList.find(l => l.id === item.laboratorio_id);
+        return lab && lab.coordinador_id === user.id;
+      })
+    : items;
+
+  // Computar valores únicos de laboratorios sumando todos los espacios reales de la BD (ya filtrados)
   const uniqueLabs = Array.from(new Set([
-    ...laboratoriosList.map(lab => lab.nombre),
-    ...items.map(item => item.laboratorio_nombre || `Lab ID: ${item.laboratorio_id}`)
+    ...laboratoriosDelUsuario.map(lab => lab.nombre),
+    ...itemsDelUsuario.map(item => item.laboratorio_nombre || `Lab ID: ${item.laboratorio_id}`)
   ]));
 
   // Filtrar items
-  const filteredItems = items.filter(item => {
+  const filteredItems = itemsDelUsuario.filter(item => {
     // 1. Search term
     const searchMatch = item.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
                         item.codigo_interno.toLowerCase().includes(searchTerm.toLowerCase());
@@ -240,29 +276,14 @@ export const InventarioView: React.FC = () => {
             <span>ID</span>
           </button>
           
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative' }} ref={filterRef}>
             <button className="btn-filter" onClick={() => setIsFilterOpen(!isFilterOpen)}>
               <SlidersHorizontal size={16} />
               <span>Filtros</span>
             </button>
 
           {isFilterOpen && activeTab === 'inventario' && (
-            <div className="filter-dropdown-menu" style={{
-              position: 'absolute',
-              top: '100%',
-              right: 0,
-              marginTop: '8px',
-              background: 'white',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              padding: '16px',
-              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-              zIndex: 50,
-              width: '320px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px'
-            }}>
+            <div className="filter-dropdown-menu">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontWeight: '600', fontSize: '14px', color: '#334155' }}>Filtros</span>
                 <button 
@@ -364,7 +385,7 @@ export const InventarioView: React.FC = () => {
       
       {/* VISTA 1: TABLA DE INVENTARIO */}
       {activeTab === 'inventario' && (
-        <div className="table-container" style={{ overflow: 'visible' }}>
+        <div className="table-container inventory-table-container" style={{ overflow: 'visible' }}>
           <table className="users-table">
             <thead>
               <tr>
@@ -390,7 +411,23 @@ export const InventarioView: React.FC = () => {
                 filteredItems.map((item) => (
                   <tr key={item.id}>
                     <td>#{item.id}</td>
-                    <td className="item-name-cell">{item.nombre}</td>
+                    <td className="item-name-cell">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {item.imagen_url ? (
+                          <div className="item-thumbnail-container">
+                            <img src={`http://localhost:4000${item.imagen_url}`} alt={item.nombre} className="item-thumbnail" />
+                            <div className="item-image-preview-tooltip">
+                              <img src={`http://localhost:4000${item.imagen_url}`} alt={item.nombre} />
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ width: '36px', height: '36px', borderRadius: '6px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+                            <Monitor size={18} />
+                          </div>
+                        )}
+                        <span style={{ fontWeight: 500 }}>{item.nombre}</span>
+                      </div>
+                    </td>
                     <td>{item.codigo_interno}</td>
                     <td>{item.categoria}</td>
                     <td>{item.laboratorio_nombre || `Lab ID: ${item.laboratorio_id}`}</td>
@@ -438,9 +475,18 @@ export const InventarioView: React.FC = () => {
 
           <div className="card-header">
 
-            <div>
-              <h3>{item.nombre}</h3>
-              <span>{item.codigo_interno}</span>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              {item.imagen_url ? (
+                <img src={`http://localhost:4000${item.imagen_url}`} alt={item.nombre} style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #e2e8f0' }} />
+              ) : (
+                <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+                  <Monitor size={24} />
+                </div>
+              )}
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#334155' }}>{item.nombre}</h3>
+                <span style={{ fontSize: '13px', color: '#64748b' }}>{item.codigo_interno}</span>
+              </div>
             </div>
 
             <div className="action-menu-container">

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, MoreHorizontal, Layers, CheckCircle2, Wrench, XCircle, Monitor, FlaskConical, Presentation, Building } from 'lucide-react';
+import { Search, Filter, Plus, MoreHorizontal, Layers, CheckCircle2, Wrench, XCircle, Monitor, FlaskConical, Presentation, Building, Users } from 'lucide-react';
 import { AgregarEspacioModal } from '../../components/shared/AgregarEspacioModal';
 import { VistaEstaciones } from '../../components/shared/VistaEstaciones';
 import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
 import { customToast } from '../../components/custom-toast/CustomToast';
+import { useAuth } from '../../context/AuthContext';
+import { laboratoriosService } from '../../services/laboratorios.service';
 import '../../css/inventario.css';
 import '../../css/espacios.css';
 import '../../css/usuarios.css';
@@ -11,16 +13,19 @@ import '../../css/usuarios.css';
 interface EspacioItem {
   id: string;
   nombre: string;
-  modo_reserva: string;
+  modo_reserva: 'espacio_completo' | 'por_estacion';
   edificio: string;
   piso: string;
   aula: string;
   capacidad_maxima: number;
   estado: string;
   descripcion?: string;
+  ocupado?: boolean;
+  coordinador_id?: string;
 }
 
 export const EspacioView: React.FC = () => {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,11 +40,32 @@ export const EspacioView: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [espacioToDelete, setEspacioToDelete] = useState<string | null>(null);
 
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filterMode, setFilterMode] = useState<string>('todos');
+  const filterRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    }
+    
+    if (isFilterOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isFilterOpen]);
+
   const fetchEspacios = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:4000/api/laboratorios');
-      const json = await res.json();
+      const json = await laboratoriosService.getLaboratorios();
       if (json.status === 'success') {
         setEspacios(json.data);
       }
@@ -78,10 +104,7 @@ export const EspacioView: React.FC = () => {
     if (!espacioToDelete) return;
     
     try {
-      const res = await fetch(`http://localhost:4000/api/laboratorios/${espacioToDelete}`, {
-        method: 'DELETE'
-      });
-      const data = await res.json();
+      const data = await laboratoriosService.deleteLaboratorio(espacioToDelete);
       if (data.status === 'success') {
         customToast.success('Espacio eliminado correctamente');
         fetchEspacios();
@@ -101,10 +124,23 @@ export const EspacioView: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const totalEspacios = espacios.length;
-  const disponibles = espacios.filter(e => e.estado === 'disponible').length;
-  const enMantenimiento = espacios.filter(e => e.estado === 'mantenimiento' || e.estado === 'en_mantenimiento').length;
-  const clausurados = espacios.filter(e => e.estado === 'clausurado').length;
+  const espaciosDelUsuario = user?.rol === 'coordinador' 
+    ? espacios.filter(e => e.coordinador_id === user.id)
+    : espacios;
+
+  const totalEspacios = espaciosDelUsuario.length;
+  const ocupados = espaciosDelUsuario.filter(e => e.ocupado === true).length;
+  const disponibles = espaciosDelUsuario.filter(e => e.estado === 'disponible' && !e.ocupado).length;
+  const enMantenimiento = espaciosDelUsuario.filter(e => e.estado === 'mantenimiento' || e.estado === 'en_mantenimiento').length;
+  const clausurados = espaciosDelUsuario.filter(e => e.estado === 'clausurado').length;
+
+  const filteredEspacios = espaciosDelUsuario.filter(item => {
+    const matchSearch = item.nombre.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchFilter = filterMode === 'todos' 
+      ? true 
+      : item.modo_reserva === filterMode;
+    return matchSearch && matchFilter;
+  });
 
   return (
     <div className="espacios-container">
@@ -142,6 +178,16 @@ export const EspacioView: React.FC = () => {
 
             <div className="metric-item">
               <div className="metric-icon-wrapper">
+                <Users size={32} color="#2D9CDB" />
+              </div>
+              <div className="metric-info">
+                <span className="metric-label">Ocupados</span>
+                <span className="metric-value">{ocupados}</span>
+              </div>
+            </div>
+
+            <div className="metric-item">
+              <div className="metric-icon-wrapper">
                 <Wrench size={32} color="#F2C94C" />
               </div>
               <div className="metric-info">
@@ -166,21 +212,62 @@ export const EspacioView: React.FC = () => {
               <Search className="search-inventory-icon" size={16} />
               <input 
                 type="text" 
-                placeholder="Buscar en el Inventario" 
+                placeholder="Buscar Espacio por Nombre" 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             
-            <button className="btn-filter" style={{ borderRadius: '20px' }}>
-              <Filter size={16} />
-              <span>Filtros</span>
-            </button>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+              <div style={{ position: 'relative' }} ref={filterRef}>
+                <button 
+                  className="btn-filter" 
+                  style={{ borderRadius: '20px' }}
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                >
+                  <Filter size={16} />
+                  <span>Filtros</span>
+                </button>
 
-            <button className="btn-add-item" style={{ borderRadius: '20px', backgroundColor: '#32886c' }} onClick={openAddModal}>
-              <Plus size={16} />
-              <span>Item</span>
-            </button>
+                {isFilterOpen && (
+                  <div className="filter-dropdown-menu">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: '600', fontSize: '14px', color: '#334155' }}>Filtros</span>
+                      <button 
+                        onClick={() => { setFilterMode('todos'); setIsFilterOpen(false); }}
+                        style={{ fontSize: '12px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                      >
+                        Limpiar
+                      </button>
+                    </div>
+                    
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>Por Tipo de Espacio</label>
+                      <select
+                        value={filterMode}
+                        onChange={(e) => setFilterMode(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px',
+                          borderRadius: '6px',
+                          border: '1px solid #e2e8f0',
+                          fontSize: '14px'
+                        }}
+                      >
+                        <option value="todos">Todos</option>
+                        <option value="por_estacion">Por Estación de Trabajo</option>
+                        <option value="espacio_completo">Espacio Completo</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button className="btn-add-item" style={{ borderRadius: '20px', backgroundColor: '#32886c' }} onClick={openAddModal}>
+                <Plus size={16} />
+                <span>Item</span>
+              </button>
+            </div>
           </div>
 
           <div className="table-container" style={{ overflow: 'visible' }}>
@@ -188,17 +275,17 @@ export const EspacioView: React.FC = () => {
               <thead>
                 <tr>
                   <th>Laboratorio</th>
-                  <th>tipo</th>
-                  <th>Ubicacion</th>
+                  <th>Tipo</th>
+                  <th>Ubicación</th>
                   <th>Capacidad</th>
                   <th>Estado</th>
-                  <th>Accion</th>
+                  <th>Acción</th>
                 </tr>
               </thead>
               <tbody>
-                {espacios.length === 0 && !loading && (
+                {filteredEspacios.length === 0 && !loading && (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '20px' }}>No hay laboratorios registrados.</td>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '20px' }}>No hay laboratorios registrados que coincidan.</td>
                   </tr>
                 )}
                 {loading && (
@@ -206,7 +293,25 @@ export const EspacioView: React.FC = () => {
                     <td colSpan={6} style={{ textAlign: 'center', padding: '20px' }}>Cargando...</td>
                   </tr>
                 )}
-                {espacios.map((item) => (
+                {filteredEspacios.map((item) => {
+                  let estadoBadgeClass = '';
+                  let estadoTexto = '';
+
+                  if (item.estado === 'mantenimiento' || item.estado === 'en_mantenimiento') {
+                    estadoBadgeClass = 'badge-warning';
+                    estadoTexto = 'Mantenimiento';
+                  } else if (item.estado === 'clausurado') {
+                    estadoBadgeClass = 'badge-danger';
+                    estadoTexto = 'Clausurado';
+                  } else if (item.ocupado) {
+                    estadoBadgeClass = 'badge-info';
+                    estadoTexto = 'Ocupado';
+                  } else {
+                    estadoBadgeClass = 'badge-success';
+                    estadoTexto = 'Disponible';
+                  }
+
+                  return (
                   <tr key={item.id}>
                     <td style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       {getIconForLab(item.nombre)}
@@ -215,7 +320,11 @@ export const EspacioView: React.FC = () => {
                     <td>{item.modo_reserva === 'espacio_completo' ? 'Espacio Completo' : 'Por Estación'}</td>
                     <td>{`${item.edificio}, Piso ${item.piso}, Aula ${item.aula}`}</td>
                     <td>{item.capacidad_maxima > 0 ? item.capacidad_maxima : 'Dinámica'}</td>
-                    <td>{item.estado}</td>
+                    <td>
+                      <span className={`badge ${estadoBadgeClass}`}>
+                        {estadoTexto}
+                      </span>
+                    </td>
                     <td>
                       <div className="action-menu-container">
                         <button 
@@ -246,13 +355,32 @@ export const EspacioView: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
 
           <div className="espacios-cards">
-            {espacios.map((item) => (
+            {filteredEspacios.map((item) => {
+              let estadoBadgeClass = '';
+              let estadoTexto = '';
+
+              if (item.estado === 'mantenimiento' || item.estado === 'en_mantenimiento') {
+                estadoBadgeClass = 'badge-warning';
+                estadoTexto = 'Mantenimiento';
+              } else if (item.estado === 'clausurado') {
+                estadoBadgeClass = 'badge-danger';
+                estadoTexto = 'Clausurado';
+              } else if (item.ocupado) {
+                estadoBadgeClass = 'badge-info';
+                estadoTexto = 'Ocupado';
+              } else {
+                estadoBadgeClass = 'badge-success';
+                estadoTexto = 'Disponible';
+              }
+
+              return (
               <div className="espacio-card" key={item.id}>
                 <div className="espacio-card-header">
                   <div className="espacio-card-title">
@@ -262,7 +390,7 @@ export const EspacioView: React.FC = () => {
                     </div>
                   </div>
                   <div className="action-menu-container">
-                    <button
+                    <button 
                       className="action-button"
                       onClick={() => setActiveMenu(activeMenu === item.id ? null : item.id)}
                     >
@@ -271,7 +399,7 @@ export const EspacioView: React.FC = () => {
                     {activeMenu === item.id && (
                       <div className="actions-dropdown">
                         {item.modo_reserva === 'por_estacion' && (
-                          <button
+                          <button 
                             className="dropdown-item"
                             onClick={() => {
                               setGestionarLabId(item.id);
@@ -288,26 +416,28 @@ export const EspacioView: React.FC = () => {
                     )}
                   </div>
                 </div>
-                <div className="espacio-card-info">
-                  <div>
-                    <span>Tipo</span>
+                <div className="espacio-card-body">
+                  <div className="info-row">
+                    <span className="info-label">Tipo:</span>
                     <strong>{item.modo_reserva === "espacio_completo" ? "Espacio Completo" : "Por Estación"}</strong>
                   </div>
-                  <div>
-                    <span>Ubicación</span>
-                    <strong>{item.edificio}, Piso {item.piso}, Aula {item.aula}</strong>
+                  <div className="info-row">
+                    <span className="info-label">Ubicación:</span>
+                    <span>{`${item.edificio}, Piso ${item.piso}, Aula ${item.aula}`}</span>
                   </div>
-                  <div>
-                    <span>Capacidad</span>
-                    <strong>{item.capacidad_maxima > 0 ? item.capacidad_maxima : "Dinámica"}</strong>
+                  <div className="info-row">
+                    <span className="info-label">Capacidad:</span>
+                    <span>{item.capacidad_maxima > 0 ? item.capacidad_maxima : 'Dinámica'}</span>
                   </div>
-                  <div>
-                    <span>Estado</span>
-                    <strong>{item.estado}</strong>
+                  <div className="info-row" style={{ marginTop: '8px' }}>
+                    <span className="info-label">Estado:</span>
+                    <span className={`badge ${estadoBadgeClass}`}>
+                      {estadoTexto}
+                    </span>
                   </div>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </>
       )}

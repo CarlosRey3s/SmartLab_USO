@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 const { pool: db } = require('./config/db');
 console.log('DEBUG - tipo de db:', typeof db, '- tiene query?', typeof db.query);
@@ -8,6 +9,9 @@ const port = process.env.PORT || 4000;
 
 app.use(cors());
 app.use(express.json());
+
+// Servir la carpeta de uploads de manera estática
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // Importar rutas
 const authRoutes = require('./routes/auth.routes');
@@ -19,6 +23,7 @@ const laboratorioRoutes = require('./routes/laboratorio.routes');
 // 1. Importamos los nuevos routers
 const actividadesRoutes = require('./routes/actividadesRoutes');
 const sugerenciasRoutes = require('./routes/sugerencia.routes');
+const reportesRoutes = require('./routes/reportes.routes');
 
 
 // Montar rutas
@@ -29,6 +34,7 @@ app.use('/api/calendario', calendarioRoutes);
 app.use('/api/laboratorios', laboratorioRoutes);
 app.use('/api/actividades', actividadesRoutes); // 2. Montamos las nuevas rutas
 app.use('/api/sugerencias', sugerenciasRoutes);
+app.use('/api/reportes', reportesRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {

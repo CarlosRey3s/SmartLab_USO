@@ -39,7 +39,11 @@ export const AppRouter = () => {
               <Route index element={<Dashboard />} />
               <Route path="dashboard" element={<Dashboard />} />
             </Route>
-            <Route path="buzon-sugerencias" element={<BuzonSugerencias />} />
+
+            {/* ================= COMPARTIDA: ESTUDIANTE Y DOCENTE ================= */}
+            <Route element={<ProtectedRoute allowedRoles={['estudiante', 'docente']} />}>
+              <Route path="buzon-sugerencias" element={<BuzonSugerencias />} />
+            </Route>
 
             {/* ================= DOCENTE ================= */}
             <Route element={<ProtectedRoute allowedRoles={['docente', 'administrador', 'coordinador']} />}>
@@ -53,7 +57,6 @@ export const AppRouter = () => {
               <Route path="inventario" element={<InventarioView />} />
               <Route path="espacio" element={<EspacioView />} />
               <Route path="reportes" element={<ReportesView />} />
-              <Route path="admin/buzon-sugerencias" element={<BuzonSugerencias />} />
             </Route>
 
             {/* ================= COMPARTIDAS ================= */}

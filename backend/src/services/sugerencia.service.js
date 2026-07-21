@@ -4,6 +4,7 @@ const obtenerSugerencias = async () => {
   const query = `
     SELECT 
       bs.id, 
+      bs.usuario_id,
       bs.titulo, 
       bs.comentario, 
       bs.estado_gestion, 

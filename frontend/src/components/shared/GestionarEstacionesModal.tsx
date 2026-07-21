@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
+import { laboratoriosService } from '../../services/laboratorios.service';
+import { ConfirmModal } from '../confirm-modal/ConfirmModal';
+import { customToast } from '../custom-toast/CustomToast';
 import '../../css/espacios.css';
 
 interface Estacion {
@@ -31,13 +34,14 @@ export const GestionarEstacionesModal: React.FC<GestionarEstacionesModalProps> =
   const [nuevaEstacionCapacidad, setNuevaEstacionCapacidad] = useState<number | ''>(1);
   const [nuevaEstacionCantidad, setNuevaEstacionCantidad] = useState<number | ''>(1);
   const [agregando, setAgregando] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [estacionToDelete, setEstacionToDelete] = useState<string | null>(null);
 
   const fetchEstaciones = async () => {
     if (!laboratorioId) return;
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/laboratorios/${laboratorioId}/estaciones`);
-      const json = await res.json();
+      const json = await laboratoriosService.getEstaciones(laboratorioId);
       if (json.status === 'success') {
         setEstaciones(json.data);
       } else {
@@ -87,12 +91,7 @@ export const GestionarEstacionesModal: React.FC<GestionarEstacionesModalProps> =
 
     setAgregando(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/laboratorios/${laboratorioId}/estaciones`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estaciones: payload })
-      });
-      const json = await res.json();
+      const json = await laboratoriosService.agregarEstaciones(laboratorioId, payload);
       
       if (json.status === 'success') {
         fetchEstaciones();
@@ -110,22 +109,28 @@ export const GestionarEstacionesModal: React.FC<GestionarEstacionesModalProps> =
     }
   };
 
-  const handleEliminar = async (estacionId: string) => {
-    if (!confirm('¿Seguro que deseas eliminar esta estación?')) return;
+  const handleEliminarClick = (estacionId: string) => {
+    setEstacionToDelete(estacionId);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!estacionToDelete) return;
     
     try {
-      const res = await fetch(`http://localhost:4000/api/laboratorios/estacion/${estacionId}`, {
-        method: 'DELETE'
-      });
-      const json = await res.json();
+      const json = await laboratoriosService.deleteEstacion(estacionToDelete);
       if (json.status === 'success') {
+        customToast.success('Estación eliminada correctamente');
         fetchEstaciones();
       } else {
-        alert(json.message);
+        customToast.error(json.message || 'Error al eliminar la estación');
       }
     } catch (err) {
       console.error(err);
-      alert('Error al eliminar');
+      customToast.error('Error al eliminar');
+    } finally {
+      setIsDeleteModalOpen(false);
+      setEstacionToDelete(null);
     }
   };
 
@@ -246,7 +251,7 @@ export const GestionarEstacionesModal: React.FC<GestionarEstacionesModalProps> =
                           <td style={{ padding: '10px', textAlign: 'center' }}>
                             <button 
                               style={{ background: 'none', border: 'none', color: '#AD868A', cursor: 'pointer' }} 
-                              onClick={() => handleEliminar(est.id)}
+                              onClick={() => handleEliminarClick(est.id)}
                             >
                               <Trash2 size={18} />
                             </button>
@@ -266,6 +271,16 @@ export const GestionarEstacionesModal: React.FC<GestionarEstacionesModalProps> =
           <button type="button" className="btn-cancel" onClick={onClose} style={{ minWidth: '150px' }}>Cerrar</button>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onCancel={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Eliminar Estación"
+        message="¿Estás seguro que deseas eliminar esta estación? Esta acción no se puede deshacer."
+        confirmText="Eliminar"
+        type="danger"
+      />
     </div>
   );
 };

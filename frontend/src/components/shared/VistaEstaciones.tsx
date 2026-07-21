@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Monitor, Trash2 } from 'lucide-react';
+import { ArrowLeft, Monitor, Trash2, Plus, X } from 'lucide-react';
+import { laboratoriosService } from '../../services/laboratorios.service';
+import { ConfirmModal } from '../confirm-modal/ConfirmModal';
+import { customToast } from '../custom-toast/CustomToast';
 import '../../css/espacios.css';
 
 interface Estacion {
@@ -7,6 +10,7 @@ interface Estacion {
   nombre: string;
   capacidad: number;
   estado: string;
+  ocupado?: boolean;
 }
 
 interface VistaEstacionesProps {
@@ -29,13 +33,17 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
   const [nuevaEstacionCapacidad, setNuevaEstacionCapacidad] = useState<number | ''>(1);
   const [nuevaEstacionCantidad, setNuevaEstacionCantidad] = useState<number | ''>(1);
   const [agregando, setAgregando] = useState(false);
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [actualizandoEstadoId, setActualizandoEstadoId] = useState<string | null>(null);
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [estacionToDelete, setEstacionToDelete] = useState<string | null>(null);
 
   const fetchEstaciones = async () => {
     if (!laboratorioId) return;
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/laboratorios/${laboratorioId}/estaciones`);
-      const json = await res.json();
+      const json = await laboratoriosService.getEstaciones(laboratorioId);
       if (json.status === 'success') {
         setEstaciones(json.data);
       } else {
@@ -80,18 +88,14 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
 
     setAgregando(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/laboratorios/${laboratorioId}/estaciones`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estaciones: payload })
-      });
-      const json = await res.json();
+      const json = await laboratoriosService.agregarEstaciones(laboratorioId, payload);
       
       if (json.status === 'success') {
         fetchEstaciones();
         setNuevaEstacionNombre('');
         setNuevaEstacionCantidad(1);
         setNuevaEstacionCapacidad(1);
+        setMostrarFormulario(false);
       } else {
         setError(json.message);
       }
@@ -103,14 +107,35 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
     }
   };
 
-  const handleEliminar = async (estacionId: string) => {
-    if (!window.confirm('¿Seguro que deseas eliminar esta estación?')) return;
+  const handleEliminarClick = (estacionId: string) => {
+    setEstacionToDelete(estacionId);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!estacionToDelete) return;
     
     try {
-      const res = await fetch(`http://localhost:4000/api/laboratorios/estacion/${estacionId}`, {
-        method: 'DELETE'
-      });
-      const json = await res.json();
+      const json = await laboratoriosService.deleteEstacion(estacionToDelete);
+      if (json.status === 'success') {
+        customToast.success('Estación eliminada correctamente');
+        fetchEstaciones();
+      } else {
+        customToast.error(json.message || 'Error al eliminar la estación');
+      }
+    } catch (err) {
+      console.error(err);
+      customToast.error('Error al eliminar');
+    } finally {
+      setIsDeleteModalOpen(false);
+      setEstacionToDelete(null);
+    }
+  };
+
+  const handleCambiarEstado = async (estacionId: string, nuevoEstado: string) => {
+    setActualizandoEstadoId(estacionId);
+    try {
+      const json = await laboratoriosService.updateEstacion(estacionId, { estado: nuevoEstado });
       if (json.status === 'success') {
         fetchEstaciones();
       } else {
@@ -118,7 +143,9 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
       }
     } catch (err) {
       console.error(err);
-      alert('Error al eliminar');
+      alert('Error al actualizar estado');
+    } finally {
+      setActualizandoEstadoId(null);
     }
   };
 
@@ -129,6 +156,7 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
       case 'en_mantenimiento': return '#F2C94C'; // Amarillo
       case 'clausurado': 
       case 'reservado': return '#EB5757'; // Rojo
+      case 'ocupado': return '#2D9CDB'; // Azul
       default: return '#828282'; // Gris
     }
   };
@@ -140,28 +168,41 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
   return (
     <div className="vista-estaciones-container">
       <div className="vista-estaciones-header">
-        <button className="btn-volver" onClick={onVolver}>
-          <ArrowLeft size={20} />
-          Volver a Laboratorios
+        <div className="header-title-group">
+          <button className="btn-volver" onClick={onVolver}>
+            <ArrowLeft size={20} />
+            Volver a Laboratorios
+          </button>
+          <h2 className="vista-estaciones-title">
+            Estaciones - {laboratorioNombre}
+          </h2>
+        </div>
+        <button 
+          className="btn-save btn-add-station" 
+          onClick={() => setMostrarFormulario(!mostrarFormulario)}
+        >
+          {mostrarFormulario ? (
+            <><X size={18} /> Cancelar</>
+          ) : (
+            <><Plus size={18} /> Añadir Estaciones</>
+          )}
         </button>
-        <h2 className="vista-estaciones-title">
-          Estaciones - {laboratorioNombre}
-        </h2>
       </div>
 
       {error && <div className="error-message">{error}</div>}
 
-      <div className="agregar-estacion-panel">
-        <div className="section-label">Añadir Nuevas Estaciones Rápidamente</div>
-        <div className="form-row">
-          <div className="form-group" style={{ flex: 1.5 }}>
+      {mostrarFormulario && (
+        <div className="agregar-estacion-panel">
+          <div className="section-label">Añadir Nuevas Estaciones Rápidamente</div>
+        <div className="form-row form-row-estacion">
+          <div className="form-group group-prefijo">
             <label>Prefijo (Ej: PC, Mesa)</label>
             <input 
               type="text" className="form-input" 
               value={nuevaEstacionNombre} onChange={e => setNuevaEstacionNombre(e.target.value)} 
             />
           </div>
-          <div className="form-group" style={{ width: '120px' }}>
+          <div className="form-group group-cantidad">
             <label>Cantidad (N)</label>
             <input 
               type="number" min="1" className="form-input" 
@@ -169,7 +210,7 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
               onChange={e => setNuevaEstacionCantidad(e.target.value === '' ? '' : parseInt(e.target.value))} 
             />
           </div>
-          <div className="form-group" style={{ width: '120px' }}>
+          <div className="form-group group-capacidad">
             <label>Capacidad</label>
             <input 
               type="number" min="1" className="form-input" 
@@ -177,13 +218,12 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
               onChange={e => setNuevaEstacionCapacidad(e.target.value === '' ? '' : parseInt(e.target.value))} 
             />
           </div>
-          <div className="form-group" style={{ display: 'flex', alignItems: 'flex-end' }}>
+          <div className="form-group group-btn">
             <button 
               type="button" 
               className="btn-save" 
               onClick={handleAgregarEstaciones} 
               disabled={agregando || !nuevaEstacionNombre.trim()} 
-              style={{ padding: '10px 24px', height: '42px' }}
             >
               {agregando ? 'Añadiendo...' : 'Agregar'}
             </button>
@@ -216,8 +256,9 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
                   : `${prefijo} ${start}, ${prefijo} ${start + 1} ... ${prefijo} ${end}`}
               </div>
             );
-        })()}
-      </div>
+          })()}
+        </div>
+      )}
 
       <div className="estaciones-list-container">
         <h3 className="section-label" style={{ marginBottom: '20px' }}>
@@ -230,8 +271,9 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
           <div className="empty-state">No hay estaciones registradas en este espacio. Añade algunas arriba.</div>
         ) : (
           <div className="station-grid">
-            {estaciones.map(est => {
-              const color = getStatusColor(est.estado);
+            {[...estaciones].sort((a, b) => a.nombre.localeCompare(b.nombre, undefined, { numeric: true, sensitivity: 'base' })).map(est => {
+              const displayState = est.ocupado ? 'ocupado' : est.estado;
+              const color = getStatusColor(displayState);
               return (
                 <div key={est.id} className="station-card" style={{ borderTopColor: color }}>
                   <div className="station-card-header">
@@ -239,9 +281,9 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
                       <Monitor size={24} color={color} />
                     </div>
                     <button 
-                      className="btn-delete-station" 
-                      onClick={() => handleEliminar(est.id)}
-                      title="Eliminar estación"
+                      className="action-icon-btn delete" 
+                      onClick={() => handleEliminarClick(est.id)}
+                      title="Eliminar"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -251,10 +293,28 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
                   
                   <div className="station-details">
                     <span className="station-capacity">👥 {est.capacidad} {est.capacidad === 1 ? 'persona' : 'personas'}</span>
-                    <div className="station-badge" style={{ backgroundColor: `${color}15`, color: color }}>
-                      <span className="badge-dot" style={{ backgroundColor: color }}></span>
-                      {formatEstado(est.estado)}
-                    </div>
+                    
+                    {actualizandoEstadoId === est.id ? (
+                      <div className="station-badge" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }}>
+                        Actualizando...
+                      </div>
+                    ) : est.ocupado ? (
+                      <div className="station-badge" style={{ backgroundColor: `${color}15`, color: color }}>
+                        <span className="badge-dot" style={{ backgroundColor: color }}></span>
+                        Ocupado
+                      </div>
+                    ) : (
+                      <select 
+                        className="station-badge" 
+                        style={{ backgroundColor: `${color}15`, color: color, border: 'none', cursor: 'pointer', outline: 'none', appearance: 'none', paddingRight: '16px' }}
+                        value={est.estado}
+                        onChange={(e) => handleCambiarEstado(est.id, e.target.value)}
+                        title="Cambiar estado"
+                      >
+                        <option value="disponible">Disponible</option>
+                        <option value="no_disponible">No Disponible</option>
+                      </select>
+                    )}
                   </div>
                 </div>
               );
@@ -262,6 +322,16 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Eliminar Estación"
+        message="¿Estás seguro que deseas eliminar esta estación? Esta acción no se puede deshacer."
+        confirmText="Eliminar"
+        confirmColor="#EB5757"
+      />
     </div>
   );
 };

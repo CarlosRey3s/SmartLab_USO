@@ -4,9 +4,6 @@ import { useAuth } from "../../context/AuthContext";
 import { authService } from "../../services/authService";
 import "../../css/login.css";
 
-/* ── Types ── */
-type Role = "estudiante" | "admin";
-
 interface FormErrors {
   email?: string;
   password?: string;
@@ -153,7 +150,6 @@ function AdminIcon() {
    MAIN COMPONENT
 ══════════════════════════════════════ */
 export default function Login() {
-  const [role, setRole]         = useState<Role>("estudiante");
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd]   = useState(false);
@@ -225,26 +221,6 @@ export default function Login() {
           <p className="login-desc">
             Ingresa tus credenciales para acceder al sistema de laboratorios.
           </p>
-
-          {/* Role Toggle */}
-          <div className="login-role-toggle" role="group" aria-label="Tipo de usuario">
-            <button
-              type="button"
-              className={`login-role-btn${role === "estudiante" ? " active" : ""}`}
-              onClick={() => setRole("estudiante")}
-              aria-pressed={role === "estudiante"}
-            >
-              <StudentIcon /> Estudiante
-            </button>
-            <button
-              type="button"
-              className={`login-role-btn${role === "admin" ? " active" : ""}`}
-              onClick={() => setRole("admin")}
-              aria-pressed={role === "admin"}
-            >
-              <AdminIcon /> Administrador
-            </button>
-          </div>
 
           {serverError && (
             <p className="login-error-msg server-error" role="alert" style={{ textAlign: 'center', marginBottom: '15px', color: '#ff4d4f' }}>

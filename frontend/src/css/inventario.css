@@ -234,6 +234,13 @@
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
+  /* Ocultar barra de desplazamiento manteniendo funcionalidad */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.add-item-modal::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }
 
 .add-item-title {
@@ -509,14 +516,34 @@ MÓVIL
 }
 
 /*=========================================
+MENÚ DE FILTROS DESPLEGABLE
+=========================================*/
+.filter-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  z-index: 50;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/*=========================================
 TABLET Y MÓVIL
 =========================================*/
 
 @media (max-width:1200px){
 
-    /* Oculta la tabla */
-    .table-container{
-        display:none;
+    /* Oculta la tabla de inventario */
+    .inventory-table-container {
+        display: none !important;
     }
 
     /* Muestra las tarjetas */
@@ -532,6 +559,11 @@ TABLET Y MÓVIL
         gap:12px;
     }
 
+    /* Tarjetas inventario */
+    .item-card-title h3 {
+        font-size: 16px;
+    }
+
     .search-inventory{
         flex:1;
         min-width:260px;
@@ -541,6 +573,77 @@ TABLET Y MÓVIL
         margin-left:0;
     }
 
+}
+
+/* =========================================
+   TOOLTIP DE IMAGEN (VISTA PREVIA)
+========================================= */
+.item-thumbnail-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.item-thumbnail {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid #e2e8f0;
+  display: block;
+}
+
+.item-image-preview-tooltip {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  transform: translateY(-50%);
+  margin-left: 15px;
+  z-index: 1000;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.item-image-preview-tooltip img {
+  width: 250px;
+  height: auto;
+  border-radius: 4px;
+  object-fit: contain;
+  display: block;
+}
+
+/* Flechita del tooltip */
+.item-image-preview-tooltip::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -8px;
+  transform: translateY(-50%);
+  border-width: 8px 8px 8px 0;
+  border-style: solid;
+  border-color: transparent #fff transparent transparent;
+  filter: drop-shadow(-2px 0 2px rgba(0,0,0,0.05));
+}
+
+.item-thumbnail-container:hover .item-image-preview-tooltip {
+  display: block;
+  animation: fadeInTooltip 0.2s ease-in-out;
+}
+
+@keyframes fadeInTooltip {
+  from { opacity: 0; transform: translateY(-50%) translateX(-10px); }
+  to { opacity: 1; transform: translateY(-50%) translateX(0); }
+}
+
+/* Ocultar en dispositivos móviles */
+@media (max-width: 1024px) {
+  .item-image-preview-tooltip {
+    display: none !important;
+  }
 }
 
 /*=========================================
@@ -580,4 +683,49 @@ CELULARES
         grid-template-columns:1fr;
     }
 
+    /* Modal Responsive */
+    .add-item-modal {
+        padding: 24px 20px;
+        max-height: 95vh;
+        margin: 10px;
+    }
+
+    .type-selector-container {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .form-grid.cols-3 {
+        grid-template-columns: 1fr;
+    }
+
+    .actions-footer {
+        flex-direction: column-reverse;
+        gap: 12px;
+    }
+
+    .btn-cancel-modal,
+    .btn-save-modal {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+  .filter-dropdown-menu {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 320px;
+    margin-top: 0;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    z-index: 1050;
+  }
 }
