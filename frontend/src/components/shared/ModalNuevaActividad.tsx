@@ -74,15 +74,15 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
     switch (textoRecurrencia) {
       case "Todos los días": // Coincidencia exacta con el array
         return { frequency: "DAILY", interval: 1 };
-      
+
       case "Todos los días hábiles (lunes a viernes)": // Coincidencia exacta con el array
         return { frequency: "WEEKLY", byDay: ["MO", "TU", "WE", "TH", "FR"] };
-      
+
       case "Todos los meses": {
         const diaDelMes = form.fecha ? new Date(form.fecha + "T12:00:00").getDate() : undefined;
         return { frequency: "MONTHLY", interval: 1, ...(diaDelMes ? { byMonthDay: diaDelMes } : {}) };
       }
-      
+
       case "Personalizado...": {
         if (!form.customFrequency) return null;
         const resultado: Record<string, any> = { frequency: form.customFrequency, interval: form.customInterval || 1 };
@@ -110,13 +110,15 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
         return null;
     }
   };
-  
+
   const handleGuardarWrapper = (data: any) => {
     //transformamos el texto plano del select de recurrencia en el objeto estruturado seguro
     const recurrenciaEstructurada = mapearRecurrenciaAObjeto(data.recurrencia || form.recurrencia);
-    onGuardar({ ...data,
+    onGuardar({
+      ...data,
       recurrencia: recurrenciaEstructurada, // remplazamos la frase en español por el objeto limpio
-      usuario_id: user?.id });
+      usuario_id: user?.id
+    });
   };
 
   const {
@@ -407,133 +409,133 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
                   <input className="na-input" type="time" value={form.hasta || ""} onChange={(e) => set("hasta", e.target.value)} />
                 </div>
               </div>
-                <div className="na-field-group">
-                    <label className="na-field-label">RECURRENCIA</label>
-                    <div className="na-recur-row">
-                      <CalendarIcon color="#4b5563" />
-                      <select 
-                        className="na-select na-recur-select" 
-                        value={form.recurrencia || "No se repite"} /* <- Ajuste 1: Valor por defecto exacto */
-                        onChange={(e) => set("recurrencia", e.target.value)}
+              <div className="na-field-group">
+                <label className="na-field-label">RECURRENCIA</label>
+                <div className="na-recur-row">
+                  <CalendarIcon color="#4b5563" />
+                  <select
+                    className="na-select na-recur-select"
+                    value={form.recurrencia || "No se repite"} /* <- Ajuste 1: Valor por defecto exacto */
+                    onChange={(e) => set("recurrencia", e.target.value)}
+                  >
+                    {(tipo === "clase" ? getRecurrenciaClase(diaFecha.nombre) : RECURRENCIA_SIMPLE).map((r) => (
+                      <option key={r} value={r}> {/* <- Ajuste 2: Se agregó el atributo value={r} */}
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* ── Panel de recurrencia personalizada ── */}
+              {form.recurrencia === "Personalizado..." && (
+                <div className="na-custom-recur">
+                  <div className="na-custom-recur-title">Configuración personalizada</div>
+
+                  {/* Repetir cada N día(s)/semana(s)/mes(es) */}
+                  <div className="na-field-group">
+                    <label className="na-field-label">REPETIR CADA</label>
+                    <div className="na-custom-recur-interval">
+                      <input
+                        className="na-input na-custom-recur-num"
+                        type="number"
+                        min={1}
+                        max={99}
+                        value={form.customInterval || 1}
+                        onChange={(e) => set("customInterval" as keyof FormData, Math.max(1, parseInt(e.target.value) || 1))}
+                      />
+                      <select
+                        className="na-select"
+                        value={form.customFrequency || "WEEKLY"}
+                        onChange={(e) => set("customFrequency" as keyof FormData, e.target.value)}
                       >
-                        {(tipo === "clase" ? getRecurrenciaClase(diaFecha.nombre) : RECURRENCIA_SIMPLE).map((r) => (
-                          <option key={r} value={r}> {/* <- Ajuste 2: Se agregó el atributo value={r} */}
-                            {r}
-                          </option>
-                        ))}
+                        <option value="DAILY">día(s)</option>
+                        <option value="WEEKLY">semana(s)</option>
+                        <option value="MONTHLY">mes(es)</option>
                       </select>
                     </div>
                   </div>
 
-                  {/* ── Panel de recurrencia personalizada ── */}
-                  {form.recurrencia === "Personalizado..." && (
-                    <div className="na-custom-recur">
-                      <div className="na-custom-recur-title">Configuración personalizada</div>
-
-                      {/* Repetir cada N día(s)/semana(s)/mes(es) */}
-                      <div className="na-field-group">
-                        <label className="na-field-label">REPETIR CADA</label>
-                        <div className="na-custom-recur-interval">
-                          <input
-                            className="na-input na-custom-recur-num"
-                            type="number"
-                            min={1}
-                            max={99}
-                            value={form.customInterval || 1}
-                            onChange={(e) => set("customInterval" as keyof FormData, Math.max(1, parseInt(e.target.value) || 1))}
-                          />
-                          <select
-                            className="na-select"
-                            value={form.customFrequency || "WEEKLY"}
-                            onChange={(e) => set("customFrequency" as keyof FormData, e.target.value)}
-                          >
-                            <option value="DAILY">día(s)</option>
-                            <option value="WEEKLY">semana(s)</option>
-                            <option value="MONTHLY">mes(es)</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Días de la semana (solo si es WEEKLY) */}
-                      {form.customFrequency === "WEEKLY" && (
-                        <div className="na-field-group">
-                          <label className="na-field-label">SE REPITE EL</label>
-                          <div className="na-custom-recur-days">
-                            {([["MO", "Lu"], ["TU", "Ma"], ["WE", "Mi"], ["TH", "Ju"], ["FR", "Vi"], ["SA", "Sá"], ["SU", "Do"]] as [string, string][]).map(([code, label]) => {
-                              const selected = (form.customByDay || []).includes(code);
-                              return (
-                                <button
-                                  key={code}
-                                  type="button"
-                                  className={`na-day-chip${selected ? " na-day-chip--on" : ""}`}
-                                  onClick={() => {
-                                    const current = form.customByDay || [];
-                                    const updated = current.includes(code)
-                                      ? current.filter((d: string) => d !== code)
-                                      : [...current, code];
-                                    set("customByDay" as keyof FormData, updated);
-                                  }}
-                                >
-                                  {label}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Finalización */}
-                      <div className="na-field-group">
-                        <label className="na-field-label">FINALIZA</label>
-                        <div className="na-custom-recur-end">
-                          <label className="na-custom-recur-radio">
-                            <input
-                              type="radio"
-                              name="customEndType"
-                              checked={form.customEndType === "never" || !form.customEndType}
-                              onChange={() => set("customEndType" as keyof FormData, "never")}
-                            />
-                            <span>Nunca</span>
-                          </label>
-                          <label className="na-custom-recur-radio">
-                            <input
-                              type="radio"
-                              name="customEndType"
-                              checked={form.customEndType === "count"}
-                              onChange={() => set("customEndType" as keyof FormData, "count")}
-                            />
-                            <span>Después de</span>
-                            <input
-                              className="na-input na-custom-recur-num"
-                              type="number"
-                              min={1}
-                              max={365}
-                              value={form.customCount || 10}
-                              disabled={form.customEndType !== "count"}
-                              onChange={(e) => set("customCount" as keyof FormData, Math.max(1, parseInt(e.target.value) || 1))}
-                            />
-                            <span>ocurrencias</span>
-                          </label>
-                          <label className="na-custom-recur-radio">
-                            <input
-                              type="radio"
-                              name="customEndType"
-                              checked={form.customEndType === "until"}
-                              onChange={() => set("customEndType" as keyof FormData, "until")}
-                            />
-                            <span>En fecha</span>
-                            <input
-                              className="na-input na-custom-recur-date"
-                              type="date"
-                              value={form.customUntil || ""}
-                              disabled={form.customEndType !== "until"}
-                              onChange={(e) => set("customUntil" as keyof FormData, e.target.value)}
-                            />
-                          </label>
-                        </div>
+                  {/* Días de la semana (solo si es WEEKLY) */}
+                  {form.customFrequency === "WEEKLY" && (
+                    <div className="na-field-group">
+                      <label className="na-field-label">SE REPITE EL</label>
+                      <div className="na-custom-recur-days">
+                        {([["MO", "Lu"], ["TU", "Ma"], ["WE", "Mi"], ["TH", "Ju"], ["FR", "Vi"], ["SA", "Sá"], ["SU", "Do"]] as [string, string][]).map(([code, label]) => {
+                          const selected = (form.customByDay || []).includes(code);
+                          return (
+                            <button
+                              key={code}
+                              type="button"
+                              className={`na-day-chip${selected ? " na-day-chip--on" : ""}`}
+                              onClick={() => {
+                                const current = form.customByDay || [];
+                                const updated = current.includes(code)
+                                  ? current.filter((d: string) => d !== code)
+                                  : [...current, code];
+                                set("customByDay" as keyof FormData, updated);
+                              }}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
+
+                  {/* Finalización */}
+                  <div className="na-field-group">
+                    <label className="na-field-label">FINALIZA</label>
+                    <div className="na-custom-recur-end">
+                      <label className="na-custom-recur-radio">
+                        <input
+                          type="radio"
+                          name="customEndType"
+                          checked={form.customEndType === "never" || !form.customEndType}
+                          onChange={() => set("customEndType" as keyof FormData, "never")}
+                        />
+                        <span>Nunca</span>
+                      </label>
+                      <label className="na-custom-recur-radio">
+                        <input
+                          type="radio"
+                          name="customEndType"
+                          checked={form.customEndType === "count"}
+                          onChange={() => set("customEndType" as keyof FormData, "count")}
+                        />
+                        <span>Después de</span>
+                        <input
+                          className="na-input na-custom-recur-num"
+                          type="number"
+                          min={1}
+                          max={365}
+                          value={form.customCount || 10}
+                          disabled={form.customEndType !== "count"}
+                          onChange={(e) => set("customCount" as keyof FormData, Math.max(1, parseInt(e.target.value) || 1))}
+                        />
+                        <span>ocurrencias</span>
+                      </label>
+                      <label className="na-custom-recur-radio">
+                        <input
+                          type="radio"
+                          name="customEndType"
+                          checked={form.customEndType === "until"}
+                          onChange={() => set("customEndType" as keyof FormData, "until")}
+                        />
+                        <span>En fecha</span>
+                        <input
+                          className="na-input na-custom-recur-date"
+                          type="date"
+                          value={form.customUntil || ""}
+                          disabled={form.customEndType !== "until"}
+                          onChange={(e) => set("customUntil" as keyof FormData, e.target.value)}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           {isLastStep && tipo && (

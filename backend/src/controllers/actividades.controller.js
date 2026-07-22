@@ -39,26 +39,6 @@ const crearActividad = async (req, res) => {
     }
 };
 
-// Función para leer las actividades
-const obtenerTodasLasActividades = async (req, res) => {
-    try {
-        // AQUÍ ESTABA EL ERROR: Asegúrate de que diga actividadesService (sin 's' al final)
-        const actividades = await actividadesService.obtenerActividades();
-
-        res.status(200).json({
-            success: true,
-            data: actividades
-        });
-    } catch (error) {
-        console.error('Error al obtener las actividades:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error al obtener las actividades',
-            error: error.message
-        });
-    }
-};
-
 const actualizarActividad = async (req, res) => {
     try {
 
@@ -105,9 +85,9 @@ const eliminarActividad = async (req, res) => {
             message: 'Error al eliminar la actividad',
             error: error.message
         });
-
     };
-}
+
+};
 
 // Añade esta función:
 const consultarDisponibilidad = async (req, res) => {
@@ -117,6 +97,7 @@ const consultarDisponibilidad = async (req, res) => {
             return res.status(400).json({ exito: false, mensaje: 'Faltan parámetros de tiempo o laboratorio' });
         }
 
+        // Importante: Asegurar que actividadesService.obtenerDisponibilidad existe, o usar la ruta correcta
         const disponibilidad = await actividadesService.obtenerDisponibilidad(
             laboratorio_id, fecha, hora_inicio, hora_fin, exclude_id
         );
@@ -126,21 +107,24 @@ const consultarDisponibilidad = async (req, res) => {
     }
 };
 
+// Función UNIFICADA para leer las actividades (Estructura completa + Expansión RRule)
 const obtenerActividades = async (req, res) => {
     try {
-        // React Big Calendar (o nuestro frontend) nos mandará el rango de fechas que está viendo el usuario
+        // 1. React Big Calendar nos mandará el rango de fechas que está viendo el usuario
         const { start, end } = req.query;
 
+        // 2. Validamos que el frontend sí nos esté mandando ese rango
         if (!start || !end) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Se requieren los parámetros de fecha start y end para la vista actual' 
+            return res.status(400).json({
+                success: false,
+                message: 'Faltan parámetros: Se requieren las fechas start y end para la vista actual del calendario.'
             });
         }
 
-        // Delegamos el trabajo pesado de expansión al servicio
+        // 3. Delegamos el trabajo a nuestra nueva súper función del servicio
         const actividadesExpandidas = await actividadesService.obtenerActividadesExpandidas(start, end);
 
+        // 4. Devolvemos el arreglo listo para que React lo dibuje y lea los modales
         res.status(200).json({
             success: true,
             data: actividadesExpandidas
@@ -148,13 +132,13 @@ const obtenerActividades = async (req, res) => {
 
     } catch (error) {
         console.error('Error al obtener el calendario:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error interno al cargar el calendario', 
-            error: error.message 
+        res.status(500).json({
+            success: false,
+            message: 'Error interno al cargar el calendario',
+            error: error.message
         });
     }
 };
 
 // Exórtala al final:
-module.exports = { crearActividad, obtenerTodasLasActividades, actualizarActividad, eliminarActividad, consultarDisponibilidad, obtenerActividades};
+module.exports = { crearActividad, actualizarActividad, eliminarActividad, obtenerActividades, consultarDisponibilidad };
