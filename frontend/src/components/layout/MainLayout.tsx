@@ -6,9 +6,13 @@ import { useAuth } from '../../context/AuthContext';
 
 export const MainLayout = () => {
   const { user } = useAuth();
-  // Inicializar estado dependiendo del tamaño de la pantalla
-  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
 
+  // Estado inicial según el tamaño de la pantalla
+  const [isSidebarOpen, setIsSidebarOpen] = useState(
+    window.innerWidth > 768
+  );
+
+  // Detectar cambios de tamaño de pantalla
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth <= 768) {
@@ -19,29 +23,43 @@ export const MainLayout = () => {
     };
 
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
-  //funcion para alternar el estado
+  // Abrir / cerrar sidebar
   const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  }
+    setIsSidebarOpen(prev => !prev);
+  };
+
   return (
     <div className="layout-container">
-      {/** le pasamos el estado al siderbar */}
-      <Sidebar 
-        isOpen={isSidebarOpen} 
-        userName={user ? `${user.nombres} ${user.apellidos}` : 'Usuario'}
+
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onToggle={toggleSidebar}
+        userName={
+          user
+            ? `${user.nombres} ${user.apellidos}`
+            : 'Usuario'
+        }
         userRole={user?.rol || 'Rol Desconocido'}
       />
 
       <div className="main-content">
-        {/**le pasamos la funcion al boton de Navbar */}
-        <Navbar  onToggleMenu={toggleSidebar}/>
+
+        <Navbar
+          onToggleMenu={toggleSidebar}
+        />
+
         <main className="page-content">
           <Outlet />
         </main>
+
       </div>
+
     </div>
   );
 };
