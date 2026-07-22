@@ -126,5 +126,35 @@ const consultarDisponibilidad = async (req, res) => {
     }
 };
 
+const obtenerActividades = async (req, res) => {
+    try {
+        // React Big Calendar (o nuestro frontend) nos mandará el rango de fechas que está viendo el usuario
+        const { start, end } = req.query;
+
+        if (!start || !end) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Se requieren los parámetros de fecha start y end para la vista actual' 
+            });
+        }
+
+        // Delegamos el trabajo pesado de expansión al servicio
+        const actividadesExpandidas = await actividadesService.obtenerActividadesExpandidas(start, end);
+
+        res.status(200).json({
+            success: true,
+            data: actividadesExpandidas
+        });
+
+    } catch (error) {
+        console.error('Error al obtener el calendario:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error interno al cargar el calendario', 
+            error: error.message 
+        });
+    }
+};
+
 // Exórtala al final:
-module.exports = { crearActividad, obtenerTodasLasActividades, actualizarActividad, eliminarActividad, consultarDisponibilidad };
+module.exports = { crearActividad, obtenerTodasLasActividades, actualizarActividad, eliminarActividad, consultarDisponibilidad, obtenerActividades};

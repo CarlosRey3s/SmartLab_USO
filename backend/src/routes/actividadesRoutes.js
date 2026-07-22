@@ -24,5 +24,6 @@ router.get('/', actividadesController.obtenerTodasLasActividades);
 router.put('/:id', dummyAuth, validarActividades, actividadesController.actualizarActividad);
 router.delete('/:id', dummyAuth, actividadesController.eliminarActividad);
 router.get('/disponibilidad', dummyAuth, actividadesController.consultarDisponibilidad);
+router.get('/',actividadesController.obtenerActividades);
 
 module.exports = router;

@@ -64,9 +64,52 @@ interface NuevaActividadProps {
 
 export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: NuevaActividadProps) {
   const { user } = useAuth();
+
+  //TRADUCTOR DE RECURRENCIA (dE TEXTO UI  a ojeto Estructurado)
+
+  // ── TRADUCTOR DE RECURRENCIA CORREGIDO ──
+  const mapearRecurrenciaAObjeto = (textoRecurrencia: string) => {
+    if (!textoRecurrencia || textoRecurrencia === "No se repite") return null;
+
+    switch (textoRecurrencia) {
+      case "Todos los días": // Coincidencia exacta con el array
+        return { frequency: "DAILY", interval: 1 };
+      
+      case "Todos los días hábiles (lunes a viernes)": // Coincidencia exacta con el array
+        return { frequency: "WEEKLY", byDay: ["MO", "TU", "WE", "TH", "FR"] };
+      
+      case "Todos los meses":
+        return { frequency: "MONTHLY", interval: 1 }; // Corregido: interval en lugar de intervalo
+      
+      case "Cada semana, el lunes":
+        return { frequency: "WEEKLY", byDay: ["MO"] };
+      
+      case "Cada semana, el martes": // Añadida la coma
+        return { frequency: "WEEKLY", byDay: ["TU"] };
+      
+      case "Cada semana, el miércoles": // Mayúscula, comas y tilde
+        return { frequency: "WEEKLY", byDay: ["WE"] };
+      
+      case "Cada semana, el jueves": // Añadida la coma
+        return { frequency: "WEEKLY", byDay: ["TH"] };
+      
+      case "Cada semana, el viernes": // Añadida la coma
+        return { frequency: "WEEKLY", byDay: ["FR"] };
+      
+      case "Cada semana":
+        return { frequency: "WEEKLY", interval: 1 };
+      
+      default:
+        return null;
+    }
+  };
   
   const handleGuardarWrapper = (data: any) => {
-    onGuardar({ ...data, usuario_id: user?.id });
+    //transformamos el texto plano del select de recurrencia en el objeto estruturado seguro
+    const recurrenciaEstructurada = mapearRecurrenciaAObjeto(data.recurrencia || form.recurrencia);
+    onGuardar({ ...data,
+      recurrencia: recurrenciaEstructurada, // remplazamos la frase en español por el objeto limpio
+      usuario_id: user?.id });
   };
 
   const {
@@ -354,15 +397,23 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
                   <input className="na-input" type="time" value={form.hasta || ""} onChange={(e) => set("hasta", e.target.value)} />
                 </div>
               </div>
-              <div className="na-field-group">
-                <label className="na-field-label">RECURRENCIA</label>
-                <div className="na-recur-row">
-                  <RecurIcon />
-                  <select className="na-select na-recur-select" value={form.recurrencia || ""} onChange={(e) => set("recurrencia", e.target.value)}>
-                    {(tipo === "clase" ? RECURRENCIA_CLASE : RECURRENCIA_SIMPLE).map((r) => <option key={r}>{r}</option>)}
-                  </select>
-                </div>
-              </div>
+                <div className="na-field-group">
+                    <label className="na-field-label">RECURRENCIA</label>
+                    <div className="na-recur-row">
+                      <CalendarIcon color="#4b5563" />
+                      <select 
+                        className="na-select na-recur-select" 
+                        value={form.recurrencia || "No se repite"} /* <- Ajuste 1: Valor por defecto exacto */
+                        onChange={(e) => set("recurrencia", e.target.value)}
+                      >
+                        {(tipo === "clase" ? RECURRENCIA_CLASE : RECURRENCIA_SIMPLE).map((r) => (
+                          <option key={r} value={r}> {/* <- Ajuste 2: Se agregó el atributo value={r} */}
+                            {r}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
             </div>
           )}
           {isLastStep && tipo && (
