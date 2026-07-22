@@ -5,7 +5,6 @@ import {
   Edit2, Trash2, Filter
 } from 'lucide-react';
 import { Calendar, dateFnsLocalizer, type ToolbarProps, type View } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay, isToday } from 'date-fns';
 import { es } from 'date-fns/locale/es';
 import { PanelSolicitudes } from './PanelSolicitudes.tsx';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -15,13 +14,23 @@ import '../../css/calendario.css';
 import { customToast } from '../../components/custom-toast/CustomToast.tsx';
 import { useAuth } from '../../context/AuthContext';
 
+import { format, parse, startOfWeek, getDay, isToday, startOfMonth, endOfMonth } from 'date-fns';
+
 // ── 1. CONFIGURACIÓN DE FECHAS E IDIOMA ──
 const locales = { 'es': es };
 const localizer = dateFnsLocalizer({
-  format, parse, startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 0 }), getDay, locales,
+  format, 
+  parse, 
+  startOfWeek, // [CORREGIDO] Pasado como referencia limpia para evitar el bucle infinito
+  getDay, 
+  locales,
 });
 
 const NavegacionContext = createContext({ irAFecha: (fecha: Date) => { } });
+
+// [CORREGIDO] Sacamos minTime y maxTime fuera del componente para que no causen re-renders infinitos
+const minTime = new Date(); minTime.setHours(6, 0, 0);
+const maxTime = new Date(); maxTime.setHours(23, 59, 59);
 
 // ── 2. INTERFAZ PARA EVENTOS (Consulta SQL) ──
 export interface EventoLaboratorio {
@@ -31,21 +40,21 @@ export interface EventoLaboratorio {
   end: Date;
   tipo: 'clase' | 'mantenimiento' | 'reserva';
   laboratorio_id: number;
-  laboratorio_nombre: string; // Cambio: Ahora es obligatorio o string directo
-  coordinador_id?: number; // Agregado
+  laboratorio_nombre: string;
+  coordinador_id?: number;
   materia?: string;
   docente_id?: number;
-  docente_nombre?: string; // ¡Añadir!
+  docente_nombre?: string;
   clase_estudiantes?: number;
   tecnico_responsable?: number;
-  tecnico_nombre?: string; // ¡Añadir!
+  tecnico_nombre?: string;
   mant_descripcion?: string;
   reserva_titulo?: string;
   reserva_nota?: string;
   estado_reserva?: string;
   usuario_id?: number;
   estaciones?: number[];
-  equipos?: Array<{ id: number; nombre: string; cantidad: number }>; // ¡Añadir!
+  equipos?: Array<{ id: number; nombre: string; cantidad: number }>;
 }
 
 // ── 3. COMPONENTES PERSONALIZADOS DEL CALENDARIO ──
@@ -102,9 +111,10 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
 
   const cambiarVista = (nuevaVista: View) => { toolbar.onView(nuevaVista); setMenuVistaAbierto(false); };
 
+  // [CORREGIDO] Agregado fallback de 'Sin título' para prevenir crashes
   const resultadosBusqueda = terminoBusqueda.trim() === ''
     ? []
-    : toolbar.eventos.filter(e => e.title.toLowerCase().includes(terminoBusqueda.toLowerCase()));
+    : toolbar.eventos.filter(e => (e.title || 'Sin título').toLowerCase().includes(terminoBusqueda.toLowerCase()));
 
   const toggleFiltroActividad = (tipo: 'clases' | 'mantenimientos' | 'reservas') => {
     toolbar.setFiltros((prev: any) => ({ ...prev, [tipo]: !prev[tipo] }));
@@ -263,13 +273,46 @@ export const CalendarioView = () => {
     tipoEspacio: 'Todos'
   });
 
-  const cargarDatos = async () => {
+  // [CORREGIDO] Función cargarDatos protegida
+ const cargarDatos = async () => {
     try {
       setCargando(true);
-      const data = await obtenerActividades();
-      setEventos(data);
+      
+      const fechaInicio = startOfMonth(fechaActual).toISOString();
+      const fechaFin = endOfMonth(fechaActual).toISOString();
+
+      const data = await obtenerActividades(fechaInicio, fechaFin);
+
+      // Escudo por si la API devuelve el objeto envuelto o directo
+      const arregloEventos = Array.isArray(data) ? data : (data?.data || []);
+
+      const eventosMapeados = arregloEventos.map((act: any) => {
+        // 🌟 ESCUDO DE ORO: Validamos dinámicamente cómo vienen las llaves del JSON
+        const rawStart = act.start || act.fecha_hora_inicio;
+        const rawEnd = act.end || act.fecha_hora_fin;
+
+        return {
+          ...act,
+          id: act.id_instancia || act.id,   // Llave única para evitar crasheos en React
+          idOriginal: act.id,               // ID real de PostgreSQL para operaciones CRUD
+          
+          // Si el backend ya calculó un title, úsalo; si no, elígelo por tipo
+          title: act.title || (act.tipo === 'clase' ? act.materia : act.tipo === 'mantenimiento' ? 'Mantenimiento' : act.titulo),
+          
+          // 🌟 Construimos los objetos Date usando las variables protegidas
+          start: new Date(rawStart),
+          end: new Date(rawEnd),
+          
+          tipo: act.tipo,
+          laboratorio_id: act.laboratorio_id,
+          laboratorio_nombre: act.laboratorio_nombre || 'Laboratorio',
+        };
+      });
+
+      console.log("🚀 Eventos mapeados con éxito para React:", eventosMapeados);
+      setEventos(eventosMapeados);
     } catch (error) {
-      console.error("Error al traer data:", error);
+      console.error('Error al cargar eventos en el componente:', error);
     } finally {
       setCargando(false);
     }
@@ -277,10 +320,7 @@ export const CalendarioView = () => {
 
   useEffect(() => {
     cargarDatos();
-  }, []);
-
-  const horasInicio = new Date(); horasInicio.setHours(6, 0, 0);
-  const horaFin = new Date(); horaFin.setHours(23, 59, 59);
+  }, [fechaActual]);
 
   const handleSelectEvent = (evento: EventoLaboratorio, e: any) => {
     const evt = e.nativeEvent as MouseEvent;
@@ -299,60 +339,50 @@ export const CalendarioView = () => {
     setEventoSeleccionado(evento);
   };
 
-  // [MODIFICADO] Activamos el modo edición con el evento seleccionado
   const handleEditarEvento = () => {
     if (!eventoSeleccionado) return;
-    setActividadAEditar(eventoSeleccionado); // Guardamos la data completa en el estado
-    setEventoSeleccionado(null); // Cerramos el popover
-    setModalAbierto(true); // Abrimos el modal
+    setActividadAEditar(eventoSeleccionado);
+    setEventoSeleccionado(null);
+    setModalAbierto(true);
   };
 
   const handleEliminarEvento = async () => {
     if (!eventoSeleccionado) return;
 
-    //Pedimos confirmacion al usuario antes de borrar
     const confirmar = window.confirm(`¿Estás seguro de que deseas eliminar la actividad "${eventoSeleccionado.title}"?\nEsta acción no se puede deshacer.`);
     if (confirmar) {
       try {
-        //llmamos a la Api para elimar
-        const resultado = await eliminarActividad(eventoSeleccionado.id);
+        // Enviar el ID original de la base de datos (no la instancia clonada)
+        const idAEliminar = (eventoSeleccionado as any).idOriginal || eventoSeleccionado.id;
+        const resultado = await eliminarActividad(idAEliminar);
 
-        //disparamos el Toast verde
         customToast.success('¡Eliminado!', resultado?.message || resultado?.mensaje || 'Actividad eliminada exitosamente');
-
-        //cerramos el popover
         setEventoSeleccionado(null);
-
-        //recargamos la tabla
         await cargarDatos();
 
       } catch (error: any) {
         console.error("Error al eliminar:", error);
         customToast.error('Error', error.message || 'No se pudo eliminar la actividad');
       }
-
-
     }
-
   };
 
-  // [MODIFICADO] Decide de forma dinámica si guarda un registro nuevo o actualiza uno viejo
   const handleGuardarActividad = async (datosModal: any) => {
     try {
       if (actividadAEditar) {
-        // MODO EDICIÓN (PUT)
-        console.log("Actualizando actividad existente ID:", actividadAEditar.id, datosModal);
-        const resultado = await actualizarActividad(actividadAEditar.id, datosModal);
+        // Usamos el idOriginal para el backend
+        const idAEditar = (actividadAEditar as any).idOriginal || actividadAEditar.id;
+        console.log("Actualizando actividad existente ID:", idAEditar, datosModal);
+        const resultado = await actualizarActividad(idAEditar, datosModal);
         customToast.success('¡Modificado!', resultado?.message || resultado?.mensaje || 'Actividad actualizada exitosamente');
       } else {
-        // MODO CREACIÓN (POST)
         console.log("Creando nueva actividad:", datosModal);
         const resultado = await crearActividad(datosModal);
         customToast.success('¡Éxito!', resultado?.message || resultado?.mensaje || 'Actividad guardada correctamente');
       }
 
       setModalAbierto(false);
-      setActividadAEditar(null); // Limpiamos el estado de edición siempre
+      setActividadAEditar(null);
       await cargarDatos();
     } catch (error: any) {
       console.error("Error en la operación del calendario:", error);
@@ -360,17 +390,11 @@ export const CalendarioView = () => {
     }
   };
 
-  // Filtrado de eventos basado en los filtros seleccionados
   const eventosFiltrados = eventos.filter(evento => {
     if (evento.tipo === 'clase' && !filtros.clases) return false;
     if (evento.tipo === 'mantenimiento' && !filtros.mantenimientos) return false;
     if (evento.tipo === 'reserva' && !filtros.reservas) return false;
-
-    if (filtros.laboratorio !== 'Todos' && evento.laboratorio_nombre !== filtros.laboratorio) return false;
-    
-    // Si existiera "tipoEspacio" en los eventos, se filtraría aquí
-    // if (filtros.tipoEspacio !== 'Todos' && evento.tipoEspacio !== filtros.tipoEspacio) return false;
-    
+    //if (filtros.laboratorio !== 'Todos' && evento.laboratorio_nombre !== filtros.laboratorio) return false;
     return true;
   });
 
@@ -394,11 +418,9 @@ export const CalendarioView = () => {
                   if (!user) return false;
                   if (user.rol === 'administrador') return true;
                   if (user.rol === 'coordinador') {
-                    // Si el evento tiene coordinador_id, solo el suyo. Si no, permitir (o denegar según política, aquí mantengo el "String(eventoSeleccionado.coordinador_id) === String(user.id)" de antes)
                     return !eventoSeleccionado.coordinador_id || String(eventoSeleccionado.coordinador_id) === String(user.id);
                   }
                   if (user.rol === 'docente') {
-                    // Docente solo puede editar/eliminar si es una reserva y le pertenece
                     return eventoSeleccionado.tipo === 'reserva' && String(eventoSeleccionado.usuario_id) === String(user.id);
                   }
                   return false;
@@ -424,7 +446,6 @@ export const CalendarioView = () => {
             </div>
 
             <div className="popover-body">
-              {/* 1. Aquí cambiamos .laboratorio por .laboratorio_nombre */}
               <div className="popover-row">
                 <CalendarIcon size={16} className="popover-icon" />
                 <span>{eventoSeleccionado.laboratorio_nombre}</span>
@@ -433,14 +454,12 @@ export const CalendarioView = () => {
               {eventoSeleccionado.tipo === 'clase' && (
                 <>
                   <div className="popover-row"><FileText size={16} className="popover-icon" /> <span>Materia: {eventoSeleccionado.materia}</span></div>
-                  {/* 2. Aquí quitamos el ID y ponemos el nombre del Docente */}
                   <div className="popover-row"><User size={16} className="popover-icon" /> <span>Docente: {eventoSeleccionado.docente_nombre || 'No asignado'}</span></div>
                 </>
               )}
 
               {eventoSeleccionado.tipo === 'mantenimiento' && (
                 <>
-                  {/* 3. Aquí quitamos el ID y ponemos el nombre del Técnico */}
                   <div className="popover-row"><Wrench size={16} className="popover-icon text-red" /> <span>Técnico: {eventoSeleccionado.tecnico_nombre || 'No asignado'}</span></div>
                   <div className="popover-row"><FileText size={16} className="popover-icon" /> <span className="text-sm">{eventoSeleccionado.mant_descripcion}</span></div>
                 </>
@@ -451,14 +470,12 @@ export const CalendarioView = () => {
                   <div className="popover-row"><User size={16} className="popover-icon" /> <span>Reserva: {eventoSeleccionado.reserva_titulo}</span></div>
                   <div className="popover-row"><FileText size={16} className="popover-icon" /> <span className="text-sm">Nota: {eventoSeleccionado.reserva_nota}</span></div>
 
-                  {/* Estaciones Reservadas */}
                   {eventoSeleccionado.estaciones && eventoSeleccionado.estaciones.length > 0 && (
                     <div className="popover-row">
                       <span className="text-sm text-gray-700">🖥️ Estaciones: {eventoSeleccionado.estaciones.join(', ')}</span>
                     </div>
                   )}
 
-                  {/* 4. EL INVENTARIO: Aquí inyectamos la lista dinámica de equipos */}
                   {eventoSeleccionado.equipos && eventoSeleccionado.equipos.length > 0 && (
                     <div className="mt-2 pt-2 border-t border-gray-200">
                       <p className="text-xs font-semibold text-gray-500 mb-1">
@@ -477,16 +494,14 @@ export const CalendarioView = () => {
                 </>
               )}
             </div>
-
           </div>
         )}
 
-        {/* [MODIFICADO] Le pasamos los datos del evento si es edición, y limpiamos el estado al cerrar */}
         {modalAbierto && (
           <ModalNuevaActividad
             onClose={() => { setModalAbierto(false); setActividadAEditar(null); }}
             onGuardar={handleGuardarActividad}
-            actividadExistente={actividadAEditar} // Prop opcional que usaremos en el modal
+            actividadExistente={actividadAEditar}
           />
         )}
 
@@ -497,7 +512,8 @@ export const CalendarioView = () => {
             startAccessor="start" endAccessor="end"
             date={fechaActual} onNavigate={setFechaActual}
             view={vistaActual} onView={setVistaActual}
-            min={horasInicio} max={horaFin}
+            min={minTime} /* [CORREGIDO] Variables externas */
+            max={maxTime} /* [CORREGIDO] Variables externas */
             formats={{ timeGutterFormat: 'h a' }} culture="es"
             eventPropGetter={eventStyleGetter}
             onSelectEvent={handleSelectEvent}

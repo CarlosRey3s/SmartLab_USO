@@ -2,6 +2,22 @@ import { useState, useEffect } from 'react';
 import { usuariosService } from '../services/usuarios.service';
 import { chequearDisponibilidad, obtenerInventarioDisponible } from '../services/actividades.service';
 
+export const DIAS_SEMANA: Record<number, { nombre: string; code: string }> = {
+    0: { nombre: "domingo", code: "SU" },
+    1: { nombre: "lunes", code: "MO" },
+    2: { nombre: "martes", code: "TU" },
+    3: { nombre: "miércoles", code: "WE" },
+    4: { nombre: "jueves", code: "TH" },
+    5: { nombre: "viernes", code: "FR" },
+    6: { nombre: "sábado", code: "SA" },
+};
+
+export const getDiaSemana = (fechaStr: string) => {
+    if (!fechaStr) return DIAS_SEMANA[1];
+    const date = new Date(fechaStr + "T12:00:00");
+    return DIAS_SEMANA[date.getDay()];
+};
+
 export type TipoActividad = "clase" | "mantenimiento" | "reserva" | null;
 export type ModoReserva = "por_estacion" | "espacio_completo";
 export type EstadoEstacion = "disponible" | "no_disponible";
@@ -52,6 +68,12 @@ export interface FormData {
     desde?: string;
     hasta?: string;
     recurrencia?: string;
+    customFrequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY';
+    customInterval?: number;
+    customByDay?: string[];
+    customEndType?: 'never' | 'count' | 'until';
+    customCount?: number;
+    customUntil?: string;
 }
 
 const STEPS: Record<Exclude<TipoActividad, null>, string[]> = {
@@ -82,6 +104,11 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
         recurrencia: "No se repite",
         equipos: [],
         estaciones: [],
+        customFrequency: 'WEEKLY',
+        customInterval: 1,
+        customByDay: [],
+        customEndType: 'never',
+        customCount: 10,
     });
 
     const [estacionesOcupadas, setEstacionesOcupadas] = useState<number[]>([]);
@@ -247,6 +274,17 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
         return () => clearTimeout(timeoutId);
     }, [form.laboratorio, form.fecha, form.desde, form.hasta, actividadExistente]);
 
+    // ── Sincronizar texto de recurrencia semanal al cambiar la fecha ──
+    useEffect(() => {
+        if (form.fecha && form.recurrencia?.startsWith("Cada semana, el ")) {
+            const dia = getDiaSemana(form.fecha);
+            const nuevoTexto = `Cada semana, el ${dia.nombre}`;
+            if (form.recurrencia !== nuevoTexto) {
+                setForm(prev => ({ ...prev, recurrencia: nuevoTexto }));
+            }
+        }
+    }, [form.fecha]);
+
     // ── FUNCIONES DE AYUDA Y CONTROLADORES ──
     const equiposSeleccionados: EquipoSeleccionado[] = form.equipos || [];
     const estacionesSeleccionadas: (number | string)[] = form.estaciones || [];
@@ -290,7 +328,7 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
         });
     };
 
-    const set = (field: keyof FormData, value: string | number) => setForm(prev => ({ ...prev, [field]: value }));
+    const set = (field: keyof FormData, value: any) => setForm(prev => ({ ...prev, [field]: value }));
 
     const handleTipo = (t: TipoActividad) => {
         setTipo(t);
@@ -301,6 +339,11 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
             recurrencia: "No se repite",
             equipos: [],
             estaciones: [],
+            customFrequency: 'WEEKLY',
+            customInterval: 1,
+            customByDay: [],
+            customEndType: 'never',
+            customCount: 10,
             desde: t === "clase" ? "08:00" : t === "mantenimiento" ? "14:00" : "09:00",
             hasta: t === "clase" ? "10:00" : t === "mantenimiento" ? "17:00" : "11:00",
         });
@@ -316,7 +359,7 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
     const handleAtras = () => {
         if (stepIndex === 0) {
             setTipo(null);
-            setForm({ tipo: null, numPersonas: 20, recurrencia: "No se repite", equipos: [], estaciones: [] });
+            setForm({ tipo: null, numPersonas: 20, recurrencia: "No se repite", equipos: [], estaciones: [], customFrequency: 'WEEKLY', customInterval: 1, customByDay: [], customEndType: 'never', customCount: 10 });
         } else {
             setStepIndex(i => i - 1);
         }

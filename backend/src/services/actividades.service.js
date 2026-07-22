@@ -116,18 +116,35 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
 const formatearRecurrencia = (recurrenciaObj) => {
     if (!recurrenciaObj || typeof recurrenciaObj !== 'object') return null;
 
-    const {frequency, interval, byDay} = recurrenciaObj;
+    const {frequency, interval, byDay, byMonthDay, count, until} = recurrenciaObj;
     if(!frequency) return null;
 
     let parts = [`FREQ=${frequency}`];
 
     if(interval && interval > 1){
-    parts.push(`INTERVAL=${interval}`);
+        parts.push(`INTERVAL=${interval}`);
     }
 
     if (Array.isArray(byDay) && byDay.length > 0) {
         parts.push(`BYDAY=${byDay.join(',')}`);
     }
+
+    if (byMonthDay) {
+        parts.push(`BYMONTHDAY=${byMonthDay}`);
+    }
+
+    if (count && count > 0) {
+        parts.push(`COUNT=${count}`);
+    } else if (until) {
+        const untilDate = new Date(until);
+        if (!isNaN(untilDate.getTime())) {
+            const y = untilDate.getFullYear();
+            const m = String(untilDate.getMonth() + 1).padStart(2, '0');
+            const d = String(untilDate.getDate()).padStart(2, '0');
+            parts.push(`UNTIL=${y}${m}${d}T235959Z`);
+        }
+    }
+
     return parts.join(';');
 };
 /**
@@ -225,11 +242,8 @@ const actualizarActividad = async (idActividad, datosModal, idUsuarioLogueado) =
     const inicioDatetime = new Date(`${fecha}T${desde}`);
     const finDatetime = new Date(`${fecha}T${hasta}`);
 
-    let dbRecurrencia = 'no_repite';
-    if (typeof recurrencia === 'string' && (recurrencia === 'Todos los días' || recurrencia === 'Todos los dias')) dbRecurrencia = 'diario';
-    else if (typeof recurrencia === 'string' && recurrencia.includes('semana')) dbRecurrencia = 'semanal';
-    else if (typeof recurrencia === 'string' && recurrencia.includes('mes')) dbRecurrencia = 'mensual';
-    else if (typeof recurrencia === 'string' && recurrencia.includes('hábiles')) dbRecurrencia = 'dias_habiles';
+    // CORRECCIÓN HUECO 4: Usar la misma función que al crear para guardar el RRULE válido
+    const dbRecurrencia = formatearRecurrencia(recurrencia);
 
     const client = await db.connect();
     try {
