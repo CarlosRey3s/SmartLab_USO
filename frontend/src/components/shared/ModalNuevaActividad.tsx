@@ -10,16 +10,17 @@ import { FormularioClase } from './ModalActividades/FormularioClase';
 import { FormularioReserva } from './ModalActividades/FormularioReserva';
 import { SelectorInventario } from './ModalActividades/SelectorInventario';
 
+import { useActividadForm, type FormData, getDiaSemana } from '../../hooks/useActividadForm';
 import { useActividadForm, type FormData } from '../../hooks/useActividadForm';
 import { canCreateClassesOrMaintenance, isLimitedToOwnLaboratories } from '../../utils/roleGuard';
 
 
 import { type TipoActividad, type ModoReserva, type LaboratorioDB, type EstacionDB, type EquipoSeleccionado, type ItemInventarioDB } from '../../hooks/useActividadForm';
 
-const RECURRENCIA_CLASE = [
+const getRecurrenciaClase = (diaNombre: string) => [
   "No se repite",
   "Todos los días",
-  "Cada semana, el lunes",
+  `Cada semana, el ${diaNombre}`,
   "Todos los días hábiles (lunes a viernes)",
   "Todos los meses",
   "Personalizado...",
@@ -65,9 +66,61 @@ interface NuevaActividadProps {
 
 export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: NuevaActividadProps) {
   const { user } = useAuth();
-  
+
+  //TRADUCTOR DE RECURRENCIA (dE TEXTO UI  a ojeto Estructurado)
+
+  // ── TRADUCTOR DE RECURRENCIA CORREGIDO ──
+  const mapearRecurrenciaAObjeto = (textoRecurrencia: string) => {
+    if (!textoRecurrencia || textoRecurrencia === "No se repite") return null;
+
+    switch (textoRecurrencia) {
+      case "Todos los días": // Coincidencia exacta con el array
+        return { frequency: "DAILY", interval: 1 };
+
+      case "Todos los días hábiles (lunes a viernes)": // Coincidencia exacta con el array
+        return { frequency: "WEEKLY", byDay: ["MO", "TU", "WE", "TH", "FR"] };
+
+      case "Todos los meses": {
+        const diaDelMes = form.fecha ? new Date(form.fecha + "T12:00:00").getDate() : undefined;
+        return { frequency: "MONTHLY", interval: 1, ...(diaDelMes ? { byMonthDay: diaDelMes } : {}) };
+      }
+
+      case "Personalizado...": {
+        if (!form.customFrequency) return null;
+        const resultado: Record<string, any> = { frequency: form.customFrequency, interval: form.customInterval || 1 };
+        if (form.customFrequency === 'WEEKLY' && form.customByDay && form.customByDay.length > 0) {
+          resultado.byDay = form.customByDay;
+        }
+        if (form.customEndType === 'count' && form.customCount) {
+          resultado.count = form.customCount;
+        } else if (form.customEndType === 'until' && form.customUntil) {
+          resultado.until = form.customUntil;
+        }
+        return resultado;
+      }
+
+      default:
+        // "Cada semana, el {día}" — detecta el día dinámicamente de form.fecha
+        if (textoRecurrencia.startsWith("Cada semana, el ")) {
+          const dia = getDiaSemana(form.fecha || "");
+          return { frequency: "WEEKLY", byDay: [dia.code] };
+        }
+        // "Cada semana" — recurrencia semanal simple (reservas/mantenimiento)
+        if (textoRecurrencia === "Cada semana") {
+          return { frequency: "WEEKLY", interval: 1 };
+        }
+        return null;
+    }
+  };
+
   const handleGuardarWrapper = (data: any) => {
-    onGuardar({ ...data, usuario_id: user?.id });
+    //transformamos el texto plano del select de recurrencia en el objeto estruturado seguro
+    const recurrenciaEstructurada = mapearRecurrenciaAObjeto(data.recurrencia || form.recurrencia);
+    onGuardar({
+      ...data,
+      recurrencia: recurrenciaEstructurada, // remplazamos la frase en español por el objeto limpio
+      usuario_id: user?.id
+    });
   };
 
   const {
@@ -75,13 +128,16 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
     labsDesdeBD, cargandoLabs,
     estacionesDesdeBD, cargandoEstaciones,
     inventarioDesdeBD, cargandoInventario,
-    tecnicosOptions, docentesOptions,
+    docentesOptions,
     estacionesOcupadas, bloqueoTotal, verificando, mostrarSoloDisponibles, setMostrarSoloDisponibles,
     equiposSeleccionados, estacionesSeleccionadas,
     agregarEquipo, quitarEquipo, aumentarCantidad, disminuirCantidad, toggleEstacion,
     handleTipo, handleAtras, handleSiguiente, canSave,
     steps, currentStepKey, isLastStep, laboratorioSeleccionado, modoReserva
   } = useActividadForm({ actividadExistente, onGuardar: handleGuardarWrapper, onClose });
+
+  // Día de la semana dinámico para la opción de recurrencia semanal
+  const diaFecha = getDiaSemana(form.fecha || "");
 
   // Filtrar laboratorios a mostrar según el rol y el tipo
   const laboratoriosAMostrar = labsDesdeBD.filter(lab => {
@@ -178,9 +234,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
           {/* ── CONEXIÓN CON FORMULARIO MANTENIMIENTO ── */}
           {tipo === "mantenimiento" && currentStepKey === "datos" && (
             <FormularioMantenimiento
-              responsable={form.responsable}
               descripcion={form.descripcion}
-              tecnicosOptions={tecnicosOptions}
               onChange={(field, value) => set(field as keyof FormData, value)}
             />
           )}
@@ -358,12 +412,130 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
               <div className="na-field-group">
                 <label className="na-field-label">RECURRENCIA</label>
                 <div className="na-recur-row">
-                  <RecurIcon />
-                  <select className="na-select na-recur-select" value={form.recurrencia || ""} onChange={(e) => set("recurrencia", e.target.value)}>
-                    {(tipo === "clase" ? RECURRENCIA_CLASE : RECURRENCIA_SIMPLE).map((r) => <option key={r}>{r}</option>)}
+                  <CalendarIcon color="#4b5563" />
+                  <select
+                    className="na-select na-recur-select"
+                    value={form.recurrencia || "No se repite"} /* <- Ajuste 1: Valor por defecto exacto */
+                    onChange={(e) => set("recurrencia", e.target.value)}
+                  >
+                    {(tipo === "clase" ? getRecurrenciaClase(diaFecha.nombre) : RECURRENCIA_SIMPLE).map((r) => (
+                      <option key={r} value={r}> {/* <- Ajuste 2: Se agregó el atributo value={r} */}
+                        {r}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
+
+              {/* ── Panel de recurrencia personalizada ── */}
+              {form.recurrencia === "Personalizado..." && (
+                <div className="na-custom-recur">
+                  <div className="na-custom-recur-title">Configuración personalizada</div>
+
+                  {/* Repetir cada N día(s)/semana(s)/mes(es) */}
+                  <div className="na-field-group">
+                    <label className="na-field-label">REPETIR CADA</label>
+                    <div className="na-custom-recur-interval">
+                      <input
+                        className="na-input na-custom-recur-num"
+                        type="number"
+                        min={1}
+                        max={99}
+                        value={form.customInterval || 1}
+                        onChange={(e) => set("customInterval" as keyof FormData, Math.max(1, parseInt(e.target.value) || 1))}
+                      />
+                      <select
+                        className="na-select"
+                        value={form.customFrequency || "WEEKLY"}
+                        onChange={(e) => set("customFrequency" as keyof FormData, e.target.value)}
+                      >
+                        <option value="DAILY">día(s)</option>
+                        <option value="WEEKLY">semana(s)</option>
+                        <option value="MONTHLY">mes(es)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Días de la semana (solo si es WEEKLY) */}
+                  {form.customFrequency === "WEEKLY" && (
+                    <div className="na-field-group">
+                      <label className="na-field-label">SE REPITE EL</label>
+                      <div className="na-custom-recur-days">
+                        {([["MO", "Lu"], ["TU", "Ma"], ["WE", "Mi"], ["TH", "Ju"], ["FR", "Vi"], ["SA", "Sá"], ["SU", "Do"]] as [string, string][]).map(([code, label]) => {
+                          const selected = (form.customByDay || []).includes(code);
+                          return (
+                            <button
+                              key={code}
+                              type="button"
+                              className={`na-day-chip${selected ? " na-day-chip--on" : ""}`}
+                              onClick={() => {
+                                const current = form.customByDay || [];
+                                const updated = current.includes(code)
+                                  ? current.filter((d: string) => d !== code)
+                                  : [...current, code];
+                                set("customByDay" as keyof FormData, updated);
+                              }}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Finalización */}
+                  <div className="na-field-group">
+                    <label className="na-field-label">FINALIZA</label>
+                    <div className="na-custom-recur-end">
+                      <label className="na-custom-recur-radio">
+                        <input
+                          type="radio"
+                          name="customEndType"
+                          checked={form.customEndType === "never" || !form.customEndType}
+                          onChange={() => set("customEndType" as keyof FormData, "never")}
+                        />
+                        <span>Nunca</span>
+                      </label>
+                      <label className="na-custom-recur-radio">
+                        <input
+                          type="radio"
+                          name="customEndType"
+                          checked={form.customEndType === "count"}
+                          onChange={() => set("customEndType" as keyof FormData, "count")}
+                        />
+                        <span>Después de</span>
+                        <input
+                          className="na-input na-custom-recur-num"
+                          type="number"
+                          min={1}
+                          max={365}
+                          value={form.customCount || 10}
+                          disabled={form.customEndType !== "count"}
+                          onChange={(e) => set("customCount" as keyof FormData, Math.max(1, parseInt(e.target.value) || 1))}
+                        />
+                        <span>ocurrencias</span>
+                      </label>
+                      <label className="na-custom-recur-radio">
+                        <input
+                          type="radio"
+                          name="customEndType"
+                          checked={form.customEndType === "until"}
+                          onChange={() => set("customEndType" as keyof FormData, "until")}
+                        />
+                        <span>En fecha</span>
+                        <input
+                          className="na-input na-custom-recur-date"
+                          type="date"
+                          value={form.customUntil || ""}
+                          disabled={form.customEndType !== "until"}
+                          onChange={(e) => set("customUntil" as keyof FormData, e.target.value)}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           {isLastStep && tipo && (

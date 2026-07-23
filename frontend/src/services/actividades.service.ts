@@ -5,47 +5,15 @@ import type { EventoLaboratorio } from '..//pages/admin/Calendario.tsx'; // Ajus
 
 // Reemplaza esto con la URL real de tu backend si es diferente
 const API_URL = "http://localhost:4000/api/actividades"
-
-export const obtenerActividades = async (): Promise<EventoLaboratorio[]> => {
+export const obtenerActividades = async (start: string, end: string) => {
     try {
-        const respuesta = await axios.get(API_URL);
-        const datos = respuesta.data.data;
+        // Hacemos la petición directa al puerto 4000 de tu backend
+        const respuesta = await axios.get(API_URL, { params: { start, end } });
 
-        // Transformamos los datos del backend al formato que react-big-calendar entiende        
-        return datos.map((item: any) => ({
-            id: item.id,
-            title: item.title,
-            // convertimos las fechasde texto ISO a objetos Date de JavaScript
-            start: new Date(item.start),
-            end: new Date(item.end),
-            tipo: item.tipo,
-
-            // pasamos los datos del laboratorio ya con su nombre real
-            laboratorio_id: item.laboratorio_id,
-            laboratorio_nombre: item.laboratorio_nombre || 'Laboratorio Desconocido',
-            coordinador_id: item.coordinador_id,
-
-            // Datos de Clases Academicas
-            materia: item.materia,
-            docente_id: item.docente_id,
-            docente_nombre: item.docente_nombre,
-            clase_estudiante: item.numero_estudiantes,
-
-            // Datos de Mantenimiento
-            tecnico_responsable: item.tecnico_responsable,
-            tecnico_nombre: item.tecnico_nombre,
-            mant_descripcion: item.mant_descripcion,
-
-            // Datos de Reserva
-            reserva_titulo: item.reserva_titulo,
-            reserva_nota: item.reserva_nota,
-            estado_reserva: item.estado_reserva,
-            usuario_id: item.reserva_usuario_id,
-            estaciones: item.estaciones || [],
-            equipos: item.equipos || [],
-        }));
+        // Retornamos el arreglo crudo directamente del backend
+        return respuesta.data.data || respuesta.data;
     } catch (error) {
-        console.error("error al obtener actividades", error);
+        console.error("Error al obtener actividades en el servicio:", error);
         return [];
     }
 };

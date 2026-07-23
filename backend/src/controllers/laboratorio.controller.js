@@ -106,13 +106,13 @@ const getEstaciones = async (req, res) => {
                 EXISTS (
                     SELECT 1 
                     FROM actividades a 
-                    LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id
+                    LEFT JOIN reserva_estaciones re_est ON a.id = re_est.actividad_id
                     WHERE a.laboratorio_id = $1 
                       AND a.fecha_hora_inicio <= NOW() 
                       AND a.fecha_hora_fin >= NOW()
                       AND (
                          a.tipo IN ('clase', 'mantenimiento') OR 
-                         (a.tipo = 'reserva' AND (re.estacion_id IS NULL OR re.estacion_id = e.id))
+                         (a.tipo = 'reserva' AND (re_est.estacion_id IS NULL OR re_est.estacion_id = e.id))
                       )
                 ) as ocupado
              FROM estaciones_trabajo e 

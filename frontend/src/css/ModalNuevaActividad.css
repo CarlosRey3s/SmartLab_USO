@@ -355,6 +355,118 @@
   border-color: #1d9e75;
 }
 
+/* ── Panel recurrencia personalizada ── */
+.na-custom-recur {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.na-custom-recur-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.na-custom-recur-interval {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.na-custom-recur-num {
+  width: 64px !important;
+  text-align: center;
+  flex: none !important;
+  -moz-appearance: textfield;
+}
+
+.na-custom-recur-num::-webkit-outer-spin-button,
+.na-custom-recur-num::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Chips de días */
+.na-custom-recur-days {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.na-day-chip {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.na-day-chip:hover {
+  border-color: #1d9e75;
+  color: #1d9e75;
+  background: #ecfdf5;
+}
+
+.na-day-chip--on {
+  background: #1d9e75;
+  border-color: #1d9e75;
+  color: #fff;
+}
+
+.na-day-chip--on:hover {
+  background: #178563;
+  border-color: #178563;
+  color: #fff;
+}
+
+/* Sección finalización */
+.na-custom-recur-end {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.na-custom-recur-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.na-custom-recur-radio input[type="radio"] {
+  accent-color: #1d9e75;
+  margin: 0;
+  cursor: pointer;
+}
+
+.na-custom-recur-radio input[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.na-custom-recur-date {
+  max-width: 160px;
+}
+
 /* Footer */
 .na-footer {
   padding: 14px 20px;

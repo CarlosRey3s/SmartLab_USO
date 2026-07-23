@@ -1,5 +1,7 @@
 // ✅ Como debe quedar (Extrayendo el pool y renombrándolo a db)
 const { pool: db } = require('../config/db');
+const { rrulestr } = require('rrule');
+
 
 /**
  * Función interna para verificar detalladamente los solapamientos de horarios y reglas de infraestructura.
@@ -111,6 +113,40 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
     }
 };
 
+const formatearRecurrencia = (recurrenciaObj) => {
+    if (!recurrenciaObj || typeof recurrenciaObj !== 'object') return null;
+
+    const { frequency, interval, byDay, byMonthDay, count, until } = recurrenciaObj;
+    if (!frequency) return null;
+
+    let parts = [`FREQ=${frequency}`];
+
+    if (interval && interval > 1) {
+        parts.push(`INTERVAL=${interval}`);
+    }
+
+    if (Array.isArray(byDay) && byDay.length > 0) {
+        parts.push(`BYDAY=${byDay.join(',')}`);
+    }
+
+    if (byMonthDay) {
+        parts.push(`BYMONTHDAY=${byMonthDay}`);
+    }
+
+    if (count && count > 0) {
+        parts.push(`COUNT=${count}`);
+    } else if (until) {
+        const untilDate = new Date(until);
+        if (!isNaN(untilDate.getTime())) {
+            const y = untilDate.getFullYear();
+            const m = String(untilDate.getMonth() + 1).padStart(2, '0');
+            const d = String(untilDate.getDate()).padStart(2, '0');
+            parts.push(`UNTIL=${y}${m}${d}T235959Z`);
+        }
+    }
+
+    return parts.join(';');
+};
 /**
  * Función principal que llama el controlador
  */
@@ -121,12 +157,8 @@ const programarActividad = async (datosModal, idUsuarioLogueado) => {
     const inicioDatetime = new Date(`${fecha}T${desde}`);
     const finDatetime = new Date(`${fecha}T${hasta}`);
 
-    // 2. Traducción de recurrencia segura
-    let dbRecurrencia = 'no_repite';
-    if (recurrencia === 'Todos los días' || recurrencia === 'Todos los dias') dbRecurrencia = 'diario';
-    else if (recurrencia.includes('semana')) dbRecurrencia = 'semanal';
-    else if (recurrencia.includes('mes')) dbRecurrencia = 'mensual';
-    else if (recurrencia.includes('hábiles')) dbRecurrencia = 'dias_habiles';
+    // Procesas dinamicamente el objeto JSON de recurrencia para convertirlo al formato RRULE estandar
+    const reglaRecurrenciaPlana = formatearRecurrencia(recurrencia);
 
     const client = await db.connect();
     try {
@@ -141,13 +173,14 @@ const programarActividad = async (datosModal, idUsuarioLogueado) => {
             console.log(`-> Estado del laboratorio ${laboratorio} cambiado a 'en_mantenimiento'`);
         }
 
+
         // --- PASO A: Insertar en la tabla padre (actividades) ---
         const queryBase = `
             INSERT INTO actividades (laboratorio_id, tipo, fecha_hora_inicio, fecha_hora_fin, recurrencia) 
             VALUES ($1, $2, $3, $4, $5)
             RETURNING id;
         `;
-        const resultBase = await client.query(queryBase, [laboratorio, tipo, inicioDatetime, finDatetime, dbRecurrencia]);
+        const resultBase = await client.query(queryBase, [laboratorio, tipo, inicioDatetime, finDatetime, reglaRecurrenciaPlana]);
         const idGenerado = resultBase.rows[0]?.id;
 
         if (!idGenerado) {
@@ -181,7 +214,6 @@ const programarActividad = async (datosModal, idUsuarioLogueado) => {
                 }
             }
         }
-
         // --- PASO C: Insertar items de inventario si los hay ---
         if (datosModal.equipos && Array.isArray(datosModal.equipos) && datosModal.equipos.length > 0) {
             const queryItem = `INSERT INTO reserva_items (actividad_id, item_id, cantidad_solicitada) VALUES ($1, $2, $3)`;
@@ -189,10 +221,8 @@ const programarActividad = async (datosModal, idUsuarioLogueado) => {
                 await client.query(queryItem, [idGenerado, equipo.id, equipo.cantidad || 1]);
             }
         }
-
         await client.query('COMMIT');
         return { exito: true, mensaje: 'Actividad programada exitosamente', id: idGenerado };
-
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error al programar actividad en el Service:', error);
@@ -212,11 +242,8 @@ const actualizarActividad = async (idActividad, datosModal, idUsuarioLogueado) =
     const inicioDatetime = new Date(`${fecha}T${desde}`);
     const finDatetime = new Date(`${fecha}T${hasta}`);
 
-    let dbRecurrencia = 'no_repite';
-    if (recurrencia === 'Todos los días' || recurrencia === 'Todos los dias') dbRecurrencia = 'diario';
-    else if (recurrencia.includes('semana')) dbRecurrencia = 'semanal';
-    else if (recurrencia.includes('mes')) dbRecurrencia = 'mensual';
-    else if (recurrencia.includes('hábiles')) dbRecurrencia = 'dias_habiles';
+    // CORRECCIÓN HUECO 4: Usar la misma función que al crear para guardar el RRULE válido
+    const dbRecurrencia = formatearRecurrencia(recurrencia);
 
     const client = await db.connect();
     try {
@@ -281,139 +308,6 @@ const actualizarActividad = async (idActividad, datosModal, idUsuarioLogueado) =
         if (client) client.release();
     }
 };
-
-/**
- * Leer Actividades (GET)
- */
-const obtenerActividades = async () => {
-    const client = await db.connect();
-    try {
-        // Usamos ARRAY_AGG y GROUP BY para consolidar todas las PCs en una sola fila
-        const query = `
-         SELECT 
-                a.id, 
-                CASE 
-                    WHEN a.tipo = 'clase' THEN ca.materia
-                    WHEN a.tipo = 'reserva' THEN re.titulo
-                    WHEN a.tipo = 'mantenimiento' THEN 'Mantenimiento Preventivo'
-                    ELSE 'Actividad'
-                END AS title, 
-                a.fecha_hora_inicio AS start, 
-                a.fecha_hora_fin AS end, 
-                a.tipo,
-                
-                -- Datos del Laboratorio
-                a.laboratorio_id,
-                l.nombre AS laboratorio_nombre,
-                l.coordinador_id,
-                
-                -- Datos de Clase
-                ca.materia, 
-                ca.docente_id, 
-                u_docente.nombre AS docente_nombre,
-                ca.num_estudiantes AS clase_estudiantes,
-                
-                -- Datos de Mantenimiento
-                m.tecnico_id AS tecnico_responsable, 
-                u_tecnico.nombre AS tecnico_nombre,
-                m.descripcion_ti AS mant_descripcion,
-                
-                -- Datos de Reserva Estudiantil
-                re.titulo AS reserva_titulo,
-                re.nota_adicional AS reserva_nota,
-                re.estado_reserva,
-                re.usuario_id AS reserva_usuario_id,
-                
-                -- 1. Subconsulta para agrupar las estaciones en un Array
-                (
-                    SELECT COALESCE(array_agg(estacion_id), '{}') 
-                    FROM reserva_estaciones 
-                    WHERE actividad_id = a.id
-                ) AS estaciones,
-                 
-                -- 2. Subconsulta para agrupar los equipos en un Array de Objetos JSON
-                (
-                    SELECT COALESCE(
-                        json_agg(
-                            json_build_object(
-                                'id', ii.id, 
-                                'nombre', ii.nombre, 
-                                'cantidad', ri.cantidad_solicitada
-                            )
-                        ), '[]'::json
-                    ) 
-                    FROM reserva_items ri 
-                    INNER JOIN item_inventario ii ON ri.item_id = ii.id 
-                    WHERE ri.actividad_id = a.id
-                ) AS equipos
-
-            FROM actividades a
-            
-            -- Uniones para traer los nombres reales
-            LEFT JOIN laboratorios l ON a.laboratorio_id = l.id
-            LEFT JOIN clases_academicas ca ON a.id = ca.actividad_id
-            LEFT JOIN usuarios u_docente ON ca.docente_id = u_docente.id
-            LEFT JOIN mantenimientos m ON a.id = m.actividad_id
-            LEFT JOIN usuarios u_tecnico ON m.tecnico_id = u_tecnico.id
-            LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id;
-        `;
-        const result = await client.query(query);
-        return result.rows;
-    } catch (error) {
-        console.error('Error al obtener actividades:', error);
-        throw new Error('Error al obtener las actividades.');
-    } finally {
-        if (client) client.release();
-    }
-};
-/*const obtenerActividades = async () => {
-    const client = await db.connect();
-    try {
-        const query = `
-           SELECT 
-                a.id, 
-                CASE 
-                    WHEN a.tipo = 'clase' THEN ca.materia
-                    WHEN a.tipo = 'reserva' THEN re.titulo
-                    WHEN a.tipo = 'mantenimiento' THEN 'Mantenimiento Preventivo'
-                    ELSE 'Actividad'
-                END AS title, 
-                a.fecha_hora_inicio AS start, 
-                a.fecha_hora_fin AS end, 
-                a.tipo,
-                a.laboratorio_id,
-                ca.materia, 
-                ca.docente_id, 
-                ca.num_estudiantes AS clase_estudiantes,
-                m.tecnico_id AS tecnico_responsable, 
-                m.descripcion_ti AS mant_descripcion,
-                re.titulo AS reserva_titulo,
-                COALESCE(array_agg(res_est.estacion_id) FILTER (WHERE res_est.estacion_id IS NOT NULL), ARRAY[]::INTEGER[]) as estaciones,
-                re.nota_adicional AS reserva_nota,
-                re.estado_reserva
-            FROM 
-                actividades a
-            LEFT JOIN 
-                clases_academicas ca ON a.id = ca.actividad_id
-            LEFT JOIN 
-                mantenimientos m ON a.id = m.actividad_id
-            LEFT JOIN 
-                reservas_estudiantes re ON a.id = re.actividad_id
-            LEFT JOIN 
-                reserva_estaciones res_est ON a.id = res_est.actividad_id
-            GROUP BY 
-                a.id, ca.materia, ca.docente_id, ca.num_estudiantes, m.tecnico_id, m.descripcion_ti, re.titulo, re.nota_adicional, re.estado_reserva;
-        `;
-        const result = await client.query(query);
-        return result.rows;
-    } catch (error) {
-        console.error('Error al obtener actividades:', error);
-        throw new Error('Error al obtener las actividades. Por favor, inténtalo de nuevo.');
-    } finally {
-        if (client) client.release();
-    }
-};
-*/
 /**
  * Función para eliminar una actividad existente
  */
@@ -520,10 +414,149 @@ const obtenerDisponibilidad = async (laboratorio, fecha, horaInicio, horaFin, id
     }
 }
 
+/**
+ * Extrae las actividades con toda su infraestructura agrupada (PCs, Inventario, Nombres)
+ * y expande dinámicamente las instancias recurrentes (RRULE) dentro del rango de la vista del calendario.
+ */
+const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista) => {
+    const client = await db.connect();
+
+    try {
+        // 1. Convertir los strings de fecha que envía el frontend a objetos Date de JavaScript
+        const startVista = new Date(fechaInicioVista);
+        const endVista = new Date(fechaFinVista);
+
+        // 2. CONSULTA FUSIONADA: Estructura masiva + Filtro temporal inteligente
+        const query = `
+            SELECT 
+                a.id, 
+                CASE 
+                    WHEN a.tipo = 'clase' THEN ca.materia
+                    WHEN a.tipo = 'reserva' THEN re.titulo
+                    WHEN a.tipo = 'mantenimiento' THEN 'Mantenimiento Preventivo'
+                    ELSE 'Actividad'
+                END AS title, 
+                a.fecha_hora_inicio AS start, 
+                a.fecha_hora_fin AS end, 
+                a.tipo,
+                a.recurrencia, -- ⚠️ ¡CRUCIAL! La necesitábamos para alimentar el motor de RRule
+                
+                -- Datos del Laboratorio
+                a.laboratorio_id,
+                l.nombre AS laboratorio_nombre,
+                l.coordinador_id,
+                
+                -- Datos de Clase
+                ca.materia, 
+                ca.docente_id, 
+                u_docente.nombre AS docente_nombre,
+                ca.num_estudiantes AS clase_estudiantes,
+                
+                -- Datos de Mantenimiento
+                m.tecnico_id AS tecnico_responsable, 
+                u_tecnico.nombre AS tecnico_nombre,
+                m.descripcion_ti AS mant_descripcion,
+                
+                -- Datos de Reserva Estudiantil
+                re.titulo AS reserva_titulo,
+                re.nota_adicional AS reserva_nota,
+                re.estado_reserva,
+                re.usuario_id AS reserva_usuario_id,
+                
+                -- Subconsulta para empaquetar estaciones en un Array []
+                (
+                    SELECT COALESCE(array_agg(estacion_id), '{}') 
+                    FROM reserva_estaciones 
+                    WHERE actividad_id = a.id
+                ) AS estaciones,
+                 
+                -- Subconsulta para empaquetar equipos en un Array de Objetos JSON [{}]
+                (
+                    SELECT COALESCE(
+                        json_agg(
+                            json_build_object(
+                                'id', ii.id, 
+                                'nombre', ii.nombre, 
+                                'cantidad', ri.cantidad_solicitada
+                            )
+                        ), '[]'::json
+                    ) 
+                    FROM reserva_items ri 
+                    INNER JOIN item_inventario ii ON ri.item_id = ii.id 
+                    WHERE ri.actividad_id = a.id
+                ) AS equipos
+
+            FROM actividades a
+            
+            -- Uniones estratégicas para traer la metadata correspondiente
+            LEFT JOIN laboratorios l ON a.laboratorio_id = l.id
+            LEFT JOIN clases_academicas ca ON a.id = ca.actividad_id
+            LEFT JOIN usuarios u_docente ON ca.docente_id = u_docente.id
+            LEFT JOIN mantenimientos m ON a.id = m.actividad_id
+            LEFT JOIN usuarios u_tecnico ON m.tecnico_id = u_tecnico.id
+            LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id
+            
+            -- Filtro para no traer todo el histórico de la BD, solo lo relevante a este rango
+            WHERE (a.recurrencia IS NULL AND a.fecha_hora_inicio <= $2 AND a.fecha_hora_fin >= $1)
+               OR (a.recurrencia IS NOT NULL AND a.fecha_hora_inicio <= $2);
+        `;
+
+        const { rows } = await client.query(query, [startVista, endVista]);
+        const eventosListosParaReact = [];
+
+        // 3. El Motor de Expansión Procesando Objetos Complejos
+        for (const fila of rows) {
+            if (!fila.recurrencia) {
+                // CASO A: Evento Único (No se repite)
+                // Conserva toda la estructura intacta y asignamos id_instancia estándar
+                fila.id_instancia = fila.id.toString();
+                eventosListosParaReact.push(fila);
+            } else {
+                // CASO B: Evento Recurrente (Multiplicación por RRule)
+                const fechaInicioOriginal = new Date(fila.start);
+                const fechaFinOriginal = new Date(fila.end);
+
+                // Calculamos la duración exacta (ej: 2 horas de clase) en milisegundos
+                const duracionMilisegundos = fechaFinOriginal.getTime() - fechaInicioOriginal.getTime();
+
+                // Inicializamos la regla matemática con el string de la BD
+                const regla = rrulestr(fila.recurrencia, {
+                    dtstart: fechaInicioOriginal
+                });
+
+                // Extraemos todas las fechas clonadas que caen en la vista actual (ej: todos los miércoles del mes)
+                const fechasClonadas = regla.between(startVista, endVista, true);
+
+                for (const fechaClon of fechasClonadas) {
+                    // Clonamos el objeto de la fila con TODO su contenido (estaciones, equipos, nombres)
+                    const eventoClonado = { ...fila };
+
+                    // Modificamos únicamente las propiedades de tiempo para esta instancia específica
+                    eventoClonado.start = fechaClon;
+                    eventoClonado.end = new Date(fechaClon.getTime() + duracionMilisegundos);
+
+                    // Llave única compuesta para evitar duplicidad de keys en React Big Calendar
+                    eventoClonado.id_instancia = `${fila.id}-${fechaClon.getTime()}`;
+
+                    eventosListosParaReact.push(eventoClonado);
+                }
+            }
+        }
+
+        return eventosListosParaReact;
+
+    } catch (error) {
+        console.error('Error procesando la expansión de eventos estructurados:', error);
+        throw new Error('Error al procesar las actividades completas del calendario.');
+    } finally {
+        if (client) client.release();
+    }
+};
+
 module.exports = {
     programarActividad,
-    obtenerActividades,
     actualizarActividad,
     eliminarActividad,
-    obtenerDisponibilidad
+    obtenerDisponibilidad,
+    obtenerActividadesExpandidas
 };
