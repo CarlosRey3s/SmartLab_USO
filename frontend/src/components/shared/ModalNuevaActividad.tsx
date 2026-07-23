@@ -11,7 +11,6 @@ import { FormularioReserva } from './ModalActividades/FormularioReserva';
 import { SelectorInventario } from './ModalActividades/SelectorInventario';
 
 import { useActividadForm, type FormData, getDiaSemana } from '../../hooks/useActividadForm';
-import { useActividadForm, type FormData } from '../../hooks/useActividadForm';
 import { canCreateClassesOrMaintenance, isLimitedToOwnLaboratories } from '../../utils/roleGuard';
 
 

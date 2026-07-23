@@ -8,6 +8,15 @@ const verificarRol = (rolesPermitidos) => {
             // pero damos soporte a body o query como fallback). En desarrollo usamos '1' (administrador) si falta.
             const usuario_id = req.headers['usuario-id'] || (req.body && req.body.usuario_id) || (req.query && req.query.usuario_id) || '1'; 
             
+            // Excepción para el usuario temporal de prueba (hardcoded)
+            if (usuario_id == '9999' || usuario_id === 9999) {
+                if (rolesPermitidos.includes('administrador')) {
+                    return next();
+                } else {
+                    return res.status(403).json({ success: false, message: 'Acceso denegado para el administrador de prueba.' });
+                }
+            }
+
             const result = await pool.query('SELECT rol FROM usuarios WHERE id = $1', [usuario_id]);
             if (result.rows.length === 0) {
                 return res.status(404).json({ success: false, message: 'Usuario no encontrado para validación de permisos.' });
