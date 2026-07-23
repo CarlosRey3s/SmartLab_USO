@@ -7,7 +7,8 @@
 -- ===========================================================================
 -- 1. CREACIÓN DE TIPOS ENUM (Control estricto de catálogos y dominios)
 -- ===========================================================================
-CREATE TYPE rol_usuario_enum AS ENUM ('estudiante', 'docente', 'coordinador', 'administrador');
+CREATE TYPE rol_usuario_enum AS ENUM ('estudiante', 'docente', 'coordinador', 'administrador', 'supervisor');
+-- ALTER TYPE rol_usuario_enum ADD VALUE IF NOT EXISTS 'supervisor'; -- (Comando ejecutado para actualizar DB existente)
 CREATE TYPE estado_usuario_enum AS ENUM ('activo', 'inactivo');
 CREATE TYPE estado_lab_enum AS ENUM ('disponible', 'en_mantenimiento', 'clausurado');
 CREATE TYPE modo_reserva_enum AS ENUM ('por_estacion', 'espacio_completo');

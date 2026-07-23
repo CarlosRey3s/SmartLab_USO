@@ -5,6 +5,7 @@ import { VistaEstaciones } from '../../components/shared/VistaEstaciones';
 import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
 import { customToast } from '../../components/custom-toast/CustomToast';
 import { useAuth } from '../../context/AuthContext';
+import { isReadOnlyView } from '../../utils/roleGuard';
 import { laboratoriosService } from '../../services/laboratorios.service';
 import '../../css/inventario.css';
 import '../../css/espacios.css';
@@ -26,6 +27,7 @@ interface EspacioItem {
 
 export const EspacioView: React.FC = () => {
   const { user } = useAuth();
+  const readOnly = user ? isReadOnlyView(user.rol as any) : false;
   const [searchTerm, setSearchTerm] = useState('');
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -263,10 +265,12 @@ export const EspacioView: React.FC = () => {
                 )}
               </div>
 
-              <button className="btn-add-item" style={{ borderRadius: '20px', backgroundColor: '#32886c' }} onClick={openAddModal}>
-                <Plus size={16} />
-                <span>Item</span>
-              </button>
+              {!readOnly && (
+                <button className="btn-add-item" style={{ borderRadius: '20px', backgroundColor: '#32886c' }} onClick={openAddModal}>
+                  <Plus size={16} />
+                  <span>Item</span>
+                </button>
+              )}
             </div>
           </div>
 

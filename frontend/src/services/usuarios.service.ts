@@ -2,9 +2,13 @@
 const API_URL = 'http://localhost:4000/api';
 
 export const usuariosService = {
-  getUsuarios: async () => {
+  getUsuarios: async (usuarioId: string = '1') => {
     try {
-      const response = await fetch(`${API_URL}/usuarios`);
+      const response = await fetch(`${API_URL}/usuarios`, {
+        headers: {
+          'usuario-id': usuarioId
+        }
+      });
       const data = await response.json();
       return data;
     } catch (error) {
@@ -13,12 +17,13 @@ export const usuariosService = {
     }
   },
 
-  crearUsuario: async (userData: any) => {
+  crearUsuario: async (userData: any, usuarioId: string = '1') => {
     try {
       const response = await fetch(`${API_URL}/usuarios`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'usuario-id': usuarioId
         },
         body: JSON.stringify(userData)
       });
@@ -30,12 +35,13 @@ export const usuariosService = {
     }
   },
 
-  actualizarUsuario: async (id: number, userData: any) => {
+  actualizarUsuario: async (id: number, userData: any, usuarioId: string = '1') => {
     try {
       const response = await fetch(`${API_URL}/usuarios/${id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'usuario-id': usuarioId
         },
         body: JSON.stringify(userData)
       });
@@ -47,10 +53,13 @@ export const usuariosService = {
     }
   },
 
-  eliminarUsuario: async (id: number) => {
+  eliminarUsuario: async (id: number, usuarioId: string = '1') => {
     try {
       const response = await fetch(`${API_URL}/usuarios/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'usuario-id': usuarioId
+        }
       });
       const data = await response.json();
       return data;

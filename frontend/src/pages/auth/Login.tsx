@@ -129,22 +129,7 @@ function EyeOffIcon() {
   );
 }
 
-function StudentIcon() {
-  return (
-    <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M7.5 1L14 4.5l-6.5 3-6.5-3L7.5 1z" />
-      <path d="M3 6.5V10c0 1.5 2 2.5 4.5 2.5S12 11.5 12 10V6.5" strokeLinecap="round" />
-    </svg>
-  );
-}
 
-function AdminIcon() {
-  return (
-    <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M7.5 1.5l1.6 3.3 3.6.5-2.6 2.5.6 3.5-3.2-1.7-3.2 1.7.6-3.5L2.3 5.3l3.6-.5z" />
-    </svg>
-  );
-}
 
 /* ══════════════════════════════════════
    MAIN COMPONENT
@@ -190,8 +175,8 @@ export default function Login() {
       // Redirigir según el rol real de la BD
       if (data.user.rol === 'administrador') {
         navigate('/admin/dashboard');
-      } else if (data.user.rol === 'coordinador') {
-        navigate('/admin/dashboard'); // Asumiendo que va al mismo, puedes cambiarlo luego
+      } else if (data.user.rol === 'coordinador' || data.user.rol === 'supervisor') {
+        navigate('/admin/dashboard');
       } else if (data.user.rol === 'docente') {
         navigate('/docente/dashboard');
       } else {

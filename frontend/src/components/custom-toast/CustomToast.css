@@ -31,6 +31,12 @@
   box-shadow: 0 10px 30px rgba(244, 63, 94, 0.25);
 }
 
+.premium-toast.info-toast {
+  /* Azul suave (Blue) */
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.25);
+}
+
 @keyframes slideIn {
   from { transform: translateX(120%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
@@ -114,6 +120,10 @@
 
 .premium-toast.error-toast .progress::after {
   background: #fca5a5;
+}
+
+.premium-toast.info-toast .progress::after {
+  background: #93c5fd;
 }
 
 @keyframes fillProgress {

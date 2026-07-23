@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Check, X, Clock } from 'lucide-react';
 import '../../css/solicitudes.css';
+import { useAuth } from '../../context/AuthContext';
+import { isReadOnlyView } from '../../utils/roleGuard';
 
 interface Solicitud {
   id: number;
@@ -43,6 +45,8 @@ const mockSolicitudes: Solicitud[] = [
 ];
 
 export const PanelSolicitudes = () => {
+  const { user } = useAuth();
+  const readOnly = user ? isReadOnlyView(user.rol as any) : false;
   const [tabActiva, setTabActiva] = useState<'pendientes' | 'aprobadas' | 'rechazadas'>('pendientes');
 
   return (
@@ -88,6 +92,7 @@ export const PanelSolicitudes = () => {
               </span>
             </div>
 
+            {!readOnly && (
             <div className="solicitud-actions">
               <button className="btn-aprobar">
                 <Check size={16} /> Aprobar
@@ -96,6 +101,7 @@ export const PanelSolicitudes = () => {
                 <X size={16} /> Rechazar
               </button>
             </div>
+            )}
             
             <button className="btn-detalle">Ver detalle</button>
           </div>

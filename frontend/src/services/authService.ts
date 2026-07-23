@@ -6,7 +6,7 @@ export interface LoginResponse {
     id: string; // uuid
     nombres: string;
     apellidos: string;
-    rol: 'administrador' | 'estudiante' | 'docente' | 'coordinador';
+    rol: 'administrador' | 'estudiante' | 'docente' | 'coordinador' | 'supervisor';
     correo: string;
   };
 }

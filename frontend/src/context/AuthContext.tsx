@@ -4,7 +4,7 @@ interface User {
   id: string;
   nombres: string;
   apellidos: string;
-  rol: 'administrador' | 'estudiante' | 'docente' | 'coordinador';
+  rol: 'administrador' | 'estudiante' | 'docente' | 'coordinador' | 'supervisor';
   correo: string;
 }
 

@@ -6,7 +6,7 @@ A continuación se listan los roles requeridos para el sistema y cuáles ya se e
 - [x] Docente / Instructor
 - [x] Coordinador
 - [x] Administrador
-- [ ] Supervisor
+- [x] Supervisor
 
 ---
 
@@ -18,9 +18,6 @@ Estos roles ya existen en la base de datos y pueden ser asignados a los usuarios
 * **Docente / Instructor**
 * **Coordinador**
 * **Administrador**
-
-### Roles Faltantes ❌
-Estos roles **no existen** actualmente en el tipo enumerado de la base de datos. Para implementarlos, será necesario actualizar el esquema de la base de datos y ajustar las validaciones en el backend:
 * **Supervisor**
 
 ---
@@ -97,32 +94,32 @@ A continuación se detalla cómo debe comportarse el sistema para cada rol, tant
 
 ### Coordinador
 - [x] **Frontend:** Ocultar en el selector de espacios los laboratorios que no le pertenecen (al crear clases o mantenimientos).
-- [ ] **Frontend:** Filtrar el buzón de sugerencias para mostrar solo los de sus laboratorios.
-- [ ] **Backend:** Validar que al crear clases o mantenimientos, el ID de usuario coincida con el `coordinador_id` del laboratorio.
-- [ ] **Backend:** Validar que las reservas en laboratorios ajenos queden en estado `'pendiente'`.
-- [ ] **Backend:** Filtrar peticiones GET de sugerencias según el `coordinador_id`.
+- [x] **Frontend:** Filtrar el buzón de sugerencias para mostrar solo los de sus laboratorios.
+- [x] **Backend:** Validar que al crear clases o mantenimientos, el ID de usuario coincida con el `coordinador_id` del laboratorio.
+- [x] **Backend:** Validar que las reservas en laboratorios ajenos queden en estado `'pendiente'`.
+- [x] **Backend:** Filtrar peticiones GET de sugerencias según el `coordinador_id`.
 
 ### Administrador
 - [x] **Frontend:** Habilitar la asignación de usuarios (rol coordinador) al momento de crear nuevos espacios.
 - [x] **Backend:** Implementar la lógica para guardar correctamente el `coordinador_id` al crear laboratorios.
-- [ ] **Backend:** Eliminar cualquier restricción de filtrado al consultar sugerencias (acceso total).
+- [x] **Backend:** Eliminar cualquier restricción de filtrado al consultar sugerencias (acceso total).
 
 ### Docente / Instructor
 - [x] **Frontend:** Ocultar las vistas de administración (Espacios, Inventarios).
 - [x] **Frontend:** Habilitar el buzón de sugerencias en su interfaz.
-- [ ] **Backend:** Restringir el acceso a endpoints de modificación de laboratorios e inventarios.
-- [ ] **Backend:** Asegurar que todas sus reservas entren con estado `'pendiente'`.
+- [x] **Backend:** Restringir el acceso a endpoints de modificación de laboratorios e inventarios.
+- [x] **Backend:** Asegurar que todas sus reservas entren con estado `'pendiente'`.
 
 ### Estudiante
 - [x] **Frontend:** Ocultar opciones de crear Clase o Mantenimiento (solo dejar Reserva).
 - [x] **Frontend:** Habilitar el buzón de sugerencias en su interfaz.
-- [ ] **Backend:** Bloquear el acceso a cualquier endpoint de gestión administrativa.
-- [ ] **Backend:** Asegurar que toda actividad enviada sea tipo `'reserva'` y estado `'pendiente'`.
+- [x] **Backend:** Bloquear el acceso a cualquier endpoint de gestión administrativa.
+- [x] **Backend:** Asegurar que toda actividad enviada sea tipo `'reserva'` y estado `'pendiente'`.
 
 ### Supervisor
-- [ ] **Base de Datos:** Añadir el rol de 'supervisor' al enumerado `rol_usuario_enum` en PostgreSQL.
-- [ ] **Frontend:** Construir o adaptar las vistas para que funcionen 100% en modo "solo lectura" (ocultar botones de crear/editar/eliminar).
-- [ ] **Backend:** Configurar los middlewares para rechazar peticiones POST, PUT y DELETE provenientes de este rol.
+- [x] **Base de Datos:** Añadir el rol de 'supervisor' al enumerado `rol_usuario_enum` en PostgreSQL.
+- [x] **Frontend:** Construir o adaptar las vistas para que funcionen 100% en modo "solo lectura" (ocultar botones de crear/editar/eliminar).
+- [x] **Backend:** Configurar los middlewares para rechazar peticiones POST, PUT y DELETE provenientes de este rol.
 
 ---
 
@@ -136,3 +133,17 @@ A continuación se listan características adicionales que aún deben desarrolla
 - [ ] **Calendario Responsive**: Adaptar la vista del calendario para que funcione y se visualice correctamente en dispositivos móviles.
 - [ ] **Implementar Reglas de Roles en Backend**: Programar la seguridad y restricciones descritas en este documento dentro de Node.js.
 - [ ] **Auditoría UI/UX**: Supervisar y probar correctamente el funcionamiento visual de todo el frontend para asegurar una experiencia de usuario fluida.
+
+### Salvador Realizo estos cambios
+- **Reportes - Nomenclatura**: Se sustituyó el término "Laboratorio" por "Espacio" en las métricas de uso.
+- **Reportes - Años Dinámicos**: Se configuró la lista de años para generarse de forma dinámica (desde 2024 hasta dos años en el futuro).
+- **Reportes - Filtro Multi-selección**: Se reemplazó el menú tradicional por un dropdown interactivo con *checkboxes*, permitiendo filtrar e integrar estadísticas de varios espacios al mismo tiempo.
+- **Bandeja de Sugerencias - Mejoras Visuales**: Se actualizó el diseño de la lista añadiendo *hover effects*, avatares con iniciales de usuario y limpieza de emojis innecesarios.
+- **Estandarización de Filtros (UI)**: Se estandarizó el menú de filtros en la Bandeja y Reportes al formato utilizado en Inventario (Botón flotante con dropdown). Se incluyó lógica de cierre al hacer clic fuera (*click-outside*).
+- **Inventario - Limpieza**: Se removió el filtro de "Letra Inicial" para optimizar la interfaz y evitar redundancia.
+- **Correcciones**: Se solventaron conflictos CSS de la clase `.btn-filter` y se reparó un *Type Mismatch* en TypeScript respecto a la validación de roles y espacios.
+- **Seguridad en Rutas**: Se bloqueó el acceso manual a la vista de `/admin/usuarios` protegiéndola en `AppRouter.tsx` de forma exclusiva para el rol de administrador.
+- **Inventario - Limpieza UI**: Se removió el encabezado de título redundante, y se trasladó el botón de ordenamiento (Asc/Desc) al interior del menú desplegable de "Filtros" para compactar la barra de búsqueda.
+- **Seguridad UI (Supervisor)**: Se implementó la restricción `readOnly` para ocultar automáticamente los botones "+ Item" en las vistas de **Inventario** y **Espacios** al navegar bajo el rol de Supervisor.
+- **Reportes - Resolución de Conflictos CSS**: Se independizó la clase de menú desplegable en la bandeja creando `.reports-filter-dropdown-menu` para evitar desbordes en los bordes de la pantalla.
+- **Reportes - Optimización Móvil**: Se corrigió el apilamiento roto de los avatares e información de usuarios en pantallas de celular, y se redujeron significativamente los `paddings` (márgenes blancos) de los contenedores para aprovechar toda la pantalla.

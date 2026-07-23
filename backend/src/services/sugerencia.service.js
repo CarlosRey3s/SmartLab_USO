@@ -1,7 +1,7 @@
 const { pool } = require('../config/db');
 
-const obtenerSugerencias = async () => {
-  const query = `
+const obtenerSugerencias = async (usuario_id, rol) => {
+  let query = `
     SELECT 
       bs.id, 
       bs.usuario_id,
@@ -18,9 +18,19 @@ const obtenerSugerencias = async () => {
     FROM buzon_sugerencias bs
     JOIN usuarios u ON bs.usuario_id = u.id
     LEFT JOIN laboratorios l ON bs.laboratorio_id = l.id
-    ORDER BY bs.fecha_envio DESC
   `;
-  const result = await pool.query(query);
+  
+  const values = [];
+
+  // Si es coordinador, solo traer sugerencias de laboratorios donde él sea el coordinador
+  if (rol === 'coordinador' && usuario_id) {
+    query += ` WHERE l.coordinador_id = $1`;
+    values.push(usuario_id);
+  }
+
+  query += ` ORDER BY bs.fecha_envio DESC`;
+
+  const result = await pool.query(query, values);
   return result.rows;
 };
 

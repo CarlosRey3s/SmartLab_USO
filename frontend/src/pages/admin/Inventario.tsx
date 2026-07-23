@@ -8,6 +8,7 @@ import { laboratoriosService } from '../../services/laboratorios.service';
 import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
 import { customToast } from '../../components/custom-toast/CustomToast';
 import { useAuth } from '../../context/AuthContext';
+import { isReadOnlyView } from '../../utils/roleGuard';
 
 interface InventoryItem {
   id: string | number;
@@ -27,6 +28,7 @@ interface InventoryItem {
 
 export const InventarioView: React.FC = () => {
   const { user } = useAuth();
+  const readOnly = user ? isReadOnlyView(user.rol as any) : false;
   const [activeTab, setActiveTab] = useState<'inventario' | 'reportes'>('inventario');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeMenu, setActiveMenu] = useState<string | number | null>(null);
@@ -36,7 +38,6 @@ export const InventarioView: React.FC = () => {
   
   // Estados para los filtros avanzados
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [filterLetter, setFilterLetter] = useState('');
   const [filterLab, setFilterLab] = useState('');
   const [filterState, setFilterState] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -157,21 +158,18 @@ export const InventarioView: React.FC = () => {
     const searchMatch = item.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
                         item.codigo_interno.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // 2. Letter filter
-    const letterMatch = filterLetter ? item.nombre.toUpperCase().startsWith(filterLetter) : true;
-    
-    // 3. Lab filter
+    // 2. Lab filter
     const labName = item.laboratorio_nombre || `Lab ID: ${item.laboratorio_id}`;
     const labMatch = filterLab ? labName === filterLab : true;
     
-    // 4. State filter
+    // 3. State filter
     let estadoActual = 'Disponible';
     if (item.cantidad_actual === 0) estadoActual = 'Agotado';
     else if (item.cantidad_actual <= item.stock_minimo) estadoActual = 'Bajo Stock';
     
     const stateMatch = filterState ? estadoActual === filterState : true;
 
-    return searchMatch && letterMatch && labMatch && stateMatch;
+    return searchMatch && labMatch && stateMatch;
   }).sort((a, b) => {
     if (sortOrder === 'asc') {
       return Number(a.id) - Number(b.id);
@@ -235,7 +233,8 @@ export const InventarioView: React.FC = () => {
 
   return (
     <div className="inventario-container">
-      
+
+
       {/* ================= HEADER IDÉNTICO AL DE REPORTE Y COMENTARIOS ================= */}
       <div className="reports-header">
         <div className="tabs">
@@ -267,14 +266,7 @@ export const InventarioView: React.FC = () => {
         </div>
         
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <button 
-            className="btn-filter" 
-            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-            title={sortOrder === 'asc' ? "Ordenar Descendentemente" : "Ordenar Ascendentemente"}
-          >
-            {sortOrder === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
-            <span>ID</span>
-          </button>
+
           
           <div style={{ position: 'relative' }} ref={filterRef}>
             <button className="btn-filter" onClick={() => setIsFilterOpen(!isFilterOpen)}>
@@ -287,56 +279,11 @@ export const InventarioView: React.FC = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontWeight: '600', fontSize: '14px', color: '#334155' }}>Filtros</span>
                 <button 
-                  onClick={() => { setFilterLetter(''); setFilterLab(''); setFilterState(''); setIsFilterOpen(false); }}
+                  onClick={() => { setFilterLab(''); setFilterState(''); setSortOrder('asc'); setIsFilterOpen(false); }}
                   style={{ fontSize: '12px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                 >
                   Limpiar
                 </button>
-              </div>
-              
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>Por Letra Inicial</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                  <button
-                    onClick={() => setFilterLetter('')}
-                    style={{
-                      padding: '4px 8px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      background: filterLetter === '' ? '#3b82f6' : '#f1f5f9',
-                      color: filterLetter === '' ? 'white' : '#475569',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    Todas
-                  </button>
-                  {"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').map(letter => (
-                    <button
-                      key={letter}
-                      onClick={() => setFilterLetter(letter === filterLetter ? '' : letter)}
-                      style={{
-                        width: '24px',
-                        height: '24px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        background: filterLetter === letter ? '#3b82f6' : '#f1f5f9',
-                        color: filterLetter === letter ? 'white' : '#475569',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      {letter}
-                    </button>
-                  ))}
-                </div>
               </div>
               
               <div>
@@ -358,15 +305,25 @@ export const InventarioView: React.FC = () => {
                   <option value="Agotado">Agotado</option>
                 </select>
               </div>
+              
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Ordenar por ID</label>
+                <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')} style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', outline: 'none' }}>
+                  <option value="asc">Ascendente</option>
+                  <option value="desc">Descendente</option>
+                </select>
+              </div>
             </div>
           )}
         </div>
 
         {activeTab === 'inventario' ? (
-          <button className="btn-add-item" onClick={openAddModal}>
-            <Plus size={16} />
-            <span>Item</span>
-          </button>
+          !readOnly && (
+            <button className="btn-add-item" onClick={openAddModal}>
+              <Plus size={16} />
+              <span>Item</span>
+            </button>
+          )
         ) : (
           <select 
             className="select-report-status"
@@ -437,6 +394,7 @@ export const InventarioView: React.FC = () => {
                       {item.cantidad_actual > item.stock_minimo ? 'Disponible' : (item.cantidad_actual === 0 ? 'Agotado' : 'Bajo Stock')}
                     </td>
                     <td>
+                      {!readOnly && (
                       <div className="action-menu-container">
                         <button 
                           className="action-button"
@@ -452,6 +410,7 @@ export const InventarioView: React.FC = () => {
                           </div>
                         )}
                       </div>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -489,6 +448,7 @@ export const InventarioView: React.FC = () => {
               </div>
             </div>
 
+            {!readOnly && (
             <div className="action-menu-container">
 
               <button
@@ -519,6 +479,7 @@ export const InventarioView: React.FC = () => {
               )}
 
             </div>
+            )}
 
           </div>
 

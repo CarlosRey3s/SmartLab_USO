@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { SlidersHorizontal } from "lucide-react";
 import "../../css/ReportesComentarios.css";
 import { customToast } from "../../components/custom-toast/CustomToast";
 import { useAuth } from "../../context/AuthContext";
+import { isLimitedToOwnLaboratories, isReadOnlyView } from "../../utils/roleGuard";
 
 interface LaboratorioDB {
   id: number;
@@ -30,6 +32,7 @@ type FilterType = "todos" | "pendientes" | "respondidos";
 
 export const ReportesView: React.FC = () => {
   const { user } = useAuth();
+  const readOnly = user ? isReadOnlyView(user.rol as any) : false;
   const [activeTab, setActiveTab] = useState<TabType>("uso");
   const [filter, setFilter] = useState<FilterType>("todos");
   
@@ -39,8 +42,47 @@ export const ReportesView: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const [mesInicio, setMesInicio] = useState("01");
-  const [mesFin, setMesFin] = useState("06");
-  const [anio, setAnio] = useState("2026");
+  const currentMonthStr = String(new Date().getMonth() + 1).padStart(2, '0');
+  const [mesFin, setMesFin] = useState(currentMonthStr);
+  const currentYear = new Date().getFullYear();
+  const [anio, setAnio] = useState(String(currentYear));
+  const [filtroEspacio, setFiltroEspacio] = useState<string[]>([]);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isEspacioFilterOpen, setIsEspacioFilterOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+  const espacioFilterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+      if (espacioFilterRef.current && !espacioFilterRef.current.contains(event.target as Node)) {
+        setIsEspacioFilterOpen(false);
+      }
+    };
+
+    if (isFilterOpen || isEspacioFilterOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isFilterOpen, isEspacioFilterOpen]);
+
+  const toggleEspacio = (id: string) => {
+    setFiltroEspacio(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const availableYears = React.useMemo(() => {
+    const years = [];
+    for (let y = currentYear + 2; y >= 2024; y--) {
+      years.push(y);
+    }
+    return years;
+  }, [currentYear]);
 
   const [laboratorios, setLaboratorios] = useState<LaboratorioDB[]>([]);
   const [globalStats, setGlobalStats] = useState({ estudiantesActivos: 0, instrumentosPrestados: 0 });
@@ -81,13 +123,14 @@ export const ReportesView: React.FC = () => {
 
   const fetchSugerencias = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/sugerencias");
+      const queryParams = new URLSearchParams();
+      if (user?.id) queryParams.append('usuario_id', String(user.id));
+      if (user?.rol) queryParams.append('rol', user.rol);
+
+      const res = await fetch(`http://localhost:4000/api/sugerencias?${queryParams.toString()}`);
       const data = await res.json();
       if (data.status === "success") {
         setSugerencias(data.data);
-        if (data.data.length > 0 && !selectedMessage && window.innerWidth > 1024) {
-          setSelectedMessage(data.data[0]);
-        }
       }
     } catch (error) {
       console.error("Error al cargar sugerencias:", error);
@@ -130,30 +173,68 @@ export const ReportesView: React.FC = () => {
     }
   };
 
-  const filteredSugerencias = sugerencias.filter(sug => {
-    if (filter === "todos") return true;
-    if (filter === "pendientes") return sug.estado_gestion === "pendiente" || sug.estado_gestion === "en_revisión";
-    if (filter === "respondidos") return sug.estado_gestion === "atendida" || sug.estado_gestion === "archivada";
-    return true;
+  // Obtenemos los espacios únicos de las reservas (como está originalmente)
+  const espaciosUnicosDeReservas = Array.from(new Set(laboratorios.map(lab => lab.id)))
+    .map(id => laboratorios.find(lab => lab.id === id)!);
+
+  // Unimos los espacios permitidos por rol con los que vienen en el reporte
+  const espaciosPermitidos = user?.rol === 'coordinador'
+    ? espaciosUnicosDeReservas.filter(lab => String(lab.coordinador_id) === String(user.id))
+    : espaciosUnicosDeReservas;
+
+  const labsFiltrados = espaciosPermitidos.filter(lab => {
+    if (filtroEspacio.length > 0) return filtroEspacio.includes(String(lab.id));
+    return true; // Si está vacío, mostrar todos
   });
+
+  const nombresMisLabs = React.useMemo(() => espaciosPermitidos.map(l => l.nombre), [espaciosPermitidos]);
+
+  const horasReservadas = labsFiltrados.reduce((acc, lab) => acc + (lab.horas_uso || 0), 0);
+  const labFrecuente = labsFiltrados.length > 0 
+    ? labsFiltrados.reduce((prev, curr) => (curr.total_reservas || 0) > (prev.total_reservas || 0) ? curr : prev).nombre 
+    : 'N/A';
+
+  const filteredSugerencias = React.useMemo(() => {
+    return sugerencias.filter(sug => {
+      // 1. Validar reglas de rol (Coordinador solo ve sugerencias de sus laboratorios)
+      if (user && isLimitedToOwnLaboratories(user.rol as any)) {
+        // Si la sugerencia no tiene un laboratorio asociado, o el laboratorio no es del coordinador, se oculta
+        if (!sug.laboratorio_nombre || !nombresMisLabs.includes(sug.laboratorio_nombre)) {
+          return false;
+        }
+      }
+
+      // 2. Filtro de pestañas (todos, pendientes, respondidos)
+      if (filter === "pendientes") return sug.estado_gestion === "pendiente" || sug.estado_gestion === "en_revisión";
+      if (filter === "respondidos") return sug.estado_gestion === "atendida" || sug.estado_gestion === "archivada";
+      
+      return true; // filter === "todos"
+    });
+  }, [sugerencias, filter, user, nombresMisLabs]);
+
+  // Autoseleccionar mensaje o limpiar si no aplica (solo en desktop)
+  useEffect(() => {
+    if (activeTab === "bandeja" && window.innerWidth > 1024) {
+      if (filteredSugerencias.length > 0) {
+        // Si no hay seleccionado, o el que está ya no figura en la lista, agarra el primero
+        const currentIsValid = selectedMessage && filteredSugerencias.some(s => s.id === selectedMessage.id);
+        if (!currentIsValid) {
+          setSelectedMessage(filteredSugerencias[0]);
+        }
+      } else {
+        setSelectedMessage(null);
+      }
+    }
+  }, [filteredSugerencias, activeTab]); // No poner selectedMessage aquí para no loopear
 
   const formatearFecha = (fechaStr: string) => {
     const f = new Date(fechaStr);
     return f.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
   };
 
-  const getIconForCategory = (comentario: string) => {
-    if (comentario.includes("Objetos Perdidos")) return "🔍";
-    if (comentario.includes("Equipos")) return "🖥️";
-    if (comentario.includes("Laboratorios") || comentario.includes("Inventario")) return "🧪";
-    return "✉️";
+  const getInitials = (nombre: string, apellido: string) => {
+    return `${nombre.charAt(0)}${apellido.charAt(0)}`.toUpperCase();
   };
-
-  const labsFiltrados = laboratorios.filter(lab => user?.rol === 'coordinador' ? String(lab.coordinador_id) === String(user.id) : true);
-  const horasReservadas = labsFiltrados.reduce((acc, lab) => acc + (lab.horas_uso || 0), 0);
-  const labFrecuente = labsFiltrados.length > 0 
-    ? labsFiltrados.reduce((prev, curr) => (curr.total_reservas || 0) > (prev.total_reservas || 0) ? curr : prev).nombre 
-    : 'N/A';
 
   return (
     <div className="reports-container">
@@ -182,25 +263,39 @@ export const ReportesView: React.FC = () => {
         <div className={`reports-grid ${selectedMessage ? 'show-detail' : ''}`}>
           {/* LISTA DE COMENTARIOS */}
           <div className="reports-list card">
-            <div className="filters">
-              <button 
-                className={`filter ${filter === "todos" ? "active" : ""}`}
-                onClick={() => setFilter("todos")}
-              >
-                Todos
+            <div style={{ position: 'relative', display: 'inline-block', marginBottom: '16px' }} ref={filterRef}>
+              <button className="reports-btn-filter" onClick={() => setIsFilterOpen(!isFilterOpen)}>
+                <SlidersHorizontal size={16} />
+                <span>Filtros</span>
               </button>
-              <button 
-                className={`filter ${filter === "pendientes" ? "active" : ""}`}
-                onClick={() => setFilter("pendientes")}
-              >
-                Pendientes
-              </button>
-              <button 
-                className={`filter ${filter === "respondidos" ? "active" : ""}`}
-                onClick={() => setFilter("respondidos")}
-              >
-                Respondidos
-              </button>
+
+              {isFilterOpen && (
+                <div className="reports-filter-dropdown-menu">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: '600', fontSize: '14px', color: '#334155' }}>Filtros de Estado</span>
+                    <button 
+                      onClick={() => { setFilter("todos"); setIsFilterOpen(false); }}
+                      style={{ fontSize: '12px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                    >
+                      Limpiar
+                    </button>
+                  </div>
+                  
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Por Estado de Gestión</label>
+                    <select 
+                      className="select-report-status"
+                      value={filter}
+                      onChange={(e) => { setFilter(e.target.value as FilterType); setIsFilterOpen(false); }}
+                      style={{ width: '100%', boxSizing: 'border-box' }}
+                    >
+                      <option value="todos">Todos los Estados</option>
+                      <option value="pendientes">Pendientes</option>
+                      <option value="respondidos">Respondidos</option>
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="messages-list-container">
@@ -223,13 +318,15 @@ export const ReportesView: React.FC = () => {
                       }}
                     >
                       <div className="message-item-header">
-                        <span className="icon">{getIconForCategory(sug.comentario)}</span>
+                        <div className="user-avatar">{getInitials(sug.usuario_nombre, sug.usuario_apellido)}</div>
                         <div className="user-info">
-                          <div className="user">{sug.usuario_nombre} {sug.usuario_apellido}</div>
+                          <div className="user">
+                            <span>{sug.usuario_nombre} {sug.usuario_apellido}</span>
+                            <span className="date">{formatearFecha(sug.fecha_envio)}</span>
+                          </div>
                           <p className="subject">{sug.titulo}</p>
-                          <p className="preview">{preview.substring(0, 40)}{preview.length > 40 ? '...' : ''}</p>
+                          <p className="preview">{preview}</p>
                         </div>
-                        <span className="date">{formatearFecha(sug.fecha_envio)}</span>
                       </div>
                     </div>
                   );
@@ -249,35 +346,36 @@ export const ReportesView: React.FC = () => {
                   ← Volver a la lista
                 </button>
                 <div className="detail-tags">
-                  <span className="tag-type">
-                  {selectedMessage.laboratorio_nombre || "General"}
-                </span>
-                <span className={`tag-status ${selectedMessage.estado_gestion === 'atendida' ? 'status-ok' : ''}`}>
-                  {selectedMessage.estado_gestion.replace('_', ' ').toUpperCase()}
-                </span>
-              </div>
-              
-              <h3>{selectedMessage.titulo}</h3>
-              <p className="from">De: {selectedMessage.usuario_nombre} {selectedMessage.usuario_apellido}</p>
-
-              <div className="message-box">
-                {(() => {
-                  const match = selectedMessage.comentario.match(/\[Categoría:\s(.*?)\]\n([\s\S]*)/);
-                  return match ? (
-                    <>
-                      <strong>Categoría:</strong> {match[1]}<br/><br/>
-                      {match[2]}
-                    </>
-                  ) : selectedMessage.comentario;
-                })()}
-              </div>
-
-              {selectedMessage.estado_gestion === 'atendida' ? (
-                <div style={{ marginTop: '20px', padding: '15px', background: '#e8f5e9', borderRadius: '8px', borderLeft: '4px solid #219653' }}>
-                  <h4 style={{ color: '#219653', margin: '0 0 10px 0' }}>Respuesta enviada:</h4>
-                  <p style={{ margin: 0, color: '#333' }}>{selectedMessage.respuesta_coordinador}</p>
+                  <span className="tag-type">{selectedMessage.laboratorio_nombre || "General"}</span>
+                  <span className={`tag-status ${selectedMessage.estado_gestion}`}>
+                    {selectedMessage.estado_gestion.toUpperCase()}
+                  </span>
                 </div>
-              ) : (
+                <h3>{selectedMessage.titulo}</h3>
+                <p className="from">De: {selectedMessage.usuario_nombre} {selectedMessage.usuario_apellido}</p>
+                
+                <div className="message-box">
+                  {(() => {
+                    const match = selectedMessage.comentario.match(/\[Categoría:\s(.*?)\]\n([\s\S]*)/);
+                    return match ? (
+                      <>
+                        <strong>Categoría:</strong> {match[1]}<br/><br/>
+                        {match[2]}
+                      </>
+                    ) : selectedMessage.comentario;
+                  })()}
+                </div>
+
+                {selectedMessage.estado_gestion === 'atendida' ? (
+                  <div className="response-box">
+                    <h4>✓ Respuesta enviada:</h4>
+                    <p>{selectedMessage.respuesta_coordinador}</p>
+                  </div>
+                ) : readOnly ? (
+                  <div style={{ padding: '15px', marginTop: '20px', borderRadius: '8px', backgroundColor: '#f1f5f9', color: '#64748b', textAlign: 'center' }}>
+                    <p>Esta sugerencia está pendiente de revisión y respuesta.</p>
+                  </div>
+                ) : (
                 <>
                   <label className="management-label">Gestión y Respuesta</label>
                   <textarea 
@@ -347,7 +445,7 @@ export const ReportesView: React.FC = () => {
           {/* TABLA DE DESGLOSE */}
           <div className="table-section">
             <div className="table-header">
-              <h3>Desglose por Laboratorio</h3>
+              <h3>Desglose por Espacio</h3>
 
               <div className="table-actions">
                 <select className="select-custom" value={mesInicio} onChange={e => setMesInicio(e.target.value)}>
@@ -380,10 +478,42 @@ export const ReportesView: React.FC = () => {
                   <option value="12">Diciembre</option>
                 </select>
                 <select className="select-custom year-select" value={anio} onChange={e => setAnio(e.target.value)}>
-                  <option value="2026">2026</option>
-                  <option value="2025">2025</option>
-                  <option value="2024">2024</option>
+                  {availableYears.map(year => (
+                    <option key={year} value={String(year)}>{year}</option>
+                  ))}
                 </select>
+
+                <div style={{ position: 'relative' }} ref={espacioFilterRef}>
+                  <button 
+                    className="select-custom multi-select-btn" 
+                    onClick={() => setIsEspacioFilterOpen(!isEspacioFilterOpen)}
+                  >
+                    {filtroEspacio.length === 0 
+                      ? "Todos los espacios" 
+                      : `${filtroEspacio.length} espacios seleccionados`}
+                  </button>
+
+                  {isEspacioFilterOpen && (
+                    <div className="multi-select-dropdown">
+                      <div className="multi-select-header">
+                        <span>Selecciona Espacios</span>
+                        <button className="btn-clear" onClick={() => setFiltroEspacio([])}>Limpiar</button>
+                      </div>
+                      <div className="multi-select-options">
+                        {espaciosPermitidos.map(esp => (
+                          <label key={esp.id} className="multi-select-option">
+                            <input 
+                              type="checkbox" 
+                              checked={filtroEspacio.includes(String(esp.id))}
+                              onChange={() => toggleEspacio(String(esp.id))}
+                            />
+                            {esp.nombre}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 <button className="export">Exportar PDF</button>
               </div>
@@ -392,7 +522,7 @@ export const ReportesView: React.FC = () => {
             <table className="custom-table">
               <thead>
                 <tr>
-                  <th>Laboratorio</th>
+                  <th>Espacio</th>
                   <th>Total Reservas</th>
                   <th>Horas Uso</th>
                   <th>Estado Actual</th>
@@ -419,7 +549,7 @@ export const ReportesView: React.FC = () => {
                 {labsFiltrados.length === 0 && (
                   <tr>
                     <td colSpan={4} style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
-                      No hay laboratorios asignados a tu cuenta
+                      No hay espacios asignados a tu cuenta
                     </td>
                   </tr>
                 )}
