@@ -57,13 +57,16 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
 
     // 2. Consulta de choques en el mismo laboratorio
     let queryChoques = `
-        SELECT a.id, a.tipo, 
+        SELECT a.id, a.tipo, re.estado_reserva,
                COALESCE(array_agg(res_est.estacion_id) FILTER (WHERE res_est.estacion_id IS NOT NULL), ARRAY[]::INTEGER[]) as estaciones
         FROM actividades a
         LEFT JOIN reserva_estaciones res_est ON a.id = res_est.actividad_id
+        LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id
         WHERE a.laboratorio_id = $1
           AND a.fecha_hora_inicio < $2 
           AND a.fecha_hora_fin > $3
+          -- Solo evaluamos conflicto si es Clase, Mantenimiento o una Reserva 'aprobada'
+          AND (a.tipo IN ('clase', 'mantenimiento') OR re.estado_reserva = 'aprobada')
     `;
 
     const parametros = [laboratorio_id, finDatetime, inicioDatetime];
@@ -73,8 +76,8 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
         parametros.push(idActividadExcluir);
     }
 
-    queryChoques += ` GROUP BY a.id, a.tipo`;
-
+   queryChoques += ` GROUP BY a.id, a.tipo, re.estado_reserva`;
+   
     const resChoques = await client.query(queryChoques, parametros);
     const actividadesConflictivas = resChoques.rows;
 
@@ -150,14 +153,18 @@ const formatearRecurrencia = (recurrenciaObj) => {
 /**
  * Función principal que llama el controlador
  */
-const programarActividad = async (datosModal, idUsuarioLogueado) => {
+const programarActividad = async (datosModal, usuarioLogueado) => {
     const { tipo, laboratorio, fecha, desde, hasta, numPersonas, recurrencia } = datosModal;
 
-    // 1. Transformar las fechas y horas a formato DATETIME/TIMESTAMP
+    // 1. Extraemos id y rol del objeto usuarioLogueado (Ya no es solo un ID)
+    const idUsuario = usuarioLogueado.id;
+    const rolUsuario = usuarioLogueado.rol;
+
+    // 2. Transformar las fechas y horas a formato DATETIME/TIMESTAMP
     const inicioDatetime = new Date(`${fecha}T${desde}`);
     const finDatetime = new Date(`${fecha}T${hasta}`);
 
-    // Procesas dinamicamente el objeto JSON de recurrencia para convertirlo al formato RRULE estandar
+    // Procesas dinamicamente el objeto JSON de recurrencia
     const reglaRecurrenciaPlana = formatearRecurrencia(recurrencia);
 
     const client = await db.connect();
@@ -167,12 +174,11 @@ const programarActividad = async (datosModal, idUsuarioLogueado) => {
         // [VALIDACIÓN CRÍTICA]: Ejecutar el árbol lógico de choques de horarios e infraestructura
         await verificarChoqueHorario(client, laboratorio, inicioDatetime, finDatetime, tipo, datosModal);
 
-        // si la nueva actividad es un mantenimiento, actualizamos fisicamente el estado
+        // Si la nueva actividad es un mantenimiento, actualizamos físicamente el estado
         if (tipo === 'mantenimiento') {
             await client.query(`UPDATE laboratorios SET estado = 'en_mantenimiento' WHERE id = $1`, [laboratorio]);
             console.log(`-> Estado del laboratorio ${laboratorio} cambiado a 'en_mantenimiento'`);
         }
-
 
         // --- PASO A: Insertar en la tabla padre (actividades) ---
         const queryBase = `
@@ -188,18 +194,26 @@ const programarActividad = async (datosModal, idUsuarioLogueado) => {
         }
         console.log("-> ID de actividad creado exitosamente:", idGenerado);
 
-        // --- PASO B: Insertar en la tabla hija correspondiente según tu diseño ---
+        // --- PASO B: Insertar en la tabla hija correspondiente ---
         if (tipo === 'clase') {
             const queryHija = `INSERT INTO clases_academicas (actividad_id, materia, docente_id, num_estudiantes) VALUES ($1, $2, $3, $4)`;
-            const docenteId = datosModal.docente || idUsuarioLogueado;
+            // Usamos idUsuario extraído arriba
+            const docenteId = datosModal.docente || idUsuario;
             await client.query(queryHija, [idGenerado, datosModal.materia, docenteId, numPersonas]);
+            
         } else if (tipo === 'mantenimiento') {
             const queryHija = `INSERT INTO mantenimientos (actividad_id, tecnico_id, descripcion_ti) VALUES ($1, $2, $3)`;
-            const tecnicoId = datosModal.responsable || idUsuarioLogueado;
+            // Usamos idUsuario extraído arriba
+            const tecnicoId = datosModal.responsable || idUsuario;
             await client.query(queryHija, [idGenerado, tecnicoId, datosModal.descripcion || 'Sin descripción']);
+            
         } else if (tipo === 'reserva') {
+            
+            // LÓGICA DE ROLES: Dependiendo del rol, pasa a pendiente o aprobada automáticamente
+            const estadoInicial = (rolUsuario === 'administrador') ? 'aprobada' : 'pendiente';
+
             const queryHija = `INSERT INTO reservas_estudiantes (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva) VALUES ($1, $2, $3, $4, $5)`;
-            await client.query(queryHija, [idGenerado, idUsuarioLogueado, datosModal.titulo, datosModal.descripcion || null, 'aprobada']);
+            await client.query(queryHija, [idGenerado, idUsuario, datosModal.titulo, datosModal.descripcion || null, estadoInicial]);
 
             const estaciones = Array.isArray(datosModal.estaciones) && datosModal.estaciones.length > 0
                 ? datosModal.estaciones
@@ -214,6 +228,7 @@ const programarActividad = async (datosModal, idUsuarioLogueado) => {
                 }
             }
         }
+
         // --- PASO C: Insertar items de inventario si los hay ---
         if (datosModal.equipos && Array.isArray(datosModal.equipos) && datosModal.equipos.length > 0) {
             const queryItem = `INSERT INTO reserva_items (actividad_id, item_id, cantidad_solicitada) VALUES ($1, $2, $3)`;
@@ -221,8 +236,16 @@ const programarActividad = async (datosModal, idUsuarioLogueado) => {
                 await client.query(queryItem, [idGenerado, equipo.id, equipo.cantidad || 1]);
             }
         }
+        
         await client.query('COMMIT');
-        return { exito: true, mensaje: 'Actividad programada exitosamente', id: idGenerado };
+        
+        // Mensaje dinámico de respuesta al frontend
+        const mensajeRespuesta = (tipo === 'reserva' && (rolUsuario === 'estudiante' || rolUsuario === 'docente'))
+            ? 'Solicitud de reserva enviada exitosamente. Quedará en espera de aprobación por el coordinador.'
+            : 'Actividad programada exitosamente';
+
+        return { exito: true, mensaje: mensajeRespuesta, id: idGenerado };
+        
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error al programar actividad en el Service:', error);
@@ -231,7 +254,6 @@ const programarActividad = async (datosModal, idUsuarioLogueado) => {
         if (client) client.release();
     }
 };
-
 /*
  * Modificar Actividad (PUT)
  */

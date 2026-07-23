@@ -12,6 +12,11 @@ const login = async (correo, password) => {
       rol: 'administrador',
       estado: 'activo'
     };
+    
+  }
+  //borrar depues 
+  if (correo === 'estudiante@prueba.com' && password === 'estudiante123') {
+    return { id: 8888, rol: 'estudiante', estado: 'activo' }; // <-- Agrega este
   }
   // ----------------------------------
 

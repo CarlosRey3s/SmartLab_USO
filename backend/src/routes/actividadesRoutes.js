@@ -6,7 +6,7 @@ const actividadesController = require('../controllers/actividades.controller.js'
 
 // 2. Importamos el middleware 
 const { validarActividades } = require('../middlewares/validarActividades.js');
-
+const { verificarToken } = require('../middlewares/auth.middleware');
 // 3. Middleware dummy de prueba
 const dummyAuth = (req, res, next) => {
     req.usuario = { id: 1 }; // Simulamos que el Admin con ID 1 está logueado
@@ -26,5 +26,5 @@ router.put('/:id', dummyAuth, validarActividades, actividadesController.actualiz
 router.delete('/:id', dummyAuth, actividadesController.eliminarActividad);
 router.get('/disponibilidad', dummyAuth, actividadesController.consultarDisponibilidad);
 
-
+router.post('/', verificarToken, validarActividades, actividadesController.crearActividad);
 module.exports = router;
