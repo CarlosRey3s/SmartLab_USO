@@ -1134,7 +1134,7 @@
   }
 }
 /* =======================================================
-   ESTILOS DEL MEN� DE FILTROS
+   ESTILOS DEL MEN� DE FILTROS
    ======================================================= */
 .toolbar-actions {
   display: flex;
@@ -1290,3 +1290,227 @@
   background-color: #18181b;
   color: #fff;
 }
+
+
+
+
+/* =======================================================
+   RESPONSIVE
+======================================================= */
+
+/* ---------- TABLETS ---------- */
+@media (max-width: 1024px) {
+
+  .calendar-page-wrapper {
+    flex-direction: column;
+  }
+
+  .calendar-main-container {
+    width: 100%;
+  }
+
+  .calendar-sidebar-right {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
+  .btn-crear {
+    width: 100%;
+  }
+
+  .mini-calendario-container,
+  .mis-laboratorios-card,
+  .btn-exportar {
+    width: calc(50% - .5rem);
+  }
+
+  .search-input {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .toolbar-right {
+    flex-wrap: wrap;
+  }
+
+  .event-popover-container {
+    width: min(320px, 90vw);
+  }
+
+}
+
+
+/* ---------- CELULARES ---------- */
+@media (max-width:768px){
+
+  .calendar-main-container{
+      padding:1rem;
+  }
+
+  .calendar-page-wrapper{
+      flex-direction:column;
+      gap:1rem;
+  }
+
+  /* Toolbar */
+
+  .calendar-toolbar-custom{
+      flex-direction:column;
+      align-items:stretch;
+      gap:1rem;
+  }
+
+  .toolbar-left,
+  .toolbar-right{
+      width:100%;
+      flex-wrap:wrap;
+      justify-content:space-between;
+      gap:.75rem;
+  }
+
+  .toolbar-label{
+      font-size:1.1rem;
+      text-align:center;
+      width:100%;
+  }
+
+  .nav-arrows{
+      justify-content:center;
+      width:100%;
+  }
+
+  /* Buscador */
+
+  .search-container{
+      width:100%;
+  }
+
+  .search-input{
+      width:100%;
+      max-width:none;
+  }
+
+  /* Sidebar */
+
+  .calendar-sidebar-right{
+      width:100%;
+      flex-direction:column;
+      gap:1rem;
+  }
+
+  .btn-crear,
+  .mini-calendario-container,
+  .mis-laboratorios-card,
+  .btn-exportar{
+      width:100%;
+  }
+
+  /* Separación final del botón exportar */
+  .btn-exportar{
+      margin-top:0;
+      margin-bottom:1rem;
+  }
+
+  /* Dropdowns */
+
+  .dropdown-menu{
+      width:180px;
+      right:0;
+  }
+
+  .filter-dropdown-menu{
+      width:95vw;
+      right:0;
+      left:auto;
+      max-width:360px;
+  }
+
+  .search-results-dropdown{
+      width:100%;
+  }
+
+  /* Popover */
+
+  .event-popover-container{
+      width:95%;
+      left:2.5% !important;
+      right:2.5%;
+  }
+
+  /* Mini calendario */
+
+  .mini-dia-btn{
+      width:24px;
+      height:24px;
+  }
+
+  .numero-dia{
+      font-size:.7rem;
+  }
+
+  /* Cabecera calendario */
+
+  .custom-header-cell .dia-numero{
+      width:30px;
+      height:30px;
+      font-size:1rem;
+  }
+
+  .custom-header-cell .dia-texto{
+      font-size:.55rem;
+  }
+
+  /* Eventos */
+
+  .event-title{
+      font-size:.68rem;
+  }
+
+  .event-time{
+      font-size:.6rem;
+  }
+
+}
+
+
+/* ---------- CELULARES PEQUEÑOS ---------- */
+
+@media (max-width:480px){
+
+  .calendar-main-container{
+      padding:.75rem;
+  }
+
+  .btn-hoy,
+  .btn-view{
+      width:100%;
+      justify-content:center;
+  }
+
+  .toolbar-right{
+      flex-direction:column;
+      align-items:stretch;
+  }
+
+  .btn-view-icon{
+      align-self:center;
+  }
+
+  .filter-dropdown-menu{
+      width:100%;
+      max-width:none;
+      left:0;
+      right:0;
+  }
+
+  .popover-title{
+      font-size:1rem;
+  }
+
+  .popover-body{
+      padding:12px;
+  }
+
+} 

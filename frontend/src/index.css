@@ -536,3 +536,45 @@ body {
   }
 }
 
+/* =======================================================
+   SIDEBAR RESPONSIVE (MÓVIL)
+   ======================================================= */
+
+@media (max-width: 768px) {
+
+  /* El sidebar deja de empujar el contenido */
+  .sb {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--sb-width);
+    z-index: 1000;
+
+    transform: translateX(0);
+    transition: transform .3s ease;
+
+    box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  }
+
+  /* Cuando está cerrado simplemente se esconde */
+  .sb--collapsed {
+    width: var(--sb-width);
+    transform: translateX(-100%);
+    border-right: 1px solid var(--sb-gray-200);
+  }
+
+  /* El contenido ya no se mueve */
+  .main-content {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .page-content {
+    width: 100%;
+    min-width: 0;
+    padding: 1rem;
+  }
+
+}
+
