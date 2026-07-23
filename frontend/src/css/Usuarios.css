@@ -443,9 +443,10 @@
   margin-bottom: 1.5rem;
 }
 
-.form-section-title {
+.modal-content .form-section-title {
   font-size: 0.85rem;
-  color: #9ca3af;
+  color: #4b5563; /* Gris más oscuro para que resalte */
+  font-weight: 700; /* Más negrita */
   text-transform: uppercase;
   margin-bottom: 1rem;
   letter-spacing: 0.05em;
@@ -457,9 +458,10 @@
   flex-direction: column;
 }
 
-.form-label {
+.modal-content .form-label {
   font-size: 0.8rem;
-  color: #9ca3af;
+  color: #111827; /* Casi negro para mejor lectura */
+  font-weight: 700;
   text-transform: uppercase;
   margin-bottom: 0.5rem;
   letter-spacing: 0.05em;
@@ -471,7 +473,7 @@
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   font-size: 0.95rem;
-  color: #4b5563;
+  color: #111827;
   outline: none;
   background: #ffffff;
 }

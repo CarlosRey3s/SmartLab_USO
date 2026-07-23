@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { authService } from "../../services/authService";
+import { useMsal } from "@azure/msal-react";
+import { loginRequest } from "../../config/authConfig";
 import "../../css/login.css";
 
 interface FormErrors {
@@ -142,8 +144,70 @@ export default function Login() {
   const [errors, setErrors]     = useState<FormErrors>({});
   const [serverError, setServerError] = useState<string | null>(null);
 
+  // Estados para el registro con Microsoft (cuando el usuario es nuevo)
+  const [showProfileForm, setShowProfileForm] = useState(false);
+  const [msAccessToken, setMsAccessToken] = useState("");
+  const [newExpediente, setNewExpediente] = useState("");
+  const [newRol, setNewRol] = useState("estudiante");
+
+  const { instance, inProgress, accounts } = useMsal();
   const { login: authLogin } = useAuth();
   const navigate = useNavigate();
+
+  // Como React puede volver a ejecutar hooks, guardamos si ya lo intentamos
+  const [hasProcessedMsLogin, setHasProcessedMsLogin] = useState(false);
+
+  // Computar si es correo administrador
+  const userEmail = accounts[0]?.username?.toLowerCase() || "";
+  const isAdminEmail = [
+    'pg21i04001@usonsonate.edu.sv',
+    'rc21i04001@usonsonate.edu.sv',
+    'dm18i04001@usonsonate.edu.sv'
+  ].includes(userEmail);
+
+  // Forzar el rol en base al correo
+  useEffect(() => {
+    if (showProfileForm) {
+      if (isAdminEmail) setNewRol("administrador");
+      else if (newRol === "administrador") setNewRol("estudiante");
+    }
+  }, [showProfileForm, isAdminEmail]);
+
+  useEffect(() => {
+    if (inProgress === "none" && accounts.length > 0 && !hasProcessedMsLogin) {
+      setHasProcessedMsLogin(true);
+      const account = accounts[0];
+      setLoading(true);
+      
+      instance.acquireTokenSilent({
+        scopes: ["User.Read", "profile", "email"],
+        account: account
+      }).then(res => {
+        procesarLogin(res.accessToken);
+      }).catch(err => {
+        console.error(err);
+        setServerError("Error al obtener credenciales de Microsoft.");
+        setLoading(false);
+      });
+    }
+
+    function procesarLogin(token: string) {
+      authService.loginMicrosoft(token)
+        .then(data => {
+          authLogin(data.user, data.token);
+          redirectUser(data.user.rol);
+        })
+        .catch(error => {
+           if (error.isNewUser) {
+             setMsAccessToken(token);
+             setShowProfileForm(true);
+           } else {
+             setServerError(error.message);
+           }
+           setLoading(false);
+        });
+    }
+  }, [inProgress, accounts, instance, hasProcessedMsLogin, authLogin]);
 
   const validate = (): FormErrors => {
     const e: FormErrors = {};
@@ -156,6 +220,18 @@ export default function Login() {
     else if (password.length < 6)
       e.password = "Mínimo 6 caracteres";
     return e;
+  };
+
+  const redirectUser = (rol: string) => {
+    if (rol === 'administrador') {
+      navigate('/admin/dashboard');
+    } else if (rol === 'coordinador' || rol === 'supervisor') {
+      navigate('/admin/dashboard');
+    } else if (rol === 'docente') {
+      navigate('/docente/dashboard');
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -171,23 +247,44 @@ export default function Login() {
       // Llamada real al backend sin importar el rol gráfico que haya seleccionado
       const data = await authService.login(email, password);
       authLogin(data.user, data.token);
-      
-      // Redirigir según el rol real de la BD
-      if (data.user.rol === 'administrador') {
-        navigate('/admin/dashboard');
-      } else if (data.user.rol === 'coordinador' || data.user.rol === 'supervisor') {
-        navigate('/admin/dashboard');
-      } else if (data.user.rol === 'docente') {
-        navigate('/docente/dashboard');
-      } else {
-        // estudiante
-        navigate('/dashboard');
-      }
+      redirectUser(data.user.rol);
     } catch (error: any) {
       console.error('Error en login:', error);
       setServerError(error.message || 'Error al conectar con el servidor');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleMicrosoftLogin = async () => {
+    try {
+      setLoading(true);
+      setServerError(null);
+      // Usamos redirect para evitar bloqueos de popups y desincronización
+      await instance.loginRedirect(loginRequest);
+    } catch (e: any) {
+      console.error("Error completo de MSAL:", e);
+      setServerError("Error al iniciar conexión con Microsoft: " + (e.message || "Error desconocido"));
+      setLoading(false);
+    }
+  };
+
+  const handleCompleteProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newExpediente.trim()) {
+      setServerError("El expediente es obligatorio");
+      return;
+    }
+    setServerError(null);
+    setLoading(true);
+    try {
+       const data = await authService.registerMicrosoft(msAccessToken, newExpediente, newRol);
+       authLogin(data.user, data.token);
+       redirectUser(data.user.rol);
+    } catch (error: any) {
+       setServerError(error.message);
+    } finally {
+       setLoading(false);
     }
   };
 
@@ -201,8 +298,7 @@ export default function Login() {
           {/* Amarillo accent bar */}
           <div className="login-accent-bar" />
 
-          <h1 className="login-heading">Login</h1>
-          <h2 className="login-welcome">Welcome</h2>
+          <h1 className="login-heading">Acceder</h1>
           <p className="login-desc">
             Ingresa tus credenciales para acceder al sistema de laboratorios.
           </p>
@@ -213,77 +309,157 @@ export default function Login() {
             </p>
           )}
 
-          <form onSubmit={handleSubmit} noValidate>
+          {showProfileForm ? (
+            <form onSubmit={handleCompleteProfile} noValidate>
+              <h3 className="login-welcome" style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Completar Perfil</h3>
+              <p className="login-desc" style={{ marginBottom: '1.2rem' }}>
+                Tu correo fue verificado con Microsoft. Por favor, completa estos datos para finalizar el registro.
+              </p>
 
-            {/* Email */}
-            <label className="login-field-label-top" htmlFor="login-email">
-              User
-            </label>
-            <div className="login-input-wrap">
-              <span className="login-input-icon"><UserIcon /></span>
-              <input
-                id="login-email"
-                className={`login-input${errors.email ? " has-error" : ""}`}
-                type="email"
-                placeholder="correo@universidad.edu.sv"
-                value={email}
-                onChange={e => {
-                  setEmail(e.target.value);
-                  if (errors.email) setErrors(v => ({ ...v, email: undefined }));
-                }}
-                autoComplete="email"
-                aria-invalid={!!errors.email}
-              />
-            </div>
-            {errors.email && (
-              <p className="login-error-msg" role="alert">{errors.email}</p>
-            )}
+              <label className="login-field-label-top" htmlFor="login-expediente">Expediente</label>
+              <div className="login-input-wrap">
+                <input
+                  id="login-expediente"
+                  className="login-input"
+                  type="text"
+                  placeholder="ej. AA123456"
+                  value={newExpediente}
+                  onChange={e => setNewExpediente(e.target.value)}
+                  required
+                />
+              </div>
 
-            {/* Password */}
-            <label className="login-field-label-top" htmlFor="login-password">
-              Password
-            </label>
-            <div className="login-input-wrap">
-              <span className="login-input-icon"><LockIcon /></span>
-              <input
-                id="login-password"
-                className={`login-input${errors.password ? " has-error" : ""}`}
-                type={showPwd ? "text" : "password"}
-                placeholder="••••••••"
-                value={password}
-                onChange={e => {
-                  setPassword(e.target.value);
-                  if (errors.password) setErrors(v => ({ ...v, password: undefined }));
-                }}
-                autoComplete="current-password"
-                aria-invalid={!!errors.password}
-              />
-              <button
-                type="button"
-                className="login-eye-btn"
-                onClick={() => setShowPwd(v => !v)}
-                aria-label={showPwd ? "Ocultar contraseña" : "Mostrar contraseña"}
-              >
-                {showPwd ? <EyeOffIcon /> : <EyeIcon />}
+              <label className="login-field-label-top" htmlFor="login-rol">Rol</label>
+              {isAdminEmail ? (
+                <div className="login-input-wrap">
+                  <p className="login-input" style={{ backgroundColor: 'var(--c-surface)', cursor: 'not-allowed', display: 'flex', alignItems: 'center', opacity: 0.7 }}>
+                    Administrador (Pre-aprobado)
+                  </p>
+                </div>
+              ) : (
+                <div className="login-input-wrap">
+                  <select
+                    id="login-rol"
+                    className="login-input"
+                    value={newRol}
+                    onChange={e => setNewRol(e.target.value)}
+                  >
+                    <option value="estudiante">Estudiante</option>
+                    <option value="docente">Docente</option>
+                    <option value="coordinador">Coordinador</option>
+                    <option value="supervisor">Supervisor</option>
+                  </select>
+                </div>
+              )}
+
+              <button type="submit" className={`login-submit${loading ? " loading" : ""}`} disabled={loading}>
+                {loading && <span className="login-spinner" />}
+                {loading ? "Registrando..." : "Completar Registro"}
               </button>
-            </div>
-            {errors.password && (
-              <p className="login-error-msg" role="alert">{errors.password}</p>
-            )}
+              
+              <button 
+                type="button" 
+                onClick={() => setShowProfileForm(false)} 
+                className="login-submit" 
+                style={{ background: 'transparent', color: 'var(--c-text-soft)', marginTop: '10px', border: '1px solid var(--c-border)' }}
+              >
+                Cancelar
+              </button>
+            </form>
+          ) : (
+            <>
+              <form onSubmit={handleSubmit} noValidate>
+                {/* Email */}
+                <label className="login-field-label-top" htmlFor="login-email">
+                  Nombre de usuario
+                </label>
+                <div className="login-input-wrap">
+                  <span className="login-input-icon"><UserIcon /></span>
+                  <input
+                    id="login-email"
+                    className={`login-input${errors.email ? " has-error" : ""}`}
+                    type="email"
+                    placeholder="correo@universidad.edu.sv"
+                    value={email}
+                    onChange={e => {
+                      setEmail(e.target.value);
+                      if (errors.email) setErrors(v => ({ ...v, email: undefined }));
+                    }}
+                    autoComplete="email"
+                    aria-invalid={!!errors.email}
+                  />
+                </div>
+                {errors.email && (
+                  <p className="login-error-msg" role="alert">{errors.email}</p>
+                )}
 
-            {/* Submit */}
-            <button
-              type="submit"
-              className={`login-submit${loading ? " loading" : ""}`}
-              disabled={loading}
-            >
-              {loading && <span className="login-spinner" />}
-              {loading ? "Verificando..." : "Ingresar"}
-            </button>
-          </form>
+                {/* Password */}
+                <label className="login-field-label-top" htmlFor="login-password">
+                  Contraseña
+                </label>
+                <div className="login-input-wrap">
+                  <span className="login-input-icon"><LockIcon /></span>
+                  <input
+                    id="login-password"
+                    className={`login-input${errors.password ? " has-error" : ""}`}
+                    type={showPwd ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={e => {
+                      setPassword(e.target.value);
+                      if (errors.password) setErrors(v => ({ ...v, password: undefined }));
+                    }}
+                    autoComplete="current-password"
+                    aria-invalid={!!errors.password}
+                  />
+                  <button
+                    type="button"
+                    className="login-eye-btn"
+                    onClick={() => setShowPwd(v => !v)}
+                    aria-label={showPwd ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  >
+                    {showPwd ? <EyeOffIcon /> : <EyeIcon />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="login-error-msg" role="alert">{errors.password}</p>
+                )}
+
+                {/* Submit */}
+                <button
+                  type="submit"
+                  className={`login-submit${loading ? " loading" : ""}`}
+                  disabled={loading}
+                >
+                  {loading && <span className="login-spinner" />}
+                  {loading ? "Verificando..." : "Acceder"}
+                </button>
+              </form>
+
+              <div className="login-divider"></div>
+
+              <div className="login-sso-section">
+                <p className="login-sso-text">Identifíquese usando su cuenta en:</p>
+                <button
+                  type="button"
+                  className="login-ms-btn"
+                  onClick={handleMicrosoftLogin}
+                  disabled={loading}
+                >
+                  <svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
+                    <rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
+                    <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/>
+                    <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
+                  </svg>
+                  Microsoft
+                </button>
+              </div>
+            </>
+          )}
 
           <div className="login-forgot">
-            <a href="#">Olvidé mi contraseña</a>
+            <a href="#">Aviso de Cookies</a>
           </div>
 
           <p className="login-footer">

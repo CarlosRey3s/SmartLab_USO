@@ -4,6 +4,7 @@ import "../../css/ReportesComentarios.css";
 import { customToast } from "../../components/custom-toast/CustomToast";
 import { useAuth } from "../../context/AuthContext";
 import { isLimitedToOwnLaboratories, isReadOnlyView } from "../../utils/roleGuard";
+import { exportToExcel } from "../../utils/exportExcel";
 
 interface LaboratorioDB {
   id: number;
@@ -515,7 +516,9 @@ export const ReportesView: React.FC = () => {
                   )}
                 </div>
 
-                <button className="export">Exportar PDF</button>
+                <button className="export" onClick={() => exportToExcel(labsFiltrados, 'Reporte_Uso_Espacios')}>
+                  Exportar Excel
+                </button>
               </div>
             </div>
 

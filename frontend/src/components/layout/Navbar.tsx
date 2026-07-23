@@ -10,7 +10,7 @@ interface NavbarProps {
 
 export const Navbar = ({ onToggleMenu }: NavbarProps) => {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
 
   const fullName = user
@@ -44,9 +44,7 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('uso_user');
-    localStorage.removeItem('uso_token');
-    window.location.href = '/login';
+    logout();
   };
 
   return (

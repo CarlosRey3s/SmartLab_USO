@@ -6,7 +6,6 @@ import {
   Search,
   Trash2,
   RefreshCw,
-  Edit3,
   Shield,
   Edit2,
   X
@@ -399,27 +398,36 @@ export default function Usuarios() {
             
             <div className="form-group">
               <label className="form-label">NOMBRES</label>
-              <input type="text" className="form-input" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} />
+              <input type="text" className="form-input" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} placeholder="Ej. Juan Carlos" />
             </div>
 
             <div className="form-group">
               <label className="form-label">APELLIDOS</label>
-              <input type="text" className="form-input" value={formData.apellido} onChange={e => setFormData({...formData, apellido: e.target.value})} />
+              <input type="text" className="form-input" value={formData.apellido} onChange={e => setFormData({...formData, apellido: e.target.value})} placeholder="Ej. Pérez Gómez" />
             </div>
 
             <div className="form-group">
               <label className="form-label">EXPEDIENTE</label>
-              <input type="text" className="form-input" value={formData.expediente} onChange={e => setFormData({...formData, expediente: e.target.value})} />
+              <input 
+                type="text" 
+                className="form-input" 
+                value={formData.expediente} 
+                onChange={e => {
+                  const onlyNums = e.target.value.replace(/[^0-9]/g, '');
+                  setFormData({...formData, expediente: onlyNums});
+                }}
+                placeholder="Ej. 123456" 
+              />
             </div>
             
             <div className="form-group">
               <label className="form-label">CORREO ELECTRONICO</label>
-              <input type="email" className="form-input" value={formData.correo} onChange={e => setFormData({...formData, correo: e.target.value})} />
+              <input type="email" className="form-input" value={formData.correo} onChange={e => setFormData({...formData, correo: e.target.value})} placeholder="Ej. usuario@ejemplo.com" />
             </div>
             
             <div className="form-group">
               <label className="form-label">CONTRASEÑA</label>
-              <input type="password" className="form-input" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+              <input type="password" className="form-input" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} placeholder="Mínimo 8 caracteres" />
             </div>
             
             <div className="form-row">

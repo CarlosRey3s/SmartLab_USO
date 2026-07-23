@@ -317,24 +317,64 @@
   to { transform: rotate(360deg); }
 }
 
-/* ── Forgot ── */
+/* ── Divider ── */
+.login-divider {
+  width: 100%;
+  height: 1px;
+  background-color: var(--c-border);
+  margin: 1.8rem 0 1.5rem 0;
+}
+
+/* ── SSO Section ── */
+.login-sso-section {
+  text-align: left;
+  margin-bottom: 1.5rem;
+}
+
+.login-sso-text {
+  font-size: 1.4rem;
+  color: var(--c-text-soft);
+  margin-bottom: 1rem;
+}
+
+.login-ms-btn {
+  width: 100%;
+  padding: 0.8rem;
+  background: #008a00;
+  color: var(--c-blanco);
+  border: none;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: opacity 0.2s ease;
+}
+
+.login-ms-btn:hover {
+  opacity: 0.9;
+}
+
+/* ── Forgot / Aviso de Cookies ── */
 .login-forgot {
-  text-align: center;
-  margin-top: 1.2rem;
+  text-align: left;
+  margin-top: 1.5rem;
 }
 
 .login-forgot a {
-  font-size: 0.78rem;
-  color: var(--c-mauve);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-color: rgba(173, 134, 138, 0.38);
-  transition: color 0.15s, text-decoration-color 0.15s;
+  font-size: 0.9rem;
+  color: var(--c-text);
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.15s;
 }
 
 .login-forgot a:hover {
   color: var(--c-verde);
-  text-decoration-color: var(--c-verde);
 }
 
 .login-footer {
