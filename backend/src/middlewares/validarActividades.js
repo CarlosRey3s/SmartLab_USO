@@ -28,11 +28,11 @@ const validarActividades = (req, res, next) => {
             });
         }
     } else if (tipo === 'mantenimiento') {
-        const { responsable } = req.body;
-        if (!responsable) {
+        const { descripcion } = req.body;
+        if (!descripcion) {
             return res.status(400).json({
                 success: false,
-                message: 'Faltan campos obligatorios para mantenimiento. Responsable es requerido.'
+                message: 'Faltan campos obligatorios para mantenimiento. La descripción es requerida.'
             });
         }
     }

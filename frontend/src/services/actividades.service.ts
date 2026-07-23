@@ -5,74 +5,11 @@ import type { EventoLaboratorio } from '..//pages/admin/Calendario.tsx'; // Ajus
 
 // Reemplaza esto con la URL real de tu backend si es diferente
 const API_URL = "http://localhost:4000/api/actividades"
-/*
-export const obtenerActividades = async (start: string, end: string) => {
-    try {
-        const respuesta = await axios.get(API_URL, { params: { start, end } });
-        
-        // Extraemos con seguridad el array del cuerpo de la respuesta
-        const datos = respuesta.data.data || respuesta.data;
-        const arregloEventos = Array.isArray(datos) ? datos : [];
-
-        // Mapeamos alineando perfectamente las llaves de PostgreSQL con lo que pide React Big Calendar
-        return arregloEventos.map((item: any) => {
-            // Evaluamos con un escudo defensor los nombres de campos que vengan del backend
-            const fechaInicioRaw = item.fecha_hora_inicio || item.start;
-            const fechaFinRaw = item.fecha_hora_fin || item.end;
-
-            return {
-                id: item.id_instancia || item.id, // Instancia única calculada por el motor RRULE
-                idOriginal: item.id, // Llave primaria real para base de datos
-                
-                // Si es tipo clase usa la materia, si es reserva usa el título, si no un genérico
-                title: item.tipo === 'clase' 
-                    ? (item.materia || 'Clase Académica') 
-                    : item.tipo === 'mantenimiento' 
-                        ? 'Cierre Técnico' 
-                        : (item.titulo || 'Reserva Directa'),
-
-                // Forzamos la conversión limpia a objetos de fecha reales
-                start: new Date(fechaInicioRaw),
-                end: new Date(fechaFinRaw),
-                
-                tipo: item.tipo,
-
-                // Infraestructura
-                laboratorio_id: item.laboratorio_id,
-                laboratorio_nombre: item.laboratorio_nombre || 'Laboratorio',
-                coordinador_id: item.coordinador_id,
-
-                // Extensiones de la tabla hija: Clases
-                materia: item.materia,
-                docente_id: item.docente_id,
-                docente_nombre: item.docente_nombre || 'No asignado',
-                clase_estudiantes: item.num_estudiantes || item.clase_estudiante,
-
-                // Extensiones de la tabla hija: Mantenimientos
-                tecnico_responsable: item.tecnico_id || item.tecnico_responsable,
-                tecnico_nombre: item.tecnico_nombre || 'No asignado',
-                mant_descripcion: item.descripcion_ti || item.mant_descripcion,
-
-                // Extensiones de la tabla hija: Reservas Directas
-                reserva_titulo: item.titulo || item.reserva_titulo,
-                reserva_nota: item.nota_adicional || item.reserva_nota,
-                estado_reserva: item.estado_reserva || 'aprobada',
-                usuario_id: item.usuario_id || item.id_solicitante,
-                estaciones: item.estaciones || [],
-                equipos: item.equipos || [],
-            };
-        });
-    } catch (error) {
-        console.error("Error crítico al obtener y formatear actividades:", error);
-        return [];
-    }
-};
-*/
 export const obtenerActividades = async (start: string, end: string) => {
     try {
         // Hacemos la petición directa al puerto 4000 de tu backend
         const respuesta = await axios.get(API_URL, { params: { start, end } });
-        
+
         // Retornamos el arreglo crudo directamente del backend
         return respuesta.data.data || respuesta.data;
     } catch (error) {

@@ -126,7 +126,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
     labsDesdeBD, cargandoLabs,
     estacionesDesdeBD, cargandoEstaciones,
     inventarioDesdeBD, cargandoInventario,
-    tecnicosOptions, docentesOptions,
+    docentesOptions,
     estacionesOcupadas, bloqueoTotal, verificando, mostrarSoloDisponibles, setMostrarSoloDisponibles,
     equiposSeleccionados, estacionesSeleccionadas,
     agregarEquipo, quitarEquipo, aumentarCantidad, disminuirCantidad, toggleEstacion,
@@ -232,9 +232,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
           {/* ── CONEXIÓN CON FORMULARIO MANTENIMIENTO ── */}
           {tipo === "mantenimiento" && currentStepKey === "datos" && (
             <FormularioMantenimiento
-              responsable={form.responsable}
               descripcion={form.descripcion}
-              tecnicosOptions={tecnicosOptions}
               onChange={(field, value) => set(field as keyof FormData, value)}
             />
           )}

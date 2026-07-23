@@ -116,7 +116,6 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
     const [verificando, setVerificando] = useState<boolean>(false);
     const [mostrarSoloDisponibles, setMostrarSoloDisponibles] = useState<boolean>(false);
 
-    const [tecnicosOptions, setTecnicosOptions] = useState<{ value: number, label: string }[]>([]);
     const [docentesOptions, setDocentesOptions] = useState<{ value: number, label: string }[]>([]);
 
     // ── EFECTOS (Carga de datos y modo edición) ──
@@ -129,6 +128,54 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
             const desdeLocal = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`;
             const hastaLocal = `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
 
+            // --- DECODIFICAR RRULE A ESTADO DEL FORMULARIO ---
+            let recurrenciaForm = "No se repite";
+            let customFields = {};
+
+            if (actividadExistente.recurrencia) {
+                const rrule = actividadExistente.recurrencia;
+                const esDiario = rrule === "FREQ=DAILY";
+                const esHabiles = rrule === "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR" || rrule === "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR,SA" /* por si acaso */;
+
+                const dayCode = getDiaSemana(fechaLocal).code;
+                const esSemanalSimple = rrule === `FREQ=WEEKLY;BYDAY=${dayCode}` || rrule === "FREQ=WEEKLY;INTERVAL=1" || rrule === "FREQ=WEEKLY";
+
+                const monthDay = start.getDate();
+                const esMensualSimple = rrule === `FREQ=MONTHLY;BYMONTHDAY=${monthDay}` || rrule === "FREQ=MONTHLY;INTERVAL=1" || rrule === "FREQ=MONTHLY";
+
+                if (esDiario) {
+                    recurrenciaForm = "Todos los días";
+                } else if (esHabiles) {
+                    recurrenciaForm = "Todos los días hábiles (lunes a viernes)";
+                } else if (esSemanalSimple) {
+                    recurrenciaForm = `Cada semana, el ${getDiaSemana(fechaLocal).nombre}`;
+                } else if (esMensualSimple) {
+                    recurrenciaForm = "Todos los meses";
+                } else {
+                    // Es personalizado
+                    recurrenciaForm = "Personalizado...";
+
+                    // Parseo rústico de RRULE
+                    const params = new URLSearchParams(rrule.replace(/;/g, '&'));
+
+                    customFields = {
+                        customFrequency: params.get('FREQ') || 'WEEKLY',
+                        customInterval: parseInt(params.get('INTERVAL') || '1'),
+                        customByDay: params.get('BYDAY') ? params.get('BYDAY')!.split(',') : [],
+                        customEndType: params.get('COUNT') ? 'count' : (params.get('UNTIL') ? 'until' : 'never'),
+                        customCount: parseInt(params.get('COUNT') || '10'),
+                    };
+
+                    if (params.get('UNTIL')) {
+                        // UNTIL format: YYYYMMDDTHHMMSSZ -> YYYY-MM-DD
+                        const u = params.get('UNTIL')!;
+                        if (u.length >= 8) {
+                            (customFields as any).customUntil = `${u.substring(0, 4)}-${u.substring(4, 6)}-${u.substring(6, 8)}`;
+                        }
+                    }
+                }
+            }
+
             setTipo(actividadExistente.tipo);
             setForm({
                 tipo: actividadExistente.tipo,
@@ -136,7 +183,8 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
                 fecha: fechaLocal,
                 desde: desdeLocal,
                 hasta: hastaLocal,
-                recurrencia: actividadExistente.recurrencia || "No se repite",
+                recurrencia: recurrenciaForm,
+                ...customFields,
                 materia: actividadExistente.materia || "",
                 docente: actividadExistente.docente_id || "",
                 numPersonas: actividadExistente.clase_estudiantes || 20,
@@ -171,8 +219,7 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
                 const data = await usuariosService.getUsuarios();
                 const usuarios = Array.isArray(data) ? data : data.data || [];
 
-                const tecnicos = usuarios.filter((u: any) => ['técnico', 'tecnico', 'Técnico', 'Tecnico'].includes(u.rol));
-                setTecnicosOptions(tecnicos.map((t: any) => ({ value: t.id, label: `${t.nombre} ${t.apellido || ''}`.trim() })));
+                // Los técnicos fueron eliminados ya que el mantenimiento no requiere responsable asignado manualmente
 
                 const docentes = usuarios.filter((u: any) => ['docente', 'Docente', 'DOCENTE'].includes(u.rol));
                 setDocentesOptions(docentes.map((d: any) => ({ value: d.id, label: `${d.nombre} ${d.apellido || ''}`.trim() })));
@@ -379,7 +426,7 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
         if (!tipo) return false;
         if (currentStepKey === "datos") {
             if (tipo === "clase") return !!form.materia && !!form.docente;
-            if (tipo === "mantenimiento") return !!form.responsable && !!form.descripcion;
+            if (tipo === "mantenimiento") return !!form.descripcion;
             if (tipo === "reserva") return !!form.titulo;
         }
         if (currentStepKey === "laboratorio") {
@@ -397,7 +444,7 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
         labsDesdeBD, cargandoLabs,
         estacionesDesdeBD, cargandoEstaciones,
         inventarioDesdeBD, cargandoInventario,
-        tecnicosOptions, docentesOptions,
+        docentesOptions,
         estacionesOcupadas, bloqueoTotal, verificando, mostrarSoloDisponibles, setMostrarSoloDisponibles,
         equiposSeleccionados, estacionesSeleccionadas,
         agregarEquipo, quitarEquipo, aumentarCantidad, disminuirCantidad, toggleEstacion,
