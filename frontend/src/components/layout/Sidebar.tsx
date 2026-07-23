@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
 import {
   LayoutDashboard,
   Calendar,
@@ -42,6 +43,7 @@ export const Sidebar = ({
 }: SidebarProps) => {
 
   const location = useLocation();
+  const sidebarRef = useRef<HTMLElement | null>(null);
 
   const isActive = (path: string) => {
     if (path === '/dashboard') {
@@ -71,9 +73,34 @@ export const Sidebar = ({
     }
   };
 
+  useEffect(() => {
+
+  const handleClickOutside = (event: MouseEvent) => {
+
+    if (
+      window.innerWidth <= 992 &&
+      isOpen &&
+      sidebarRef.current &&
+      !sidebarRef.current.contains(event.target as Node)
+    ) {
+      onToggle?.();
+    }
+
+  };
+
+
+  document.addEventListener('mousedown', handleClickOutside);
+
+
+  return () => {
+    document.removeEventListener('mousedown', handleClickOutside);
+  };
+
+}, [isOpen, onToggle]);
+
 
   return (
-    <aside className={`sb${!isOpen ? ' sb--collapsed' : ''}`}>
+    <aside ref={sidebarRef} className={`sb${!isOpen ? ' sb--collapsed' : ''}`}>
 
       <div className="sb__header">
 

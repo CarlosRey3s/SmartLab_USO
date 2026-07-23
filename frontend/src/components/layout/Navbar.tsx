@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Menu, Bell, Search, LogOut } from 'lucide-react';
+import { Menu, Bell, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/Navbar.css';
 
@@ -69,25 +69,6 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
 
       </div>
 
-      {/* ========= CENTRO ========= */}
-      <div className="navbar-center">
-
-        <div className="search-container">
-
-          <Search
-            size={16}
-            className="search-icon"
-          />
-
-          <input
-            type="text"
-            className="search-input-navbar"
-            placeholder="Buscar en todo el sistema..."
-          />
-
-        </div>
-
-      </div>
 
       {/* ========= DERECHA ========= */}
       <div className="navbar-right">
@@ -106,6 +87,7 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
             {initials}
           </div>
 
+
           {showDropdown && (
 
             <div className="navbar-dropdown">
@@ -123,6 +105,7 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
           )}
 
         </div>
+
 
         <button
           className="icon-button notification-button"
