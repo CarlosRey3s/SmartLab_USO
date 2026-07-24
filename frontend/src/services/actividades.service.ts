@@ -3,12 +3,12 @@ import axios from 'axios';
 import type { EventoLaboratorio } from '..//pages/admin/Calendario.tsx'; // Ajusta la ruta a donde tengas tu interfaz
 // Ajusta la ruta a donde tengas tu interfaz
 
-// Usa la URL del API del backend; en desarrollo se puede proxear con Vite.
-const API_URL = (import.meta.env.VITE_API_URL || '/api/actividades').replace(/\/$/, '');
+// Reemplaza esto con la URL real de tu backend si es diferente
+const API_URL = "http://localhost:4000/api/actividades"
 
 // Helper para enviar el token
 const getAuthHeaders = () => {
-    const token = typeof window !== 'undefined' ? window.localStorage.getItem('uso_token') : null;
+    const token = localStorage.getItem('uso_token');
     return {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -17,18 +17,16 @@ const getAuthHeaders = () => {
 
 export const obtenerActividades = async (start: string, end: string) => {
     try {
-        const respuesta = await axios.get(API_URL, {
+        // Hacemos la petición directa al puerto 4000 de tu backend
+        const respuesta = await axios.get(API_URL, { 
             params: { start, end },
             headers: getAuthHeaders()
         });
 
-        const payload = respuesta?.data?.data ?? respuesta?.data ?? [];
-        return Array.isArray(payload) ? payload : [];
-    } catch (error: any) {
-        console.error('Error al obtener actividades en el servicio:', error?.message || error);
-        if (error?.response) {
-            console.error('Detalle del error del backend:', error.response.status, error.response.data);
-        }
+        // Retornamos el arreglo crudo directamente del backend
+        return respuesta.data.data || respuesta.data;
+    } catch (error) {
+        console.error("Error al obtener actividades en el servicio:", error);
         return [];
     }
 };
