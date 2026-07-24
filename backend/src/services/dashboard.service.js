@@ -2,372 +2,263 @@ const { pool } = require("../config/db");
 
 class DashboardService {
 
-
-    // ==============================
-    // TARJETAS SUPERIORES
-    // ==============================
-
-    async getKPIs(){
+    // =====================================
+    // KPIs
+    // =====================================
+    async getKPIs() {
 
         const query = `
-
         SELECT
 
         (
             SELECT COUNT(*)
             FROM reservas_estudiantes
             WHERE estado_reserva='pendiente'
-        ) AS solicitudes_pendientes,
-
+        )::int AS solicitudes_pendientes,
 
         (
             SELECT COUNT(*)
             FROM item_inventario
             WHERE cantidad_actual <= stock_minimo
-        ) AS stock_bajo,
-
+        )::int AS stock_bajo,
 
         (
             SELECT COUNT(*)
             FROM actividades
             WHERE DATE(fecha_hora_inicio)=CURRENT_DATE
-        ) AS actividades_hoy,
+        )::int AS actividades_hoy,
 
+        (
+            SELECT COUNT(DISTINCT laboratorio_id)
+            FROM actividades
+            WHERE NOW() BETWEEN fecha_hora_inicio
+            AND fecha_hora_fin
+        )::int AS laboratorios_ocupados,
 
         (
             SELECT COUNT(*)
             FROM laboratorios
-            WHERE estado='disponible'
-            AND id IN (
-                SELECT laboratorio_id
-                FROM actividades
-                WHERE NOW() BETWEEN fecha_hora_inicio 
-                AND fecha_hora_fin
-            )
-        ) AS laboratorios_ocupados,
-
-
-        (
-            SELECT COUNT(*)
-            FROM laboratorios
-        ) AS total_laboratorios;
-
-
+        )::int AS total_laboratorios;
         `;
 
+        const { rows } = await pool.query(query);
 
-        const result = await pool.query(query);
-
-        return result.rows[0];
+        return rows[0];
 
     }
 
 
 
+    // =====================================
+    // RESERVAS SEMANA
+    // =====================================
+    async getReservasSemana() {
 
-
-    // ==============================
-    // RESERVAS SEMANALES
-    // ==============================
-
-    async getReservasSemana(){
-
-        const query=`
-
+        const query = `
         SELECT
 
-        TO_CHAR(
-        fecha_hora_inicio,
-        'Dy'
-        ) AS dia,
+            TO_CHAR(a.fecha_hora_inicio,'Dy') AS dia,
 
+            COUNT(*)::int AS reservas,
 
-        COUNT(*) AS reservas,
-
-
-        COUNT(
-            CASE 
-            WHEN re.estado_reserva='completada'
-            THEN 1
-            END
-        ) AS completadas
-
+            COUNT(
+                CASE
+                    WHEN r.estado_reserva='completada'
+                    THEN 1
+                END
+            )::int AS completadas
 
         FROM actividades a
 
+        LEFT JOIN reservas_estudiantes r
+            ON r.actividad_id=a.id
 
-        LEFT JOIN reservas_estudiantes re
-        ON re.actividad_id=a.id
+        WHERE a.tipo='reserva'
 
+        GROUP BY
+            DATE(a.fecha_hora_inicio),
+            TO_CHAR(a.fecha_hora_inicio,'Dy')
 
-        WHERE fecha_hora_inicio >= CURRENT_DATE - INTERVAL '6 days'
-
-
-        GROUP BY dia, DATE(fecha_hora_inicio)
-
-
-        ORDER BY DATE(fecha_hora_inicio);
-
-
+        ORDER BY
+            DATE(a.fecha_hora_inicio);
         `;
 
+        const { rows } = await pool.query(query);
 
-        const result=await pool.query(query);
-
-        return result.rows;
+        return rows;
 
     }
 
 
 
-
-
-
-    // ==============================
+    // =====================================
     // ALERTAS
-    // ==============================
+    // =====================================
+    async getAlertas() {
 
-
-    async getAlertas(){
-
-
-        const query=`
-
+        const query = `
         SELECT *
-
-        FROM (
+        FROM(
 
             SELECT
 
-            'stock' AS tipo,
-
-            nombre AS titulo,
-
-            'Stock bajo' AS detalle,
-
-            fecha_movimiento AS fecha
-
+                'stock' AS tipo,
+                i.nombre AS titulo,
+                'Stock bajo' AS detalle,
+                MAX(m.fecha_movimiento) AS fecha
 
             FROM item_inventario i
 
             LEFT JOIN movimiento_inventario m
-            ON m.item_id=i.id
+                ON m.item_id=i.id
 
+            WHERE i.cantidad_actual<=i.stock_minimo
 
-            WHERE cantidad_actual <= stock_minimo
-
-
+            GROUP BY
+                i.id,
+                i.nombre
 
             UNION ALL
 
-
-
             SELECT
 
-            'reserva',
-
-            titulo,
-
-            'Solicitud pendiente',
-
-            a.fecha_creacion
-
+                'reserva',
+                r.titulo,
+                'Solicitud pendiente',
+                a.fecha_creacion
 
             FROM reservas_estudiantes r
 
             JOIN actividades a
-            ON a.id=r.actividad_id
+                ON a.id=r.actividad_id
 
-
-            WHERE estado_reserva='pendiente'
-
-
-
+            WHERE r.estado_reserva='pendiente'
 
             UNION ALL
 
-
-
             SELECT
 
-            'mantenimiento',
-
-            descripcion_ti,
-
-            'Mantenimiento pendiente',
-
-            a.fecha_creacion
-
+                'mantenimiento',
+                m.descripcion_ti,
+                'Mantenimiento programado',
+                a.fecha_creacion
 
             FROM mantenimientos m
 
             JOIN actividades a
-            ON a.id=m.actividad_id
+                ON a.id=m.actividad_id
 
-
-        ) AS alertas
-
+        ) alertas
 
         ORDER BY fecha DESC
 
         LIMIT 10;
-
-
         `;
 
+        const { rows } = await pool.query(query);
 
-        const result=await pool.query(query);
-
-        return result.rows;
+        return rows;
 
     }
 
 
 
+    // =====================================
+    // SATURACION
+    // =====================================
+    async getSaturacion() {
 
-
-
-    // ==============================
-    // SATURACIÓN DE LABORATORIOS
-    // ==============================
-
-
-    async getSaturacion(){
-
-
-        const query=`
-
+        const query = `
         SELECT
 
+            l.nombre,
 
-        l.nombre,
+            COUNT(a.id)::int AS actividades,
 
+            COALESCE(
 
-        COUNT(a.id) AS actividades,
+                ROUND(
+                    (
+                        COUNT(a.id)::numeric /
+                        NULLIF(l.capacidad_maxima,0)
+                    )*100
+                ),
 
+                0
 
-        ROUND(
-
-        (
-        COUNT(a.id)::decimal /
-        NULLIF(l.capacidad_maxima,0)
-        )*100
-
-        ) AS porcentaje
-
-
+            )::int AS porcentaje
 
         FROM laboratorios l
 
-
         LEFT JOIN actividades a
+            ON a.laboratorio_id=l.id
 
-        ON a.laboratorio_id=l.id
+        GROUP BY
+            l.id,
+            l.nombre,
+            l.capacidad_maxima
 
-
-        GROUP BY l.id;
-
-
-
+        ORDER BY l.nombre;
         `;
 
+        const { rows } = await pool.query(query);
 
-        const result=await pool.query(query);
-
-
-        return result.rows;
-
+        return rows;
 
     }
 
 
 
+    // =====================================
+    // AGENDA
+    // =====================================
+    async getAgenda() {
 
-
-
-    // ==============================
-    // AGENDA DEL DIA
-    // ==============================
-
-
-    async getAgenda(){
-
-
-        const query=`
-
+        const query = `
         SELECT
 
+            TO_CHAR(a.fecha_hora_inicio,'HH24:MI') AS hora,
 
-        TO_CHAR(
-        a.fecha_hora_inicio,
-        'HH24:MI'
-        ) hora,
+            CASE
 
+                WHEN a.tipo='clase'
+                    THEN c.materia
 
-        CASE
+                WHEN a.tipo='reserva'
+                    THEN r.titulo
 
+                WHEN a.tipo='mantenimiento'
+                    THEN m.descripcion_ti
 
-        WHEN a.tipo='clase'
-        THEN c.materia
+            END AS actividad,
 
-
-        WHEN a.tipo='reserva'
-        THEN r.titulo
-
-
-        WHEN a.tipo='mantenimiento'
-        THEN m.descripcion_ti
-
-
-        END AS actividad,
-
-
-        l.nombre laboratorio
-
-
+            l.nombre AS laboratorio
 
         FROM actividades a
 
-
         JOIN laboratorios l
-        ON l.id=a.laboratorio_id
-
+            ON l.id=a.laboratorio_id
 
         LEFT JOIN clases_academicas c
-        ON c.actividad_id=a.id
-
+            ON c.actividad_id=a.id
 
         LEFT JOIN reservas_estudiantes r
-        ON r.actividad_id=a.id
-
+            ON r.actividad_id=a.id
 
         LEFT JOIN mantenimientos m
-        ON m.actividad_id=a.id
-
-
+            ON m.actividad_id=a.id
 
         WHERE DATE(a.fecha_hora_inicio)=CURRENT_DATE
 
-
         ORDER BY a.fecha_hora_inicio;
-
-
-
         `;
 
+        const { rows } = await pool.query(query);
 
-        const result=await pool.query(query);
-
-
-        return result.rows;
-
+        return rows;
 
     }
 
-
-
-
 }
 
-
-module.exports=new DashboardService();
+module.exports = new DashboardService();
