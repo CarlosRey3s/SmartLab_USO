@@ -4,9 +4,9 @@ const crearActividad = async (req, res) => {
     try {
         // 1. Extraer el usuario que viene del middleware 'verificarToken'
         // Si no viniera (ej. en pruebas sin token), dejamos un fallback temporal para no romper nada
-        const usuarioLogueado = req.usuario || { 
-            id: req.body.usuario_id || 1, 
-            rol: req.body.rol || 'estudiante' 
+        const usuarioLogueado = req.usuario || {
+            id: req.body.usuario_id || 1,
+            rol: req.body.rol || 'estudiante'
         };
 
         const datosModal = req.body;
@@ -133,5 +133,52 @@ const obtenerActividades = async (req, res) => {
     }
 };
 
+// Controlador para obtener las solicitudes pendientes
+const obtenerPendientes = async (req, res) => {
+    try {
+        const pendientes = await actividadesService.obtenerSolicitudesPendientes();
+        res.status(200).json(pendientes);
+    } catch (error) {
+        console.error('Error al obtener solicitudes pendientes:', error);
+        res.status(500).json({ message: 'Error interno al cargar las solicitudes' });
+    }
+};
+
+
+// Controlador para obtener TODAS las solicitudes (pendientes, aprobadas, rechazadas)
+const obtenerTodas = async (req, res) => {
+    try {
+        const todas = await actividadesService.obtenerTodasSolicitudes();
+        res.status(200).json(todas);
+    } catch (error) {
+        console.error('Error al obtener todas las solicitudes:', error);
+        res.status(500).json({ message: 'Error interno al cargar las solicitudes' });
+    }
+};
+
+// Controlador para Aprobar o Rechazar
+const resolverReserva = async (req, res) => {
+    try {
+        const { id } = req.params; // ID de la actividad
+        const { accion } = req.body; // 'aprobar' o 'rechazar'
+        const resolutorId = req.usuario.id; // Viene del auth.middleware
+
+        const resultado = await actividadesService.resolverSolicitud(id, accion, resolutorId);
+        res.status(200).json(resultado);
+
+    } catch (error) {
+        console.error('Error al resolver la solicitud:', error);
+        // Manejo de errores controlados (400, 404, 409)
+        if (error.status) {
+            return res.status(error.status).json({ message: error.message });
+        }
+        res.status(500).json({ message: 'Error interno del servidor al procesar la resolución' });
+    }
+};
+
 // Exórtala al final:
-module.exports = { crearActividad, actualizarActividad, eliminarActividad, obtenerActividades, consultarDisponibilidad };
+module.exports = {
+    crearActividad, actualizarActividad,
+    eliminarActividad, obtenerActividades, consultarDisponibilidad,
+    obtenerPendientes, obtenerTodas, resolverReserva
+};

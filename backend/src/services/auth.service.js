@@ -3,9 +3,9 @@ const bcrypt = require('bcrypt');
 
 const login = async (correo, password) => {
   // --- USUARIO DE PRUEBA TEMPORAL ---
-  if (correo === 'admin@prueba.com' && password === 'admin123') {
+  if (correo === 'admin@prueba.com' && password === '123456') {
     return {
-      id: 9999,
+      id: 1,
       nombre: 'Admin',
       apellido: 'Prueba',
       correo: 'admin@prueba.com',

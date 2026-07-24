@@ -76,8 +76,8 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
         parametros.push(idActividadExcluir);
     }
 
-   queryChoques += ` GROUP BY a.id, a.tipo, re.estado_reserva`;
-   
+    queryChoques += ` GROUP BY a.id, a.tipo, re.estado_reserva`;
+
     const resChoques = await client.query(queryChoques, parametros);
     const actividadesConflictivas = resChoques.rows;
 
@@ -200,20 +200,20 @@ const programarActividad = async (datosModal, usuarioLogueado) => {
             // Usamos idUsuario extraído arriba
             const docenteId = datosModal.docente || idUsuario;
             await client.query(queryHija, [idGenerado, datosModal.materia, docenteId, numPersonas]);
-            
+
         } else if (tipo === 'mantenimiento') {
             const queryHija = `INSERT INTO mantenimientos (actividad_id, tecnico_id, descripcion_ti) VALUES ($1, $2, $3)`;
             // Usamos idUsuario extraído arriba
             const tecnicoId = datosModal.responsable || idUsuario;
             await client.query(queryHija, [idGenerado, tecnicoId, datosModal.descripcion || 'Sin descripción']);
-            
+
         } else if (tipo === 'reserva') {
-            
+
             // LÓGICA DE ROLES: Dependiendo del rol, pasa a pendiente o aprobada automáticamente
             const estadoInicial = (rolUsuario === 'administrador') ? 'aprobada' : 'pendiente';
 
             const queryHija = `INSERT INTO reservas_estudiantes (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva) VALUES ($1, $2, $3, $4, $5)`;
-            await client.query(queryHija, [idGenerado, idUsuario, datosModal.titulo, datosModal.descripcion || null, estadoInicial]);
+            await client.query(queryHija, [idGenerado, idUsuario, datosModal.titulo, datosModal.nota_adicional || null, estadoInicial]);
 
             const estaciones = Array.isArray(datosModal.estaciones) && datosModal.estaciones.length > 0
                 ? datosModal.estaciones
@@ -236,16 +236,16 @@ const programarActividad = async (datosModal, usuarioLogueado) => {
                 await client.query(queryItem, [idGenerado, equipo.id, equipo.cantidad || 1]);
             }
         }
-        
+
         await client.query('COMMIT');
-        
+
         // Mensaje dinámico de respuesta al frontend
         const mensajeRespuesta = (tipo === 'reserva' && (rolUsuario === 'estudiante' || rolUsuario === 'docente'))
             ? 'Solicitud de reserva enviada exitosamente. Quedará en espera de aprobación por el coordinador.'
             : 'Actividad programada exitosamente';
 
         return { exito: true, mensaje: mensajeRespuesta, id: idGenerado };
-        
+
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error al programar actividad en el Service:', error);
@@ -290,7 +290,7 @@ const actualizarActividad = async (idActividad, datosModal, idUsuarioLogueado) =
             await client.query(queryHija, [tecnicoId, datosModal.descripcion || 'Sin descripción', idActividad]);
         } else if (tipo === 'reserva') {
             const queryHija = `UPDATE reservas_estudiantes SET titulo = $1, nota_adicional = $2 WHERE actividad_id = $3`;
-            await client.query(queryHija, [datosModal.titulo, datosModal.descripcion || null, idActividad]);
+            await client.query(queryHija, [datosModal.titulo, datosModal.nota_adicional || null, idActividad]);
 
             // Eliminar y re-insertar estaciones
             await client.query(`DELETE FROM reserva_estaciones WHERE actividad_id = $1`, [idActividad]);
@@ -381,60 +381,73 @@ const eliminarActividad = async (idActividad) => {
     }
 };
 
-const obtenerDisponibilidad = async (laboratorio, fecha, horaInicio, horaFin, idActividad = null) => {
-    const inicioDatetime = new Date(`${fecha}T${horaInicio}`);
-    const finDatetime = new Date(`${fecha}T${horaFin}`);
-    const client = await db.connect();
+const obtenerDisponibilidad = async (laboratorioId, fechaInicio, fechaFin) => {
+    // =========================================================================
+    // 1. Verificar si hay un evento que bloquee TODO el laboratorio 
+    // (Ej. Clases, Mantenimientos o reservas del espacio completo)
+    // =========================================================================
+    const queryBloqueo = `
+        SELECT a.tipo 
+        FROM actividades a
+        LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id
+        WHERE a.laboratorio_id = $1 
+          AND a.fecha_hora_inicio < $3 
+          AND a.fecha_hora_fin > $2
+          AND (a.tipo != 'reserva' OR re.estado_reserva NOT IN ('cancelada', 'rechazada'))
+    `;
+    const resultBloqueo = await db.query(queryBloqueo, [laboratorioId, fechaInicio, fechaFin]);
 
-    try {
-        // 1 verificar si hay un " bloque total"
-        let queryBloqueo = `
-            SELECT a.tipo
-            FROM actividades a
-            WHERE a.laboratorio_id = $1
-              AND a.fecha_hora_inicio < $2 
-              AND a.fecha_hora_fin > $3
-        `;
-        let params = [laboratorio, finDatetime, inicioDatetime];
-
-        if (idActividad) {
-            queryBloqueo += ` AND a.id != $4`;
-            params.push(idActividad);
-        }
-        const resBloqueo = await client.query(queryBloqueo, params);
-
-        // si hay una clase o mantenimiento solapado, el alb esta 100% bloqueado
-
-        for (const act of resBloqueo.rows) {
-            if (act.tipo === 'clase' || act.tipo === 'mantenimiento') {
-                return { bloqueoTotal: true, estacionesOcupadas: [] };
-            }
-        }
-
-        // 2. Si el lab no está bloqueado totalmente, buscar las PCs específicas reservadas
-        let queryEstaciones = `
-            SELECT re_est.estacion_id
-            FROM actividades a
-            INNER JOIN reserva_estaciones re_est ON a.id = re_est.actividad_id
-            WHERE a.laboratorio_id = $1
-              AND a.fecha_hora_inicio < $2 
-              AND a.fecha_hora_fin > $3
-        `;
-
-        if (idActividad) {
-            queryEstaciones += ` AND a.id != $4`;
-        }
-
-        const resEstaciones = await client.query(queryEstaciones, params);
-        const estacionesOcupadas = resEstaciones.rows.map(row => row.estacion_id);
-        return { bloqueoTotal: false, estacionesOcupadas };
-    } catch (error) {
-        console.error('Error al verificar disponibilidad:', error);
-        throw new Error('Error al consultar disponibilidad.');
-    } finally {
-        if (client) client.release();
+    // Si detectamos clases o mantenimientos, el laboratorio entero está bloqueado
+    const bloqueoTotal = resultBloqueo.rows.find(row => row.tipo === 'clase' || row.tipo === 'mantenimiento');
+    if (bloqueoTotal) {
+        return { disponible: false, motivo: `El laboratorio está ocupado por: ${bloqueoTotal.tipo}`, estacionesOcupadas: [], itemsOcupados: {} };
     }
-}
+
+    // =========================================================================
+    // 2. Obtener las Estaciones Ocupadas en ese rango de tiempo
+    // =========================================================================
+    const queryEstaciones = `
+        SELECT res_est.estacion_id 
+        FROM reserva_estaciones res_est
+        JOIN actividades a ON res_est.actividad_id = a.id
+        LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id
+        WHERE a.laboratorio_id = $1 
+          AND a.fecha_hora_inicio < $3 
+          AND a.fecha_hora_fin > $2
+          AND (a.tipo != 'reserva' OR re.estado_reserva NOT IN ('cancelada', 'rechazada'))
+    `;
+    const resultEstaciones = await db.query(queryEstaciones, [laboratorioId, fechaInicio, fechaFin]);
+    const estacionesOcupadas = resultEstaciones.rows.map(r => r.estacion_id);
+
+    // =========================================================================
+    // 3. Obtener el Inventario Ocupado en ese rango de tiempo
+    // =========================================================================
+    const queryItems = `
+        SELECT ri.item_id, SUM(ri.cantidad_solicitada) as total_ocupado
+        FROM reserva_items ri
+        JOIN actividades a ON ri.actividad_id = a.id
+        LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id
+        WHERE a.laboratorio_id = $1 
+          AND a.fecha_hora_inicio < $3 
+          AND a.fecha_hora_fin > $2
+          AND (a.tipo != 'reserva' OR re.estado_reserva NOT IN ('cancelada', 'rechazada'))
+        GROUP BY ri.item_id
+    `;
+    const resultItems = await db.query(queryItems, [laboratorioId, fechaInicio, fechaFin]);
+
+    // Transformamos el resultado en un objeto clave-valor { id_item: cantidad_ocupada }
+    const itemsOcupados = {};
+    resultItems.rows.forEach(r => {
+        itemsOcupados[r.item_id] = parseInt(r.total_ocupado, 10);
+    });
+
+    // Retornamos el reporte completo de disponibilidad
+    return {
+        disponible: true,
+        estacionesOcupadas,
+        itemsOcupados
+    };
+};
 
 /**
  * Extrae las actividades con toda su infraestructura agrupada (PCs, Inventario, Nombres)
@@ -518,9 +531,14 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista) => 
             LEFT JOIN usuarios u_tecnico ON m.tecnico_id = u_tecnico.id
             LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id
             
-            -- Filtro para no traer todo el histórico de la BD, solo lo relevante a este rango
-            WHERE (a.recurrencia IS NULL AND a.fecha_hora_inicio <= $2 AND a.fecha_hora_fin >= $1)
-               OR (a.recurrencia IS NOT NULL AND a.fecha_hora_inicio <= $2);
+            -- ====================================================================
+            -- 🚨 FILTROS PRINCIPALES
+            -- ====================================================================
+            WHERE (
+                (a.recurrencia IS NULL AND a.fecha_hora_inicio <= $2 AND a.fecha_hora_fin >= $1)
+                OR (a.recurrencia IS NOT NULL AND a.fecha_hora_inicio <= $2)
+            )
+            AND (a.tipo != 'reserva' OR re.estado_reserva = 'aprobada');
         `;
 
         const { rows } = await client.query(query, [startVista, endVista]);
@@ -575,10 +593,176 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista) => 
     }
 };
 
+// ==========================================
+// 1. OBTENER SOLICITUDES PENDIENTES (GET)
+// ==========================================
+const obtenerSolicitudesPendientes = async () => {
+    // Usamos json_agg para agrupar las tablas hijas como arrays dentro del JSON de respuesta
+    const query = `
+        SELECT 
+            r.actividad_id,
+            r.titulo,
+            r.nota_adicional,
+            r.estado_reserva,
+            a.fecha_hora_inicio,
+            a.fecha_hora_fin,
+            a.fecha_creacion,
+            u.nombre AS solicitante_nombre,
+            u.apellido AS solicitante_apellido,
+            u.correo AS solicitante_correo,
+            u.expediente AS solicitante_expediente,
+            l.nombre AS laboratorio_nombre,
+            l.edificio,
+            l.aula,
+            (
+                SELECT COALESCE(json_agg(json_build_object('id', e.id, 'nombre', e.nombre)), '[]')
+                FROM reserva_estaciones re 
+                JOIN estaciones_trabajo e ON re.estacion_id = e.id 
+                WHERE re.actividad_id = r.actividad_id
+            ) AS estaciones,
+            (
+                SELECT COALESCE(json_agg(json_build_object('id', i.id, 'nombre', i.nombre, 'cantidad', ri.cantidad_solicitada)), '[]')
+                FROM reserva_items ri 
+                JOIN item_inventario i ON ri.item_id = i.id 
+                WHERE ri.actividad_id = r.actividad_id
+            ) AS inventario
+        FROM reservas_estudiantes r
+        JOIN actividades a ON r.actividad_id = a.id
+        JOIN usuarios u ON r.usuario_id = u.id
+        JOIN laboratorios l ON a.laboratorio_id = l.id
+        WHERE r.estado_reserva = 'pendiente'
+        ORDER BY a.fecha_creacion ASC;
+    `;
+    const { rows } = await db.query(query);
+    return rows;
+};
+
+// ==========================================
+// OBTENER TODAS LAS SOLICITUDES (pendientes, aprobadas, rechazadas)
+// ==========================================
+const obtenerTodasSolicitudes = async () => {
+    const query = `
+        SELECT 
+            r.actividad_id,
+            r.titulo,
+            r.nota_adicional,
+            r.estado_reserva,
+            a.fecha_hora_inicio,
+            a.fecha_hora_fin,
+            a.fecha_creacion,
+            u.nombre AS solicitante_nombre,
+            u.apellido AS solicitante_apellido,
+            u.correo AS solicitante_correo,
+            u.expediente AS solicitante_expediente,
+            u.rol AS solicitante_rol,
+            l.nombre AS laboratorio_nombre,
+            l.edificio,
+            l.aula,
+            (
+                SELECT COALESCE(json_agg(json_build_object('id', e.id, 'nombre', e.nombre)), '[]')
+                FROM reserva_estaciones re 
+                JOIN estaciones_trabajo e ON re.estacion_id = e.id 
+                WHERE re.actividad_id = r.actividad_id
+            ) AS estaciones,
+            (
+                SELECT COALESCE(json_agg(json_build_object('id', i.id, 'nombre', i.nombre, 'cantidad', ri.cantidad_solicitada)), '[]')
+                FROM reserva_items ri 
+                JOIN item_inventario i ON ri.item_id = i.id 
+                WHERE ri.actividad_id = r.actividad_id
+            ) AS inventario
+        FROM reservas_estudiantes r
+        JOIN actividades a ON r.actividad_id = a.id
+        JOIN usuarios u ON r.usuario_id = u.id
+        JOIN laboratorios l ON a.laboratorio_id = l.id
+        ORDER BY a.fecha_creacion DESC;
+    `;
+    const { rows } = await db.query(query);
+    return rows;
+};
+
+// ==========================================
+// 2. RESOLVER SOLICITUD (PUT - APROBAR/RECHAZAR)
+// ==========================================
+const resolverSolicitud = async (actividadId, accion, resolutorId) => {
+    // 1. Verificar el estado actual de la solicitud
+    const estadoQuery = await db.query(
+        `SELECT r.estado_reserva, a.laboratorio_id, a.fecha_hora_inicio, a.fecha_hora_fin 
+         FROM reservas_estudiantes r
+         JOIN actividades a ON r.actividad_id = a.id
+         WHERE r.actividad_id = $1`,
+        [actividadId]
+    );
+
+    if (estadoQuery.rows.length === 0) {
+        throw { status: 404, message: 'La solicitud no existe.' };
+    }
+
+    const reserva = estadoQuery.rows[0];
+
+    // Regla de Negocio: El primero que actúe, cierra.
+    if (reserva.estado_reserva !== 'pendiente') {
+        throw { status: 400, message: `Esta solicitud ya fue resuelta. Estado actual: ${reserva.estado_reserva}` };
+    }
+
+    // 2. FLUJO A: RECHAZAR
+    if (accion === 'rechazar') {
+        await db.query(
+            `UPDATE reservas_estudiantes 
+             SET estado_reserva = 'rechazada', resuelto_por = $1, fecha_resolucion = CURRENT_TIMESTAMP 
+             WHERE actividad_id = $2`,
+            [resolutorId, actividadId]
+        );
+        return { message: 'Solicitud rechazada correctamente.' };
+    }
+
+    // 3. FLUJO B: APROBAR (Con tu corrección de validación de choques)
+    if (accion === 'aprobar') {
+        // Validamos choques SOLO contra clases, mantenimientos, o reservas APROBADAS
+        const choqueQuery = `
+            SELECT a_existente.id 
+            FROM actividades a_existente
+            LEFT JOIN reservas_estudiantes r_existente ON a_existente.id = r_existente.actividad_id
+            WHERE a_existente.laboratorio_id = $1
+              AND a_existente.id != $2
+              AND (a_existente.fecha_hora_inicio < $4 AND a_existente.fecha_hora_fin > $3)
+              AND (a_existente.tipo IN ('clase', 'mantenimiento') OR r_existente.estado_reserva = 'aprobada')
+            LIMIT 1;
+        `;
+
+        const validacion = await db.query(choqueQuery, [
+            reserva.laboratorio_id,
+            actividadId,
+            reserva.fecha_hora_inicio,
+            reserva.fecha_hora_fin
+        ]);
+
+        if (validacion.rows.length > 0) {
+            throw { status: 409, message: 'No es posible aprobar la solicitud. Se detectó un choque de horario con una actividad aprobada recientemente.' };
+        }
+
+        // Si no hay choque, aprobamos
+        await db.query(
+            `UPDATE reservas_estudiantes 
+             SET estado_reserva = 'aprobada', resuelto_por = $1, fecha_resolucion = CURRENT_TIMESTAMP 
+             WHERE actividad_id = $2`,
+            [resolutorId, actividadId]
+        );
+        return { message: 'Solicitud aprobada con éxito.' };
+    }
+
+    throw { status: 400, message: 'Acción no válida. Use "aprobar" o "rechazar".' };
+};
+
+
 module.exports = {
     programarActividad,
     actualizarActividad,
     eliminarActividad,
     obtenerDisponibilidad,
-    obtenerActividadesExpandidas
+    obtenerActividadesExpandidas,
+    //agregado actualmente
+    obtenerSolicitudesPendientes,
+    obtenerTodasSolicitudes,
+    resolverSolicitud
+
 };
