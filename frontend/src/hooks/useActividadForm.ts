@@ -60,6 +60,7 @@ export interface FormData {
     responsable?: string | number;
     descripcion?: string;
     titulo?: string;
+    nota_adicional?: string;
     estaciones?: (number | string)[];
     equipos?: EquipoSeleccionado[];
     laboratorio?: string;

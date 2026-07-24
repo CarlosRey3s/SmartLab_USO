@@ -2,33 +2,26 @@ const actividadesService = require('../services/actividades.service');
 
 const crearActividad = async (req, res) => {
     try {
-        // 1. Extraer el ID del usuario logueado AQUÍ ADENTRO, donde 'req' sí existe.
-        // (Esto asume que ya pasaste por un middleware que validó el token JWT)
-        //const idAdminLogueado = req.usuario.id;
-        //Cambiarlo cuando se tenga el middleware de autenticación implementado. Por ahora, lo dejamos hardcodeado para pruebas.
-        // Y tambien cuando se trabaje con el login de usuatio y la interfaz.
-        // 2. Extraer la información que viene del modal de React
+        // 1. Extraer el usuario que viene del middleware 'verificarToken'
+        // Si no viniera (ej. en pruebas sin token), dejamos un fallback temporal para no romper nada
+        const usuarioLogueado = req.usuario || {
+            id: req.body.usuario_id || 1,
+            rol: req.body.rol || 'estudiante'
+        };
+
         const datosModal = req.body;
 
-        const idAdminLogueado = datosModal.usuario_id || "1";
+        // 2. Llamamos al servicio enviando los datos y el objeto del usuario
+        const nuevaActividad = await actividadesService.programarActividad(datosModal, usuarioLogueado);
 
-        console.log("ID del usuario logueado en el controlador:", idAdminLogueado);
-
-        // 3. Llamaremos al servicio para que procese la información y guarde
-        const nuevaActividad = await actividadesService.programarActividad(datosModal, idAdminLogueado);
-
-        // 4. Responder al frontend que todo salió bien 
         res.status(201).json({
             success: true,
-            message: 'Actividad programada exitosamente',
-            data: nuevaActividad // Devolvemos el resultado del servicio
+            message: nuevaActividad.mensaje,
+            data: nuevaActividad
         });
 
     } catch (error) {
         console.error('Error al crear la actividad:', error);
-
-        // Dependiendo del error, podrías mandar un 400 (Bad Request) o 500 (Server Error)
-        // Por ahora dejamos 500 o 400 dependiendo si es un error de choque de horarios
         const statusCode = error.message.includes('ocupado') ? 400 : 500;
 
         res.status(statusCode).json({
@@ -140,5 +133,52 @@ const obtenerActividades = async (req, res) => {
     }
 };
 
+// Controlador para obtener las solicitudes pendientes
+const obtenerPendientes = async (req, res) => {
+    try {
+        const pendientes = await actividadesService.obtenerSolicitudesPendientes();
+        res.status(200).json(pendientes);
+    } catch (error) {
+        console.error('Error al obtener solicitudes pendientes:', error);
+        res.status(500).json({ message: 'Error interno al cargar las solicitudes' });
+    }
+};
+
+
+// Controlador para obtener TODAS las solicitudes (pendientes, aprobadas, rechazadas)
+const obtenerTodas = async (req, res) => {
+    try {
+        const todas = await actividadesService.obtenerTodasSolicitudes();
+        res.status(200).json(todas);
+    } catch (error) {
+        console.error('Error al obtener todas las solicitudes:', error);
+        res.status(500).json({ message: 'Error interno al cargar las solicitudes' });
+    }
+};
+
+// Controlador para Aprobar o Rechazar
+const resolverReserva = async (req, res) => {
+    try {
+        const { id } = req.params; // ID de la actividad
+        const { accion } = req.body; // 'aprobar' o 'rechazar'
+        const resolutorId = req.usuario.id; // Viene del auth.middleware
+
+        const resultado = await actividadesService.resolverSolicitud(id, accion, resolutorId);
+        res.status(200).json(resultado);
+
+    } catch (error) {
+        console.error('Error al resolver la solicitud:', error);
+        // Manejo de errores controlados (400, 404, 409)
+        if (error.status) {
+            return res.status(error.status).json({ message: error.message });
+        }
+        res.status(500).json({ message: 'Error interno del servidor al procesar la resolución' });
+    }
+};
+
 // Exórtala al final:
-module.exports = { crearActividad, actualizarActividad, eliminarActividad, obtenerActividades, consultarDisponibilidad };
+module.exports = {
+    crearActividad, actualizarActividad,
+    eliminarActividad, obtenerActividades, consultarDisponibilidad,
+    obtenerPendientes, obtenerTodas, resolverReserva
+};

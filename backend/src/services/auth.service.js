@@ -5,15 +5,20 @@ const usuarioService = require('./usuario.service');
 
 const login = async (correo, password) => {
   // --- USUARIO DE PRUEBA TEMPORAL ---
-  if (correo === 'admin@prueba.com' && password === 'admin123') {
+  if (correo === 'admin@prueba.com' && password === '123456') {
     return {
-      id: 9999,
+      id: 1,
       nombre: 'Admin',
       apellido: 'Prueba',
       correo: 'admin@prueba.com',
       rol: 'administrador',
       estado: 'activo'
     };
+    
+  }
+  //borrar depues 
+  if (correo === 'estudiante@prueba.com' && password === 'estudiante123') {
+    return { id: 8888, rol: 'estudiante', estado: 'activo' }; // <-- Agrega este
   }
   // ----------------------------------
 

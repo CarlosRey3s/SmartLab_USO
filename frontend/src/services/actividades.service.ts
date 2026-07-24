@@ -5,10 +5,23 @@ import type { EventoLaboratorio } from '..//pages/admin/Calendario.tsx'; // Ajus
 
 // Reemplaza esto con la URL real de tu backend si es diferente
 const API_URL = "http://localhost:4000/api/actividades"
+
+// Helper para enviar el token
+const getAuthHeaders = () => {
+    const token = localStorage.getItem('uso_token');
+    return {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+    };
+};
+
 export const obtenerActividades = async (start: string, end: string) => {
     try {
         // Hacemos la petición directa al puerto 4000 de tu backend
-        const respuesta = await axios.get(API_URL, { params: { start, end } });
+        const respuesta = await axios.get(API_URL, { 
+            params: { start, end },
+            headers: getAuthHeaders()
+        });
 
         // Retornamos el arreglo crudo directamente del backend
         return respuesta.data.data || respuesta.data;
@@ -21,8 +34,7 @@ export const obtenerActividades = async (start: string, end: string) => {
 export const crearActividad = async (datosModal: any): Promise<any> => {
     try {
         const respuesta = await axios.post(API_URL, datosModal, {
-            // Cuando agregues tokens JWT, pasar los headers aquí
-            headers: { 'Content-Type': 'application/json' }
+            headers: getAuthHeaders()
         });
         return respuesta.data;
     } catch (error: any) {
@@ -39,7 +51,7 @@ export const crearActividad = async (datosModal: any): Promise<any> => {
 export const actualizarActividad = async (idActividad: number | string, datosModal: any): Promise<any> => {
     try {
         const respuesta = await axios.put(`${API_URL}/${idActividad}`, datosModal, {
-            headers: { 'Content-Type': 'application/json' }
+            headers: getAuthHeaders()
         });
         return respuesta.data;
     } catch (error: any) {
@@ -55,7 +67,7 @@ export const actualizarActividad = async (idActividad: number | string, datosMod
 export const eliminarActividad = async (idActividad: number | string): Promise<any> => {
     try {
         const respuesta = await axios.delete(`${API_URL}/${idActividad}`, {
-            headers: { 'Content-Type': 'application/json' }
+            headers: getAuthHeaders()
         });
         return respuesta.data;
     } catch (error: any) {
@@ -74,7 +86,7 @@ export const chequearDisponibilidad = async (laboratorio_id: number, fecha: stri
         let url = `http://localhost:4000/api/actividades/disponibilidad?laboratorio_id=${laboratorio_id}&fecha=${fecha}&hora_inicio=${hora_inicio}&hora_fin=${hora_fin}`;
         if (exclude_id) url += `&exclude_id=${exclude_id}`;
 
-        const response = await axios.get(url);
+        const response = await axios.get(url, { headers: getAuthHeaders() });
         return response.data.data; // Retorna { bloqueoTotal: boolean, estacionesOcupadas: number[] }
     } catch (error) {
         console.error("Error chequeando disponibilidad", error);
@@ -98,7 +110,7 @@ export const obtenerInventarioDisponible = async (
             url += `&exclude_actividad_id=${excludeActividadId}`;
         }
 
-        const response = await axios.get(url);
+        const response = await axios.get(url, { headers: getAuthHeaders() });
         return response.data;
     } catch (error) {
         console.error("Error al obtener el inventario disponible:", error);

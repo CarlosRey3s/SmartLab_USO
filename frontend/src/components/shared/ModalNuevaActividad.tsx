@@ -380,6 +380,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
 
           {/* ── PASO: INSTRUMENTOS (clase y reserva) ──  CONEXION FORMULARIO*/}
           {currentStepKey === "instrumentos" && (tipo === "clase" || tipo === "reserva") && (
+            <>
             <SelectorInventario
               inventario={inventarioDesdeBD}
               equiposSeleccionados={equiposSeleccionados}
@@ -389,6 +390,24 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
               onAumentar={aumentarCantidad}
               onDisminuir={disminuirCantidad}
             />
+
+            {/* ── NOTA ADICIONAL (solo reservas) ── */}
+            {tipo === "reserva" && (
+              <div className="na-fields" style={{ marginTop: '18px' }}>
+                <div className="na-field-group">
+                  <label className="na-field-label">NOTA ADICIONAL (OPCIONAL)</label>
+                  <textarea
+                    className="na-input"
+                    placeholder="Ej: Necesito proyector, traeremos invitados externos, requiero acceso especial..."
+                    value={form.nota_adicional || ""}
+                    onChange={(e) => set("nota_adicional" as keyof FormData, e.target.value)}
+                    rows={3}
+                    style={{ resize: 'vertical', minHeight: '60px' }}
+                  />
+                </div>
+              </div>
+            )}
+            </>
           )}
 
           {/* ── PASO: FECHA, HORA Y RESUMEN ── */}

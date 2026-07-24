@@ -20,10 +20,10 @@ import { format, parse, startOfWeek, getDay, isToday, startOfMonth, endOfMonth }
 // ── 1. CONFIGURACIÓN DE FECHAS E IDIOMA ──
 const locales = { 'es': es };
 const localizer = dateFnsLocalizer({
-  format, 
-  parse, 
+  format,
+  parse,
   startOfWeek, // [CORREGIDO] Pasado como referencia limpia para evitar el bucle infinito
-  getDay, 
+  getDay,
   locales,
 });
 
@@ -177,23 +177,23 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
                   <span className="filter-title">Filtros</span>
                   <button className="btn-limpiar" onClick={limpiarFiltros}>Limpiar</button>
                 </div>
-                
+
                 <div className="filter-section">
                   <span className="filter-subtitle">Por Tipo de Actividad</span>
                   <div className="filter-pills">
-                    <button 
+                    <button
                       className={`filter-pill ${toolbar.filtros.clases ? 'active-clases' : 'inactive-clases'}`}
                       onClick={() => toggleFiltroActividad('clases')}
                     >
                       <span className="pill-dot dot-clases"></span> Clases
                     </button>
-                    <button 
+                    <button
                       className={`filter-pill ${toolbar.filtros.mantenimientos ? 'active-mantenimientos' : 'inactive-mantenimientos'}`}
                       onClick={() => toggleFiltroActividad('mantenimientos')}
                     >
                       <span className="pill-dot dot-mantenimientos"></span> Mantenimientos
                     </button>
-                    <button 
+                    <button
                       className={`filter-pill ${toolbar.filtros.reservas ? 'active-reservas' : 'inactive-reservas'}`}
                       onClick={() => toggleFiltroActividad('reservas')}
                     >
@@ -204,7 +204,7 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
 
                 <div className="filter-section">
                   <span className="filter-subtitle">Por Laboratorio</span>
-                  <select 
+                  <select
                     className="filter-select"
                     value={toolbar.filtros.laboratorio}
                     onChange={(e) => toolbar.setFiltros({ ...toolbar.filtros, laboratorio: e.target.value })}
@@ -218,7 +218,7 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
 
                 <div className="filter-section">
                   <span className="filter-subtitle">Por Tipo de Espacio</span>
-                  <select 
+                  <select
                     className="filter-select"
                     value={toolbar.filtros.tipoEspacio}
                     onChange={(e) => toolbar.setFiltros({ ...toolbar.filtros, tipoEspacio: e.target.value })}
@@ -252,6 +252,10 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
 // ── 5. COMPONENTE PRINCIPAL (VISTA) ──
 export const CalendarioView = () => {
   const { user } = useAuth();
+  
+  // Evaluar si el usuario es autoridad
+  const esAutoridad = user?.rol === 'administrador' || user?.rol === 'coordinador';
+
   const [fechaActual, setFechaActual] = useState(new Date());
   const [vistaActual, setVistaActual] = useState<View>('week');
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -275,10 +279,10 @@ export const CalendarioView = () => {
   });
 
   // [CORREGIDO] Función cargarDatos protegida
- const cargarDatos = async () => {
+  const cargarDatos = async () => {
     try {
       setCargando(true);
-      
+
       const fechaInicio = startOfMonth(fechaActual).toISOString();
       const fechaFin = endOfMonth(fechaActual).toISOString();
 
@@ -296,14 +300,14 @@ export const CalendarioView = () => {
           ...act,
           id: act.id_instancia || act.id,   // Llave única para evitar crasheos en React
           idOriginal: act.id,               // ID real de PostgreSQL para operaciones CRUD
-          
+
           // Si el backend ya calculó un title, úsalo; si no, elígelo por tipo
           title: act.title || (act.tipo === 'clase' ? act.materia : act.tipo === 'mantenimiento' ? 'Mantenimiento' : act.titulo),
-          
+
           // 🌟 Construimos los objetos Date usando las variables protegidas
           start: new Date(rawStart),
           end: new Date(rawEnd),
-          
+
           tipo: act.tipo,
           laboratorio_id: act.laboratorio_id,
           laboratorio_nombre: act.laboratorio_nombre || 'Laboratorio',
@@ -426,15 +430,15 @@ export const CalendarioView = () => {
                   }
                   return false;
                 })() && (
-                  <>
-                    <button className="btn-popover-action" onClick={handleEditarEvento} title="Editar">
-                      <Edit2 size={16} />
-                    </button>
-                    <button className="btn-popover-action btn-delete" onClick={handleEliminarEvento} title="Eliminar">
-                      <Trash2 size={16} />
-                    </button>
-                  </>
-                )}
+                    <>
+                      <button className="btn-popover-action" onClick={handleEditarEvento} title="Editar">
+                        <Edit2 size={16} />
+                      </button>
+                      <button className="btn-popover-action btn-delete" onClick={handleEliminarEvento} title="Eliminar">
+                        <Trash2 size={16} />
+                      </button>
+                    </>
+                  )}
                 <button className="btn-popover-action" onClick={() => setEventoSeleccionado(null)} title="Cerrar">
                   <X size={18} />
                 </button>
@@ -534,9 +538,13 @@ export const CalendarioView = () => {
             </button>
           )}
 
-          <PanelSolicitudes />
+          {esAutoridad && <PanelSolicitudes />}
 
-          <button className="btn-exportar"><Printer size={20} /> Exportar</button>
+          {esAutoridad && (
+            <button className="btn-exportar">
+              <Printer size={20} /> Exportar
+            </button>
+          )}
         </div>
       </div>
     </NavegacionContext.Provider>
