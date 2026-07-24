@@ -50,17 +50,21 @@ export const AppRouter = () => {
               <Route path="docente/dashboard" element={<DocenteDashboard />} />
             </Route>
 
-            {/* ================= ADMIN ================= */}
-            <Route element={<ProtectedRoute allowedRoles={['administrador', 'coordinador']} />}>
+            {/* ================= ADMIN, COORD, SUPERVISOR ================= */}
+            <Route element={<ProtectedRoute allowedRoles={['administrador', 'coordinador', 'supervisor']} />}>
               <Route path="admin/dashboard" element={<DashboardAdmin />} />
-              <Route path="admin/usuarios" element={<Usuarios />} />
               <Route path="inventario" element={<InventarioView />} />
               <Route path="espacio" element={<EspacioView />} />
               <Route path="reportes" element={<ReportesView />} />
             </Route>
 
+            {/* ================= ADMIN EXCLUSIVO ================= */}
+            <Route element={<ProtectedRoute allowedRoles={['administrador']} />}>
+              <Route path="admin/usuarios" element={<Usuarios />} />
+            </Route>
+
             {/* ================= COMPARTIDAS ================= */}
-            <Route element={<ProtectedRoute allowedRoles={['administrador', 'coordinador', 'docente', 'estudiante']} />}>
+            <Route element={<ProtectedRoute allowedRoles={['administrador', 'coordinador', 'supervisor', 'docente', 'estudiante']} />}>
               <Route path="calendario" element={<CalendarioView />} />
             </Route>
 

@@ -15,9 +15,9 @@ const login = async (req, res) => {
     // Generar Token
     const jwtSecret = process.env.JWT_SECRET || 'llave_secreta_temporal_muy_segura';
     const token = jwt.sign(
-      { id: user.id, rol: user.rol }, 
-      jwtSecret, 
-      { expiresIn: '30m' }
+      { id: user.id, rol: user.rol },
+      jwtSecret,
+      { expiresIn: '24h' }
     );
 
     res.json({
@@ -45,6 +45,85 @@ const login = async (req, res) => {
   }
 };
 
+const loginMicrosoft = async (req, res) => {
+  try {
+    const { accessToken } = req.body;
+    if (!accessToken) {
+      return res.status(400).json({ status: 'error', message: 'Falta el accessToken de Microsoft' });
+    }
+
+    const result = await authService.loginMicrosoft(accessToken);
+
+    // Si el usuario es nuevo, el servicio devuelve 'incomplete_profile'
+    if (result.status === 'incomplete_profile') {
+      return res.status(404).json(result);
+    }
+
+    const { user } = result;
+
+    const jwtSecret = process.env.JWT_SECRET || 'llave_secreta_temporal_muy_segura';
+    const token = jwt.sign(
+      { id: user.id, rol: user.rol },
+      jwtSecret,
+      { expiresIn: '30m' }
+    );
+
+    res.json({
+      status: 'success',
+      data: {
+        token,
+        user: {
+          id: user.id,
+          nombres: user.nombre,
+          apellidos: user.apellido,
+          rol: user.rol,
+          correo: user.correo
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error en login con Microsoft:', error.message);
+    res.status(500).json({ status: 'error', message: 'Error interno del servidor al procesar el login con Microsoft' });
+  }
+};
+
+const registerMicrosoft = async (req, res) => {
+  try {
+    const { accessToken, expediente, rol } = req.body;
+    if (!accessToken || !expediente || !rol) {
+      return res.status(400).json({ status: 'error', message: 'Faltan datos requeridos (accessToken, expediente, rol)' });
+    }
+
+    const user = await authService.registerMicrosoft(accessToken, expediente, rol);
+
+    const jwtSecret = process.env.JWT_SECRET || 'llave_secreta_temporal_muy_segura';
+    const token = jwt.sign(
+      { id: user.id, rol: user.rol },
+      jwtSecret,
+      { expiresIn: '24h' }
+    );
+
+    res.status(201).json({
+      status: 'success',
+      data: {
+        token,
+        user: {
+          id: user.id,
+          nombres: user.nombre,
+          apellidos: user.apellido,
+          rol: user.rol,
+          correo: user.correo
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error en registro con Microsoft:', error.message);
+    res.status(500).json({ status: 'error', message: 'Error interno del servidor al registrar con Microsoft' });
+  }
+};
+
 module.exports = {
-  login
+  login,
+  loginMicrosoft,
+  registerMicrosoft
 };

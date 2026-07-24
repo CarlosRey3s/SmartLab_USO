@@ -23,13 +23,13 @@ interface SidebarProps {
 const menuItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['estudiante'] },
   { name: 'Dashboard', path: '/docente/dashboard', icon: LayoutDashboard, roles: ['docente'] },
-  { name: 'Dashboard', path: '/admin/dashboard', icon: ShieldCheck, roles: ['administrador', 'coordinador'] },
+  { name: 'Dashboard', path: '/admin/dashboard', icon: ShieldCheck, roles: ['administrador', 'coordinador', 'supervisor'] },
 
-  { name: 'Calendario', path: '/calendario', icon: Calendar, roles: ['administrador', 'coordinador', 'docente', 'estudiante'] },
-
-  { name: 'Inventario', path: '/inventario', icon: Package, roles: ['administrador', 'coordinador'] },
-  { name: 'Espacio', path: '/espacio', icon: Layers, roles: ['administrador', 'coordinador'] },
-  { name: 'R & E', path: '/reportes', icon: FileBarChart, roles: ['administrador', 'coordinador'] },
+  // Accesibles para Admin, Coordinador y Supervisor
+  { name: 'Calendario', path: '/calendario', icon: Calendar, roles: ['administrador', 'coordinador', 'supervisor', 'docente', 'estudiante'] },
+  { name: 'Inventario', path: '/inventario', icon: Package, roles: ['administrador', 'coordinador', 'supervisor'] },
+  { name: 'Espacio', path: '/espacio', icon: Layers, roles: ['administrador', 'coordinador', 'supervisor'] },
+  { name: 'R & E', path: '/reportes', icon: FileBarChart, roles: ['administrador', 'coordinador', 'supervisor'] },
   { name: 'Usuarios', path: '/admin/usuarios', icon: Users, roles: ['administrador'] },
 
   { name: 'Sugerencias', path: '/buzon-sugerencias', icon: MessageSquare, roles: ['estudiante', 'docente'] },
@@ -138,8 +138,8 @@ export const Sidebar = ({
 
               return (
 
-                <li 
-                  key={`${item.name}-${item.path}`} 
+                <li
+                  key={`${item.name}-${item.path}`}
                   className="sb__item"
                 >
 

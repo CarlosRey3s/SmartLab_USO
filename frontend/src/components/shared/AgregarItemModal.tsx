@@ -8,6 +8,15 @@ import { ConfirmModal } from '../confirm-modal/ConfirmModal';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/inventario.css';
 
+const OPCIONES_UNIDAD_MEDIDA: Record<string, {value: string, label: string}[]> = {
+  'Mobiliario': [{value: 'Unidad', label: 'Unidades'}, {value: 'Juego', label: 'Juegos'}],
+  'Electrónica': [{value: 'Unidad', label: 'Unidades'}, {value: 'Kit', label: 'Kits'}],
+  'Instrumentos': [{value: 'Unidad', label: 'Unidades'}, {value: 'Kit', label: 'Kits'}, {value: 'Cajas', label: 'Cajas'}],
+  'Reactivos': [{value: 'Litros', label: 'Litros'}, {value: 'Mililitros', label: 'Mililitros'}, {value: 'Gramos', label: 'Gramos'}, {value: 'Kilogramos', label: 'Kilogramos'}, {value: 'Galones', label: 'Galones'}, {value: 'Frasco', label: 'Frascos'}],
+  'Insumos': [{value: 'Unidad', label: 'Unidades'}, {value: 'Cajas', label: 'Cajas'}, {value: 'Paquete', label: 'Paquetes'}, {value: 'Litros', label: 'Litros'}, {value: 'Mililitros', label: 'Mililitros'}, {value: 'Gramos', label: 'Gramos'}, {value: 'Kilogramos', label: 'Kilogramos'}],
+  '': [{value: 'Unidad', label: 'Unidades'}, {value: 'Litros', label: 'Litros'}, {value: 'Mililitros', label: 'Mililitros'}, {value: 'Gramos', label: 'Gramos'}, {value: 'Kilogramos', label: 'Kilogramos'}, {value: 'Cajas', label: 'Cajas'}, {value: 'Galones', label: 'Galones'}]
+};
+
 interface AgregarItemModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -56,6 +65,13 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onCl
       }
     }
   }, [isOpen, editData]);
+
+  useEffect(() => {
+    const opciones = OPCIONES_UNIDAD_MEDIDA[categoria] || OPCIONES_UNIDAD_MEDIDA[''];
+    if (categoria && !opciones.some(op => op.value === unidadMedida)) {
+      setUnidadMedida(opciones[0].value);
+    }
+  }, [categoria]);
 
   const cargarLaboratorios = async () => {
     try {
@@ -168,7 +184,12 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onCl
       {isOpen && (
         <div className="modal-overlay">
           <div className="modal-content add-item-modal">
-            <h2 className="add-item-title">{editData ? 'Editar ítem del inventario' : 'Agregar ítem al inventario'}</h2>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+              <h2 className="add-item-title" style={{ margin: 0 }}>{editData ? 'Editar ítem del inventario' : 'Agregar ítem al inventario'}</h2>
+              <button className="modal-close" onClick={onClose} disabled={loading} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#008f7a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', borderRadius: '4px', transition: 'all 0.2s' }}>
+                <X size={24} />
+              </button>
+            </div>
             
             <div className="add-item-body">
           {/* Tipo de ítem */}
@@ -326,13 +347,9 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onCl
                   value={unidadMedida}
                   onChange={(e) => setUnidadMedida(e.target.value)}
                 >
-                  <option value="Unidad">Unidades</option>
-                  <option value="Litros">Litros</option>
-                  <option value="Mililitros">Mililitros</option>
-                  <option value="Gramos">Gramos</option>
-                  <option value="Kilogramos">Kilogramos</option>
-                  <option value="Cajas">Cajas</option>
-                  <option value="Galones">Galones</option>
+                  {(OPCIONES_UNIDAD_MEDIDA[categoria] || OPCIONES_UNIDAD_MEDIDA['']).map(opcion => (
+                    <option key={opcion.value} value={opcion.value}>{opcion.label}</option>
+                  ))}
                 </select>
               </div>
             </div>

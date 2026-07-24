@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircle, X, AlertCircle } from 'lucide-react';
+import { CheckCircle, X, AlertCircle, Info } from 'lucide-react';
 import './CustomToast.css';
 
 export interface ToastMessage {
   id: number;
   title: string;
   message: string;
-  type: 'success' | 'error';
+  type: 'success' | 'error' | 'info';
 }
 
 interface CustomToastProps {
@@ -39,11 +39,15 @@ const ToastItem: React.FC<CustomToastProps> = ({
   };
 
   const isSuccess = toast.type === 'success';
+  const isInfo = toast.type === 'info';
+  const isError = toast.type === 'error';
 
   return (
-    <div className={`premium-toast ${isClosing ? 'closing' : ''} ${!isSuccess ? 'error-toast' : ''}`}>
+    <div className={`premium-toast ${isClosing ? 'closing' : ''} ${isError ? 'error-toast' : ''} ${isInfo ? 'info-toast' : ''}`}>
       <div className="icon">
-        {isSuccess ? <CheckCircle size={24} color="#fff" /> : <AlertCircle size={24} color="#fff" />}
+        {isSuccess && <CheckCircle size={24} color="#fff" />}
+        {isError && <AlertCircle size={24} color="#fff" />}
+        {isInfo && <Info size={24} color="#fff" />}
       </div>
       <div className="content">
         <h4>{toast.title}</h4>
@@ -57,7 +61,7 @@ const ToastItem: React.FC<CustomToastProps> = ({
           className="progress-fill" 
           style={{ 
             position: 'absolute', bottom: 0, left: 0, width: '100%', height: '100%', 
-            background: isSuccess ? '#7ed49e' : '#fca5a5', transformOrigin: 'left',
+            background: isSuccess ? '#7ed49e' : (isInfo ? '#60a5fa' : '#fca5a5'), transformOrigin: 'left',
             animation: `fillProgress ${duration}ms linear forwards`
           }} 
         />
@@ -81,6 +85,12 @@ export const customToast = {
     const finalTitle = message ? titleOrMessage : 'Error';
     const finalMessage = message ? message : titleOrMessage;
     const toast: ToastMessage = { id: Date.now(), title: finalTitle, message: finalMessage, type: 'error' };
+    listeners.forEach(l => l(toast));
+  },
+  info: (titleOrMessage: string, message?: string) => {
+    const finalTitle = message ? titleOrMessage : 'Información';
+    const finalMessage = message ? message : titleOrMessage;
+    const toast: ToastMessage = { id: Date.now(), title: finalTitle, message: finalMessage, type: 'info' };
     listeners.forEach(l => l(toast));
   }
 };

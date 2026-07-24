@@ -11,6 +11,7 @@ import { FormularioReserva } from './ModalActividades/FormularioReserva';
 import { SelectorInventario } from './ModalActividades/SelectorInventario';
 
 import { useActividadForm, type FormData, getDiaSemana } from '../../hooks/useActividadForm';
+import { canCreateClassesOrMaintenance, isLimitedToOwnLaboratories } from '../../utils/roleGuard';
 
 
 import { type TipoActividad, type ModoReserva, type LaboratorioDB, type EstacionDB, type EquipoSeleccionado, type ItemInventarioDB } from '../../hooks/useActividadForm';
@@ -140,7 +141,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
   // Filtrar laboratorios a mostrar según el rol y el tipo
   const laboratoriosAMostrar = labsDesdeBD.filter(lab => {
     // Si el usuario es coordinador y NO está haciendo una reserva, solo ve sus laboratorios
-    if (user && user.rol === 'coordinador' && tipo !== 'reserva') {
+    if (user && isLimitedToOwnLaboratories(user.rol as any) && tipo !== 'reserva') {
       return String(lab.coordinador_id) === String(user.id);
     }
     // Si es una reserva directa (tipo === 'reserva') o tiene otro rol (admin), ve todos
@@ -194,7 +195,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
             <>
               <div className="na-field-label">TIPO DE ACTIVIDAD</div>
               <div className="na-tipo-selector">
-                {user?.rol !== 'docente' && (
+                {user && canCreateClassesOrMaintenance(user.rol as any) && (
                   <>
                     <button className="na-tipo-btn na-tipo-clase" onClick={() => handleTipo("clase")}>
                       <div className="na-tipo-ico na-ico-clase"><CalendarIcon color="#0F6E56" /></div>

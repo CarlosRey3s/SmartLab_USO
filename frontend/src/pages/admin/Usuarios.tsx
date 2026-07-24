@@ -6,7 +6,6 @@ import {
   Search,
   Trash2,
   RefreshCw,
-  Edit3,
   Shield,
   Edit2,
   X
@@ -15,8 +14,12 @@ import '../../css/Usuarios.css';
 import { usuariosService } from '../../services/usuarios.service';
 import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
 import { customToast } from '../../components/custom-toast/CustomToast';
+import { useAuth } from '../../context/AuthContext';
+import { isReadOnlyView } from '../../utils/roleGuard';
 
 export default function Usuarios() {
+  const { user } = useAuth();
+  const readOnly = user ? isReadOnlyView(user.rol as any) : false;
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
@@ -44,7 +47,7 @@ export default function Usuarios() {
 
   const cargarUsuarios = async () => {
     setLoading(true);
-    const data = await usuariosService.getUsuarios();
+    const data = await usuariosService.getUsuarios(String(user?.id || 1));
     if (data.status === 'success') {
       setUsers(data.data);
     }
@@ -70,14 +73,15 @@ export default function Usuarios() {
     if(formData.rol === 'Coordinador') dbRole = 'coordinador';
     if(formData.rol === 'Instructor') dbRole = 'docente';
     if(formData.rol === 'Estudiante') dbRole = 'estudiante';
+    if(formData.rol === 'Supervisor') dbRole = 'supervisor';
 
     const payload = { ...formData, rol: dbRole };
     
     let result;
     if (editingUserId) {
-      result = await usuariosService.actualizarUsuario(editingUserId, payload);
+      result = await usuariosService.actualizarUsuario(editingUserId, payload, String(user?.id || 1));
     } else {
-      result = await usuariosService.crearUsuario(payload);
+      result = await usuariosService.crearUsuario(payload, String(user?.id || 1));
     }
 
     if(result.status === 'success') {
@@ -96,7 +100,7 @@ export default function Usuarios() {
       title: 'Eliminar Usuario',
       message: '¿Estás seguro de que deseas eliminar este usuario de forma permanente?',
       action: async () => {
-        const result = await usuariosService.eliminarUsuario(id);
+        const result = await usuariosService.eliminarUsuario(id, String(user?.id || 1));
         if (result.status === 'success') {
           customToast.success("Usuario eliminado correctamente");
           cargarUsuarios();
@@ -110,19 +114,19 @@ export default function Usuarios() {
   };
 
   const handleAbrirEdicion = (user: any) => {
-    // Mapeo del rol de la BD al valor del select
     let selectRole = user.rol;
     if(user.rol === 'administrador') selectRole = 'Admin';
     if(user.rol === 'coordinador') selectRole = 'Coordinador';
     if(user.rol === 'docente') selectRole = 'Instructor';
     if(user.rol === 'estudiante') selectRole = 'Estudiante';
+    if(user.rol === 'supervisor') selectRole = 'Supervisor';
 
     setFormData({
       nombre: user.nombre,
       apellido: user.apellido,
       expediente: user.expediente || '',
       correo: user.correo,
-      password: '', // Se deja vacío para no cambiarla a menos que el admin escriba algo
+      password: '',
       rol: selectRole,
       estado: user.estado || 'activo'
     });
@@ -154,7 +158,6 @@ export default function Usuarios() {
 
   return (
     <div className="usuarios-container">
-      {/* Tarjetas Superiores */}
       <div className="top-cards-wrapper">
         <div className="metric-card">
           <div className="card-icon-container">
@@ -181,7 +184,6 @@ export default function Usuarios() {
         </button>
       </div>
 
-      {/* Filtros y Búsqueda */}
       <div className="filters-section">
         <div className="tabs-container">
           {['Todos', 'Administradores', 'coordinador'].map(tab => (
@@ -201,7 +203,6 @@ export default function Usuarios() {
         </div>
       </div>
 
-      {/* Acciones en lote */}
       <div className="bulk-actions-bar">
         <button className="bulk-btn" onClick={() => {
           if (selectedUsers.length === 0) return;
@@ -209,7 +210,7 @@ export default function Usuarios() {
             title: 'Eliminar Usuarios',
             message: `¿Estás seguro de eliminar ${selectedUsers.length} usuarios de forma permanente?`,
             action: async () => {
-              const deletePromises = selectedUsers.map(id => usuariosService.eliminarUsuario(id));
+              const deletePromises = selectedUsers.map(id => usuariosService.eliminarUsuario(id, String(user?.id || 1)));
               await Promise.all(deletePromises);
               customToast.success("Usuarios eliminados correctamente");
               cargarUsuarios();
@@ -260,24 +261,30 @@ export default function Usuarios() {
                 <UserCheck size={16} className="role-option-icon" />
                 <span className="role-option-text">Estudiante</span>
               </div>
+              <div 
+                className={`role-option ${selectedNewRole === 'Supervisor' ? 'selected' : ''}`}
+                onClick={() => setSelectedNewRole('Supervisor')}
+              >
+                <Shield size={16} className="role-option-icon" />
+                <span className="role-option-text">Supervisor</span>
+              </div>
             </div>
             <div className="role-popover-actions">
               <button 
                 className="role-btn-confirm"
                 onClick={async () => {
                   if (selectedNewRole && selectedUsers.length > 0) {
-                    // Mapear el rol seleccionado al valor de BD
                     let dbRole = 'estudiante';
                     if(selectedNewRole === 'Administrador') dbRole = 'administrador';
                     if(selectedNewRole === 'Coordinador') dbRole = 'coordinador';
                     if(selectedNewRole === 'Instructor') dbRole = 'docente';
                     if(selectedNewRole === 'Estudiante') dbRole = 'estudiante';
+                    if(selectedNewRole === 'Supervisor') dbRole = 'supervisor';
 
-                    // Actualizar cada usuario seleccionado
                     const updatePromises = selectedUsers.map(id => {
-                      const user = users.find(u => u.id === id);
-                      if (user) {
-                        return usuariosService.actualizarUsuario(id, { ...user, rol: dbRole });
+                      const userObj = users.find(u => u.id === id);
+                      if (userObj) {
+                        return usuariosService.actualizarUsuario(id, { ...userObj, rol: dbRole }, String(user?.id || 1));
                       }
                       return Promise.resolve();
                     });
@@ -309,7 +316,6 @@ export default function Usuarios() {
         )}
       </div>
 
-      {/* Tabla */}
       <div className="table-container">
         <table className="users-table">
           <thead>
@@ -347,7 +353,7 @@ export default function Usuarios() {
                 <td data-label="Nombre">
                   <div className="name-cell">
                     <div className="avatar-circle">
-                      {/* Avatar placeholder */}
+                      {`${(user.nombre || '').charAt(0).toUpperCase()}${(user.apellido || '').charAt(0).toUpperCase()}`}
                     </div>
                     <span className="name-text">{user.nombre} {user.apellido}</span>
                   </div>
@@ -359,14 +365,16 @@ export default function Usuarios() {
                 </td>
                 <td data-label="Ultimo Acceso">{user.fecha_creacion ? new Date(user.fecha_creacion).toLocaleDateString() : 'N/A'}</td>
                 <td data-label="Acciones">
+                  {!readOnly && (
                   <div className="actions-cell">
                     <button className="action-icon-btn edit" onClick={() => handleAbrirEdicion(user)}>
-                      <Edit3 size={16} />
+                      <Edit2 size={16} />
                     </button>
                     <button className="action-icon-btn delete" onClick={() => handleEliminar(user.id)}>
                       <Trash2 size={16} />
                     </button>
                   </div>
+                  )}
                 </td>
               </tr>
               ))
@@ -390,27 +398,36 @@ export default function Usuarios() {
             
             <div className="form-group">
               <label className="form-label">NOMBRES</label>
-              <input type="text" className="form-input" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} />
+              <input type="text" className="form-input" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} placeholder="Ej. Juan Carlos" />
             </div>
 
             <div className="form-group">
               <label className="form-label">APELLIDOS</label>
-              <input type="text" className="form-input" value={formData.apellido} onChange={e => setFormData({...formData, apellido: e.target.value})} />
+              <input type="text" className="form-input" value={formData.apellido} onChange={e => setFormData({...formData, apellido: e.target.value})} placeholder="Ej. Pérez Gómez" />
             </div>
 
             <div className="form-group">
               <label className="form-label">EXPEDIENTE</label>
-              <input type="text" className="form-input" value={formData.expediente} onChange={e => setFormData({...formData, expediente: e.target.value})} />
+              <input 
+                type="text" 
+                className="form-input" 
+                value={formData.expediente} 
+                onChange={e => {
+                  const onlyNums = e.target.value.replace(/[^0-9]/g, '');
+                  setFormData({...formData, expediente: onlyNums});
+                }}
+                placeholder="Ej. 123456" 
+              />
             </div>
             
             <div className="form-group">
               <label className="form-label">CORREO ELECTRONICO</label>
-              <input type="email" className="form-input" value={formData.correo} onChange={e => setFormData({...formData, correo: e.target.value})} />
+              <input type="email" className="form-input" value={formData.correo} onChange={e => setFormData({...formData, correo: e.target.value})} placeholder="Ej. usuario@ejemplo.com" />
             </div>
             
             <div className="form-group">
               <label className="form-label">CONTRASEÑA</label>
-              <input type="password" className="form-input" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+              <input type="password" className="form-input" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} placeholder="Mínimo 8 caracteres" />
             </div>
             
             <div className="form-row">
@@ -430,6 +447,7 @@ export default function Usuarios() {
                   <option value="Coordinador">Coordinador</option>
                   <option value="Instructor">Instructor</option>
                   <option value="Estudiante">Estudiante</option>
+                  <option value="Supervisor">Supervisor</option>
                 </select>
               </div>
             </div>

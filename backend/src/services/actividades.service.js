@@ -560,25 +560,29 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista) => 
                 const duracionMilisegundos = fechaFinOriginal.getTime() - fechaInicioOriginal.getTime();
 
                 // Inicializamos la regla matemática con el string de la BD
-                const regla = rrulestr(fila.recurrencia, {
-                    dtstart: fechaInicioOriginal
-                });
+                try {
+                    const regla = rrulestr(fila.recurrencia, {
+                        dtstart: fechaInicioOriginal
+                    });
 
-                // Extraemos todas las fechas clonadas que caen en la vista actual (ej: todos los miércoles del mes)
-                const fechasClonadas = regla.between(startVista, endVista, true);
+                    // Extraemos todas las fechas clonadas que caen en la vista actual (ej: todos los miércoles del mes)
+                    const fechasClonadas = regla.between(startVista, endVista, true);
 
-                for (const fechaClon of fechasClonadas) {
-                    // Clonamos el objeto de la fila con TODO su contenido (estaciones, equipos, nombres)
-                    const eventoClonado = { ...fila };
+                    for (const fechaClon of fechasClonadas) {
+                        // Clonamos el objeto de la fila con TODO su contenido (estaciones, equipos, nombres)
+                        const eventoClonado = { ...fila };
 
-                    // Modificamos únicamente las propiedades de tiempo para esta instancia específica
-                    eventoClonado.start = fechaClon;
-                    eventoClonado.end = new Date(fechaClon.getTime() + duracionMilisegundos);
+                        // Modificamos únicamente las propiedades de tiempo para esta instancia específica
+                        eventoClonado.start = fechaClon;
+                        eventoClonado.end = new Date(fechaClon.getTime() + duracionMilisegundos);
 
-                    // Llave única compuesta para evitar duplicidad de keys en React Big Calendar
-                    eventoClonado.id_instancia = `${fila.id}-${fechaClon.getTime()}`;
+                        // Llave única compuesta para evitar duplicidad de keys en React Big Calendar
+                        eventoClonado.id_instancia = `${fila.id}-${fechaClon.getTime()}`;
 
-                    eventosListosParaReact.push(eventoClonado);
+                        eventosListosParaReact.push(eventoClonado);
+                    }
+                } catch (rruleError) {
+                    console.warn(`[Advertencia] Error al procesar regla de recurrencia para la actividad ID ${fila.id}. Regla: ${fila.recurrencia}`, rruleError.message);
                 }
             }
         }

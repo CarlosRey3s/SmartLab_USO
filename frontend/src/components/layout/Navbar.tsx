@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Menu, Bell, Search, LogOut } from 'lucide-react';
+import { Menu, Bell, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/Navbar.css';
 
@@ -10,7 +10,7 @@ interface NavbarProps {
 
 export const Navbar = ({ onToggleMenu }: NavbarProps) => {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
 
   const fullName = user
@@ -44,9 +44,7 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('uso_user');
-    localStorage.removeItem('uso_token');
-    window.location.href = '/login';
+    logout();
   };
 
   return (
@@ -69,25 +67,6 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
 
       </div>
 
-      {/* ========= CENTRO ========= */}
-      <div className="navbar-center">
-
-        <div className="search-container">
-
-          <Search
-            size={16}
-            className="search-icon"
-          />
-
-          <input
-            type="text"
-            className="search-input-navbar"
-            placeholder="Buscar en todo el sistema..."
-          />
-
-        </div>
-
-      </div>
 
       {/* ========= DERECHA ========= */}
       <div className="navbar-right">
@@ -106,6 +85,7 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
             {initials}
           </div>
 
+
           {showDropdown && (
 
             <div className="navbar-dropdown">
@@ -123,6 +103,7 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
           )}
 
         </div>
+
 
         <button
           className="icon-button notification-button"

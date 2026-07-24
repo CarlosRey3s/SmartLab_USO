@@ -13,12 +13,14 @@ const authRoutes = require('./routes/auth.routes');
 const usuarioRoutes = require('./routes/usuario.routes');
 const inventarioRoutes = require('./routes/inventario.routes');
 const calendarioRoutes = require('./routes/calendario.routes');
+const dashboardRoutes = require('./routes/dashboard.routes');
 
 // Montar rutas
 app.use('/api/auth', authRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/inventario', inventarioRoutes);
 app.use('/api/calendario', calendarioRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {
@@ -33,6 +35,10 @@ app.get('/api/health', async (req, res) => {
     res.status(500).json({ status: 'error', message: 'Error conectando a la base de datos' });
   }
 });
+
+
+console.log("APP DASHBOARD ACTIVA");
+
 
 app.listen(port, async () => {
   console.log(`🚀 Servidor backend corriendo en http://localhost:${port}`);

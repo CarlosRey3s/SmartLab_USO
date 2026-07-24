@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-
+import { useMsal } from "@azure/msal-react";
 interface User {
   id: string;
   nombres: string;
   apellidos: string;
-  rol: 'administrador' | 'estudiante' | 'docente' | 'coordinador';
+  rol: 'administrador' | 'estudiante' | 'docente' | 'coordinador' | 'supervisor';
   correo: string;
 }
 
@@ -35,6 +35,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   }, []);
 
+  const { instance, accounts } = useMsal();
+
   const login = (userData: User, newToken: string) => {
     setUser(userData);
     setToken(newToken);
@@ -47,6 +49,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(null);
     localStorage.removeItem('uso_user');
     localStorage.removeItem('uso_token');
+
+    // Si el usuario tenía sesión con Microsoft, también la cerramos
+    if (accounts && accounts.length > 0) {
+      instance.logoutRedirect({
+        postLogoutRedirectUri: window.location.origin + "/login"
+      });
+    } else {
+      window.location.href = '/login';
+    }
   };
 
   if (loading) {

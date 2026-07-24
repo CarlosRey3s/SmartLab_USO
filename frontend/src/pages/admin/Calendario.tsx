@@ -13,6 +13,7 @@ import { obtenerActividades, crearActividad, actualizarActividad, eliminarActivi
 import '../../css/calendario.css';
 import { customToast } from '../../components/custom-toast/CustomToast.tsx';
 import { useAuth } from '../../context/AuthContext';
+import { isReadOnlyView } from '../../utils/roleGuard';
 
 import { format, parse, startOfWeek, getDay, isToday, startOfMonth, endOfMonth } from 'date-fns';
 
@@ -531,9 +532,11 @@ export const CalendarioView = () => {
         </div>
 
         <div className="calendar-sidebar-right">
-          <button className="btn-crear" onClick={() => setModalAbierto(true)}>
-            <Plus size={20} /> Crear
-          </button>
+          {(!user || !isReadOnlyView(user.rol as any)) && (
+            <button className="btn-crear" onClick={() => setModalAbierto(true)}>
+              <Plus size={20} /> Crear
+            </button>
+          )}
 
           {esAutoridad && <PanelSolicitudes />}
 

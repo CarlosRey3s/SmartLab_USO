@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Check, X, Clock, MapPin, Monitor, Wrench, User, ChevronDown, ChevronUp } from 'lucide-react';
 import type { SolicitudPendiente } from '../../types/solicitudes.types';
 import { obtenerTodasSolicitudes, resolverSolicitud } from '../../services/solicitudes.services';
+import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
+import { customToast } from '../../components/custom-toast/CustomToast';
 import '../../css/solicitudes.css';
+import { useAuth } from '../../context/AuthContext';
+import { isReadOnlyView } from '../../utils/roleGuard';
 
 type TabType = 'pendiente' | 'aprobada' | 'rechazada';
 
@@ -11,6 +15,10 @@ const PanelSolicitudes: React.FC = () => {
   const [cargando, setCargando] = useState<boolean>(true);
   const [tabActiva, setTabActiva] = useState<TabType>('pendiente');
   const [detalleAbierto, setDetalleAbierto] = useState<number | null>(null);
+
+  // Estados para el ConfirmModal
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmData, setConfirmData] = useState<{ id: number; accion: 'aprobar' | 'rechazar' } | null>(null);
 
   // Cargar TODAS las solicitudes (pendientes, aprobadas, rechazadas)
   const cargarSolicitudes = async () => {
@@ -30,18 +38,26 @@ const PanelSolicitudes: React.FC = () => {
   }, []);
 
   // Motor de decisión: Botones Aprobar y Rechazar
-  const handleResolver = async (actividadId: number, accion: 'aprobar' | 'rechazar') => {
-    const confirmacion = window.confirm(`¿Estás seguro de que deseas ${accion} esta solicitud?`);
-    if (!confirmacion) return;
+  const solicitarResolucion = (actividadId: number, accion: 'aprobar' | 'rechazar') => {
+    setConfirmData({ id: actividadId, accion });
+    setIsConfirmOpen(true);
+  };
+
+  const procesarResolucion = async () => {
+    if (!confirmData) return;
+    const { id, accion } = confirmData;
 
     try {
-      await resolverSolicitud(actividadId, accion);
-      alert(`✅ Solicitud ${accion === 'aprobar' ? 'aprobada' : 'rechazada'} exitosamente.`);
+      await resolverSolicitud(id, accion);
+      customToast.success(`Solicitud ${accion === 'aprobar' ? 'aprobada' : 'rechazada'} exitosamente.`);
       cargarSolicitudes();
     } catch (error: any) {
       console.error(`Error al ${accion} la solicitud:`, error);
       const mensajeError = error.response?.data?.message || `Ocurrió un error interno al ${accion} la solicitud.`;
-      alert(`⚠️ Error: ${mensajeError}`);
+      customToast.error(`Error: ${mensajeError}`);
+    } finally {
+      setIsConfirmOpen(false);
+      setConfirmData(null);
     }
   };
 
@@ -215,13 +231,13 @@ const PanelSolicitudes: React.FC = () => {
                     <div className="tarjeta-acciones">
                       <button
                         className="btn-aprobar"
-                        onClick={() => handleResolver(solicitud.actividad_id, 'aprobar')}
+                        onClick={() => solicitarResolucion(solicitud.actividad_id, 'aprobar')}
                       >
                         <Check size={15} /> Aprobar
                       </button>
                       <button
                         className="btn-rechazar"
-                        onClick={() => handleResolver(solicitud.actividad_id, 'rechazar')}
+                        onClick={() => solicitarResolucion(solicitud.actividad_id, 'rechazar')}
                       >
                         <X size={15} /> Rechazar
                       </button>
@@ -245,6 +261,21 @@ const PanelSolicitudes: React.FC = () => {
           })}
         </div>
       )}
+
+      {/* ── Modal de Confirmación ── */}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        title={confirmData?.accion === 'aprobar' ? 'Aprobar Solicitud' : 'Rechazar Solicitud'}
+        message={`¿Estás seguro de que deseas ${confirmData?.accion} esta solicitud?`}
+        confirmText={confirmData?.accion === 'aprobar' ? 'Aprobar' : 'Rechazar'}
+        cancelText="Cancelar"
+        type={confirmData?.accion === 'aprobar' ? 'info' : 'danger'}
+        onConfirm={procesarResolucion}
+        onCancel={() => {
+          setIsConfirmOpen(false);
+          setConfirmData(null);
+        }}
+      />
     </div>
   );
 };
