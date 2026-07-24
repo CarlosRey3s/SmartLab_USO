@@ -171,3 +171,11 @@ CREATE TABLE buzon_sugerencias (
 CREATE INDEX idx_actividades_fechas ON actividades (fecha_hora_inicio, fecha_hora_fin);
 CREATE INDEX idx_actividades_lab ON actividades (laboratorio_id);
 CREATE INDEX idx_sugerencias_estado ON buzon_sugerencias (estado_gestion);
+
+-- PASO 1: Agregar el estado 'rechazada' a tu catálogo de estados
+ALTER TYPE estado_reserva_enum ADD VALUE 'rechazada';
+
+-- PASO 2: Agregar los campos de trazabilidad a la tabla hija
+ALTER TABLE reservas_estudiantes
+ADD COLUMN resuelto_por INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+ADD COLUMN fecha_resolucion TIMESTAMP WITH TIME ZONE DEFAULT NULL;
