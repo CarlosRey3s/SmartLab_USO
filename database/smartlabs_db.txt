@@ -97,6 +97,7 @@ CREATE TABLE reservas_estudiantes (
 );
 -- [TABLA HIJA 3]: mantenimientos
 CREATE TABLE mantenimientos (
+    tecnico_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
     actividad_id INTEGER PRIMARY KEY REFERENCES actividades(id) ON DELETE CASCADE,
     descripcion_ti TEXT NOT NULL
 );

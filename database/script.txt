@@ -1,7 +1,7 @@
 -- ===========================================================================
--- SEED DATA: PLATAFORMA SMARTLABS (USO)
+-- SEED DATA: PLATAFORMA SMARTLABS (USO) — v2
+-- Cambio respecto a v1: mantenimientos.tecnico_id (FK -> usuarios)
 -- Orden respeta dependencias de FK. Ejecutar completo en una sola transacción.
--- Contraseñas en texto plano SOLO para desarrollo; reemplazar con hashes reales.
 -- ===========================================================================
 
 BEGIN;
@@ -11,57 +11,61 @@ BEGIN;
 -- ===========================================================================
 INSERT INTO usuarios (nombre, apellido, expediente, correo, password_hash, rol, estado) VALUES
 -- Administrador
-('Roberto',  'Fuentes',   'ADM-001', 'r.fuentes@uso.edu.sv',   '$2b$10$adminHashPlaceholder001', 'administrador', 'activo'),
--- Supervisores
-('Laura',    'Mendoza',   'SUP-001', 'l.mendoza@uso.edu.sv',   '$2b$10$supervisorHash001',       'supervisor',    'activo'),
-('Carlos',   'Henríquez', 'SUP-002', 'c.henriquez@uso.edu.sv', '$2b$10$supervisorHash002',       'supervisor',    'activo'),
+('Roberto',  'Fuentes',    'ADM-001',      'r.fuentes@uso.edu.sv',            '$2b$10$hashAdmin001',   'administrador', 'activo'),
+-- Supervisores (gestionan mantenimientos)
+('Laura',    'Mendoza',    'SUP-001',      'l.mendoza@uso.edu.sv',            '$2b$10$hashSup001',     'supervisor',    'activo'),
+('Carlos',   'Henríquez',  'SUP-002',      'c.henriquez@uso.edu.sv',          '$2b$10$hashSup002',     'supervisor',    'activo'),
 -- Coordinadores
-('María',    'González',  'COO-001', 'm.gonzalez@uso.edu.sv',  '$2b$10$coordHash001',            'coordinador',   'activo'),
-('Jorge',    'Vásquez',   'COO-002', 'j.vasquez@uso.edu.sv',   '$2b$10$coordHash002',            'coordinador',   'activo'),
+('María',    'González',   'COO-001',      'm.gonzalez@uso.edu.sv',           '$2b$10$hashCoo001',     'coordinador',   'activo'),
+('Jorge',    'Vásquez',    'COO-002',      'j.vasquez@uso.edu.sv',            '$2b$10$hashCoo002',     'coordinador',   'activo'),
 -- Docentes
-('Ana',      'Rivas',     'DOC-001', 'a.rivas@uso.edu.sv',     '$2b$10$docenteHash001',          'docente',       'activo'),
-('Luis',     'Martínez',  'DOC-002', 'l.martinez@uso.edu.sv',  '$2b$10$docenteHash002',          'docente',       'activo'),
-('Sandra',   'Pereira',   'DOC-003', 's.pereira@uso.edu.sv',   '$2b$10$docenteHash003',          'docente',       'activo'),
+('Ana',      'Rivas',      'DOC-001',      'a.rivas@uso.edu.sv',              '$2b$10$hashDoc001',     'docente',       'activo'),
+('Luis',     'Martínez',   'DOC-002',      'l.martinez@uso.edu.sv',           '$2b$10$hashDoc002',     'docente',       'activo'),
+('Sandra',   'Pereira',    'DOC-003',      's.pereira@uso.edu.sv',            '$2b$10$hashDoc003',     'docente',       'activo'),
 -- Estudiantes
-('Kevin',    'López',     'EST-2021-001', 'k.lopez@estudiantes.uso.edu.sv',    '$2b$10$estudHash001', 'estudiante', 'activo'),
-('Valeria',  'Cruz',      'EST-2021-002', 'v.cruz@estudiantes.uso.edu.sv',     '$2b$10$estudHash002', 'estudiante', 'activo'),
-('Diego',    'Morales',   'EST-2022-003', 'd.morales@estudiantes.uso.edu.sv',  '$2b$10$estudHash003', 'estudiante', 'activo'),
-('Sofía',    'Herrera',   'EST-2022-004', 's.herrera@estudiantes.uso.edu.sv',  '$2b$10$estudHash004', 'estudiante', 'activo'),
-('Andrés',   'Amaya',     'EST-2023-005', 'a.amaya@estudiantes.uso.edu.sv',    '$2b$10$estudHash005', 'estudiante', 'activo'),
-('Fernanda', 'Portillo',  'EST-2023-006', 'f.portillo@estudiantes.uso.edu.sv', '$2b$10$estudHash006', 'estudiante', 'inactivo');
+('Kevin',    'López',      'EST-2021-001', 'k.lopez@estudiantes.uso.edu.sv',  '$2b$10$hashEst001',     'estudiante',    'activo'),
+('Valeria',  'Cruz',       'EST-2021-002', 'v.cruz@estudiantes.uso.edu.sv',   '$2b$10$hashEst002',     'estudiante',    'activo'),
+('Diego',    'Morales',    'EST-2022-003', 'd.morales@estudiantes.uso.edu.sv', '$2b$10$hashEst003',    'estudiante',    'activo'),
+('Sofía',    'Herrera',    'EST-2022-004', 's.herrera@estudiantes.uso.edu.sv', '$2b$10$hashEst004',    'estudiante',    'activo'),
+('Andrés',   'Amaya',      'EST-2023-005', 'a.amaya@estudiantes.uso.edu.sv',  '$2b$10$hashEst005',     'estudiante',    'activo'),
+('Fernanda', 'Portillo',   'EST-2023-006', 'f.portillo@estudiantes.uso.edu.sv','$2b$10$hashEst006',    'estudiante',    'inactivo');
+
+-- IDs de referencia:
+--   Administrador : 1
+--   Supervisores  : 2 (Laura), 3 (Carlos)  ← usados como tecnico_id en mantenimientos
+--   Coordinadores : 4 (María), 5 (Jorge)
+--   Docentes      : 6 (Ana), 7 (Luis), 8 (Sandra)
+--   Estudiantes   : 9–14
 
 -- ===========================================================================
 -- 2. LABORATORIOS
--- coordinador_id referencia a: María González (id=4), Jorge Vásquez (id=5)
 -- ===========================================================================
 INSERT INTO laboratorios (nombre, descripcion, edificio, piso, aula, capacidad_maxima, estado, modo_reserva, coordinador_id) VALUES
 ('Lab. Redes y Comunicaciones',
- 'Laboratorio equipado para prácticas de redes LAN/WAN, cableado estructurado y configuración de equipos Cisco.',
- 'Edificio de Ingeniería', 'Nivel 1', 'Aula 101', 20, 'disponible', 'por_estacion', 4),
+ 'Prácticas de redes LAN/WAN, cableado estructurado y configuración de equipos Cisco.',
+ 'Edificio de Ingeniería', 'Nivel 1', 'Aula 101', 20, 'disponible',      'por_estacion',    4),  -- id=1
 
 ('Lab. Desarrollo de Software',
  'Estaciones de alto rendimiento para programación, bases de datos y pruebas de software.',
- 'Edificio de Ingeniería', 'Nivel 2', 'Aula 205', 30, 'disponible', 'por_estacion', 4),
+ 'Edificio de Ingeniería', 'Nivel 2', 'Aula 205', 30, 'disponible',      'por_estacion',    4),  -- id=2
 
 ('Lab. Química General',
- 'Laboratorio de química con campana de extracción, área de pesaje y almacén de reactivos.',
- 'Edificio de Ciencias', 'Planta Baja', 'Aula 003', 24, 'disponible', 'espacio_completo', 5),
+ 'Campana de extracción, área de pesaje y almacén de reactivos.',
+ 'Edificio de Ciencias',   'Planta Baja', 'Aula 003', 24, 'disponible',  'espacio_completo',5),  -- id=3
 
 ('Lab. Electrónica',
- 'Equipado con osciloscopios, fuentes de alimentación, multímetros y kits de Arduino/Raspberry Pi.',
- 'Edificio de Ingeniería', 'Nivel 1', 'Aula 110', 16, 'en_mantenimiento', 'por_estacion', 5),
+ 'Osciloscopios, fuentes de alimentación, multímetros y kits Arduino/Raspberry Pi.',
+ 'Edificio de Ingeniería', 'Nivel 1', 'Aula 110', 16, 'en_mantenimiento','por_estacion',    5),  -- id=4
 
 ('Aula de Cómputo General',
- 'Espacio multipropósito para prácticas de ofimática, diseño básico y acceso a internet.',
- 'Edificio Central', 'Nivel 3', 'Aula 312', 40, 'disponible', 'espacio_completo', 4);
+ 'Espacio multipropósito para ofimática, diseño básico y acceso a internet.',
+ 'Edificio Central',       'Nivel 3', 'Aula 312', 40, 'disponible',      'espacio_completo',4);  -- id=5
 
 -- ===========================================================================
--- 3. ESTACIONES DE TRABAJO
--- Sólo para labs con modo_reserva = 'por_estacion'
--- Lab Redes (id=1): 5 estaciones | Lab Software (id=2): 8 estaciones | Lab Electrónica (id=4): 4 estaciones
+-- 3. ESTACIONES DE TRABAJO  (solo labs con modo_reserva = 'por_estacion')
 -- ===========================================================================
 
--- Lab. Redes y Comunicaciones
+-- Lab. Redes (id=1) — 5 estaciones   → ids 1-5
 INSERT INTO estaciones_trabajo (laboratorio_id, nombre, capacidad, estado) VALUES
 (1, 'Estación A1', 2, 'disponible'),
 (1, 'Estación A2', 2, 'disponible'),
@@ -69,7 +73,7 @@ INSERT INTO estaciones_trabajo (laboratorio_id, nombre, capacidad, estado) VALUE
 (1, 'Estación A4', 2, 'no_disponible'),
 (1, 'Estación A5', 2, 'disponible');
 
--- Lab. Desarrollo de Software
+-- Lab. Desarrollo de Software (id=2) — 8 estaciones   → ids 6-13
 INSERT INTO estaciones_trabajo (laboratorio_id, nombre, capacidad, estado) VALUES
 (2, 'PC-01', 1, 'disponible'),
 (2, 'PC-02', 1, 'disponible'),
@@ -80,7 +84,7 @@ INSERT INTO estaciones_trabajo (laboratorio_id, nombre, capacidad, estado) VALUE
 (2, 'PC-07', 1, 'disponible'),
 (2, 'PC-08', 1, 'no_disponible');
 
--- Lab. Electrónica
+-- Lab. Electrónica (id=4) — 4 mesas   → ids 14-17
 INSERT INTO estaciones_trabajo (laboratorio_id, nombre, capacidad, estado) VALUES
 (4, 'Mesa E1', 4, 'no_disponible'),
 (4, 'Mesa E2', 4, 'no_disponible'),
@@ -91,178 +95,210 @@ INSERT INTO estaciones_trabajo (laboratorio_id, nombre, capacidad, estado) VALUE
 -- 4. ACTIVIDADES + TABLAS HIJAS
 -- ===========================================================================
 
--- ─── 4.1 CLASES ACADÉMICAS ───────────────────────────────────────────────────
--- Docentes: Ana Rivas (id=6), Luis Martínez (id=7), Sandra Pereira (id=8)
+-- ─── 4.1  CLASES ACADÉMICAS ──────────────────────────────────────────────────
 
--- Actividad 1: Clase de Redes (Lab 1, recurrente lunes/miércoles)
+-- Actividad id=1 : Redes I  (Lab 1, lunes y miércoles)
 INSERT INTO actividades (laboratorio_id, tipo, fecha_hora_inicio, fecha_hora_fin, recurrencia) VALUES
 (1, 'clase', '2026-07-27 07:00:00-06', '2026-07-27 09:00:00-06', 'RRULE:FREQ=WEEKLY;BYDAY=MO,WE');
 INSERT INTO clases_academicas (actividad_id, materia, docente_id, num_estudiantes) VALUES
 (1, 'Redes de Computadoras I', 6, 18);
 
--- Actividad 2: Clase de Programación (Lab 2, martes/jueves)
+-- Actividad id=2 : POO  (Lab 2, martes y jueves)
 INSERT INTO actividades (laboratorio_id, tipo, fecha_hora_inicio, fecha_hora_fin, recurrencia) VALUES
 (2, 'clase', '2026-07-28 10:00:00-06', '2026-07-28 12:00:00-06', 'RRULE:FREQ=WEEKLY;BYDAY=TU,TH');
 INSERT INTO clases_academicas (actividad_id, materia, docente_id, num_estudiantes) VALUES
 (2, 'Programación Orientada a Objetos', 7, 25);
 
--- Actividad 3: Clase de Química (Lab 3, viernes - espacio completo)
+-- Actividad id=3 : Química Orgánica  (Lab 3, viernes)
 INSERT INTO actividades (laboratorio_id, tipo, fecha_hora_inicio, fecha_hora_fin, recurrencia) VALUES
 (3, 'clase', '2026-07-31 08:00:00-06', '2026-07-31 11:00:00-06', 'RRULE:FREQ=WEEKLY;BYDAY=FR');
 INSERT INTO clases_academicas (actividad_id, materia, docente_id, num_estudiantes) VALUES
 (3, 'Química Orgánica I', 8, 22);
 
--- ─── 4.2 RESERVAS DE ESTUDIANTES ─────────────────────────────────────────────
--- Estados variados para mostrar el flujo completo del módulo
+-- ─── 4.2  RESERVAS DE ESTUDIANTES ────────────────────────────────────────────
 
--- Actividad 4: Reserva APROBADA — Kevin López reserva PC-01 y PC-02 en Lab Software
+-- Actividad id=4 : APROBADA — Kevin López, PC-01 + PC-02, Lab Software
 INSERT INTO actividades (laboratorio_id, tipo, fecha_hora_inicio, fecha_hora_fin) VALUES
 (2, 'reserva', '2026-07-29 14:00:00-06', '2026-07-29 16:00:00-06');
-INSERT INTO reservas_estudiantes (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva, resuelto_por, fecha_resolucion) VALUES
-(4, 9, 'Proyecto Final: API REST', 'Necesitamos instalar Node.js y Postman.', 'aprobada', 4, '2026-07-25 09:00:00-06');
+INSERT INTO reservas_estudiantes
+    (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva, resuelto_por, fecha_resolucion)
+VALUES (4, 9, 'Proyecto Final: API REST',
+        'Necesitamos instalar Node.js y Postman.',
+        'aprobada', 4, '2026-07-25 09:00:00-06');
 INSERT INTO reserva_estaciones (actividad_id, estacion_id) VALUES (4, 6), (4, 7);
 
--- Actividad 5: Reserva PENDIENTE — Valeria Cruz reserva PC-03 en Lab Software
+-- Actividad id=5 : PENDIENTE — Valeria Cruz, PC-03, Lab Software
 INSERT INTO actividades (laboratorio_id, tipo, fecha_hora_inicio, fecha_hora_fin) VALUES
 (2, 'reserva', '2026-07-30 09:00:00-06', '2026-07-30 11:00:00-06');
-INSERT INTO reservas_estudiantes (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva) VALUES
-(5, 10, 'Práctica de Base de Datos', 'Ejercicios de SQL con PostgreSQL.', 'pendiente');
+INSERT INTO reservas_estudiantes
+    (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva)
+VALUES (5, 10, 'Práctica de Base de Datos', 'Ejercicios de SQL con PostgreSQL.', 'pendiente');
 INSERT INTO reserva_estaciones (actividad_id, estacion_id) VALUES (5, 8);
 
--- Actividad 6: Reserva PENDIENTE — Diego Morales reserva Estación A1 y A2 en Lab Redes
+-- Actividad id=6 : PENDIENTE — Diego Morales, A1 + A2, Lab Redes
 INSERT INTO actividades (laboratorio_id, tipo, fecha_hora_inicio, fecha_hora_fin) VALUES
 (1, 'reserva', '2026-07-31 13:00:00-06', '2026-07-31 15:00:00-06');
-INSERT INTO reservas_estudiantes (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva) VALUES
-(6, 11, 'Configuración OSPF - Laboratorio', 'Práctica de enrutamiento dinámico.', 'pendiente');
+INSERT INTO reservas_estudiantes
+    (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva)
+VALUES (6, 11, 'Configuración OSPF', 'Práctica de enrutamiento dinámico.', 'pendiente');
 INSERT INTO reserva_estaciones (actividad_id, estacion_id) VALUES (6, 1), (6, 2);
 
--- Actividad 7: Reserva RECHAZADA — Sofía Herrera (Lab Redes, conflicto de horario)
+-- Actividad id=7 : RECHAZADA — Sofía Herrera, A3, Lab Redes (conflicto con clase)
 INSERT INTO actividades (laboratorio_id, tipo, fecha_hora_inicio, fecha_hora_fin) VALUES
 (1, 'reserva', '2026-07-27 07:30:00-06', '2026-07-27 09:30:00-06');
-INSERT INTO reservas_estudiantes (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva, resuelto_por, fecha_resolucion) VALUES
-(7, 12, 'Repaso Examen Redes', NULL, 'rechazada', 4, '2026-07-24 16:00:00-06');
+INSERT INTO reservas_estudiantes
+    (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva, resuelto_por, fecha_resolucion)
+VALUES (7, 12, 'Repaso Examen Redes', NULL,
+        'rechazada', 4, '2026-07-24 16:00:00-06');
 INSERT INTO reserva_estaciones (actividad_id, estacion_id) VALUES (7, 3);
 
--- Actividad 8: Reserva COMPLETADA — Andrés Amaya (Lab Software)
+-- Actividad id=8 : COMPLETADA — Andrés Amaya, PC-04 + PC-05, Lab Software
 INSERT INTO actividades (laboratorio_id, tipo, fecha_hora_inicio, fecha_hora_fin) VALUES
 (2, 'reserva', '2026-07-22 10:00:00-06', '2026-07-22 12:00:00-06');
-INSERT INTO reservas_estudiantes (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva, resuelto_por, fecha_resolucion) VALUES
-(8, 13, 'Desarrollo Aplicación Web', 'React + TypeScript, necesito npm disponible.', 'completada', 4, '2026-07-21 11:00:00-06');
+INSERT INTO reservas_estudiantes
+    (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva, resuelto_por, fecha_resolucion)
+VALUES (8, 13, 'Desarrollo Aplicación Web',
+        'React + TypeScript, necesito npm disponible.',
+        'completada', 4, '2026-07-21 11:00:00-06');
 INSERT INTO reserva_estaciones (actividad_id, estacion_id) VALUES (8, 9), (8, 10);
 
--- ─── 4.3 MANTENIMIENTOS ──────────────────────────────────────────────────────
+-- Actividad id=9 : CANCELADA — Fernanda Portillo (inactiva), PC-06, Lab Software
+INSERT INTO actividades (laboratorio_id, tipo, fecha_hora_inicio, fecha_hora_fin) VALUES
+(2, 'reserva', '2026-07-28 15:00:00-06', '2026-07-28 17:00:00-06');
+INSERT INTO reservas_estudiantes
+    (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva, resuelto_por, fecha_resolucion)
+VALUES (9, 14, 'Práctica Diseño UI', NULL,
+        'cancelada', 4, '2026-07-27 08:00:00-06');
+INSERT INTO reserva_estaciones (actividad_id, estacion_id) VALUES (9, 11);
 
--- Actividad 9: Mantenimiento Lab Electrónica (en_mantenimiento → justifica estado del lab)
+-- ─── 4.3  MANTENIMIENTOS  ────────────────────────────────────────────────────
+-- tecnico_id: Laura Mendoza (id=2) y Carlos Henríquez (id=3)
+
+-- Actividad id=10 : Mantenimiento correctivo Lab Electrónica (activo — justifica estado del lab)
 INSERT INTO actividades (laboratorio_id, tipo, fecha_hora_inicio, fecha_hora_fin) VALUES
 (4, 'mantenimiento', '2026-07-24 08:00:00-06', '2026-07-26 18:00:00-06');
-INSERT INTO mantenimientos (actividad_id, descripcion_ti) VALUES
-(9, 'Revisión y reemplazo de fuentes de alimentación defectuosas en mesas E1 y E2. Calibración de osciloscopios.');
+INSERT INTO mantenimientos (actividad_id, tecnico_id, descripcion_ti) VALUES
+(10, 2, 'Reemplazo de fuentes de alimentación defectuosas en mesas E1 y E2. Calibración de osciloscopios. Se suspende acceso al laboratorio hasta finalizar.');
 
--- Actividad 10: Mantenimiento preventivo Lab Redes (programado próxima semana)
+-- Actividad id=11 : Mantenimiento preventivo Lab Redes (programado próxima semana)
 INSERT INTO actividades (laboratorio_id, tipo, fecha_hora_inicio, fecha_hora_fin) VALUES
 (1, 'mantenimiento', '2026-08-01 08:00:00-06', '2026-08-01 12:00:00-06');
-INSERT INTO mantenimientos (actividad_id, descripcion_ti) VALUES
-(10, 'Mantenimiento preventivo anual: limpieza de equipos, actualización de firmware en switches y revisión del cableado del rack.');
+INSERT INTO mantenimientos (actividad_id, tecnico_id, descripcion_ti) VALUES
+(11, 3, 'Mantenimiento preventivo anual: limpieza de equipos, actualización de firmware en switches Cisco y revisión del cableado del rack principal.');
+
+-- Actividad id=12 : Mantenimiento completado Lab Software (histórico)
+INSERT INTO actividades (laboratorio_id, tipo, fecha_hora_inicio, fecha_hora_fin) VALUES
+(2, 'mantenimiento', '2026-07-10 07:00:00-06', '2026-07-10 13:00:00-06');
+INSERT INTO mantenimientos (actividad_id, tecnico_id, descripcion_ti) VALUES
+(12, 2, 'Reemplazo de teclados dañados en PC-03 y PC-07. Actualización de Java a versión 21 LTS en todas las estaciones. Revisión de UPS.');
 
 -- ===========================================================================
 -- 5. INVENTARIO
 -- ===========================================================================
+INSERT INTO item_inventario
+    (laboratorio_id, nombre, codigo_interno, numero_cas, categoria,
+     ubicacion_fisica, unidad_medida, tipo_control, cantidad_actual, stock_minimo)
+VALUES
+-- Lab. Redes (id=1)
+(1, 'Cable UTP Cat6 (caja 305 m)',      'RED-CAB-001', NULL,         'Cableado',       'Estante A - Bodega Redes',     'metros',   'normal',     450, 100),
+(1, 'Switch Cisco Catalyst 2960',       'RED-SWI-001', NULL,         'Equipo Activo',  'Rack Principal',               'unidades', 'controlado',   6,   2),
+(1, 'Patch Panel 24 puertos',           'RED-PAT-001', NULL,         'Cableado',       'Rack Principal',               'unidades', 'normal',        4,   1),
+(1, 'Conector RJ-45 (bolsa 100 u.)',    'RED-CON-001', NULL,         'Cableado',       'Estante A - Bodega Redes',     'bolsas',   'normal',        8,   2),
 
-INSERT INTO item_inventario (laboratorio_id, nombre, codigo_interno, numero_cas, categoria, ubicacion_fisica, unidad_medida, tipo_control, cantidad_actual, stock_minimo, imagen_url) VALUES
--- Lab Redes
-(1, 'Cable UTP Cat6 (caja 305m)', 'RED-CAB-001', NULL, 'Cableado', 'Estante A - Bodega Redes', 'metros', 'normal', 450, 100, NULL),
-(1, 'Switch Cisco Catalyst 2960',  'RED-SWI-001', NULL, 'Equipos Activos', 'Rack Principal', 'unidades', 'controlado', 6, 2, NULL),
-(1, 'Patch Panel 24 puertos',      'RED-PAT-001', NULL, 'Cableado', 'Rack Principal', 'unidades', 'normal', 4, 1, NULL),
+-- Lab. Desarrollo de Software (id=2)
+(2, 'Licencia Microsoft Office 365',    'SW-LIC-001',  NULL,         'Software',       'Digital - Servidor Licencias', 'licencias','controlado',  30,   5),
+(2, 'Memoria RAM DDR4 8 GB',            'SW-RAM-001',  NULL,         'Hardware',       'Cajón de Repuestos PC',        'unidades', 'controlado',  10,   3),
+(2, 'SSD 256 GB SATA',                  'SW-SSD-001',  NULL,         'Hardware',       'Cajón de Repuestos PC',        'unidades', 'controlado',   5,   2),
+(2, 'Teclado USB genérico',             'SW-TEC-001',  NULL,         'Periférico',     'Bodega Software',              'unidades', 'normal',       12,   4),
 
--- Lab Software
-(2, 'Licencia Microsoft Office 365 (anual)', 'SW-LIC-001', NULL, 'Software', 'Digital - Servidor Licencias', 'licencias', 'controlado', 30, 5, NULL),
-(2, 'Memoria RAM DDR4 8GB',                  'SW-RAM-001', NULL, 'Hardware', 'Cajón de Repuestos PC', 'unidades', 'controlado', 10, 3, NULL),
-(2, 'SSD 256GB SATA',                        'SW-SSD-001', NULL, 'Hardware', 'Cajón de Repuestos PC', 'unidades', 'controlado', 5, 2, NULL),
+-- Lab. Química General (id=3)
+(3, 'Ácido Clorhídrico (HCl) 37 %',    'QUI-REA-001', '7647-01-0', 'Reactivo',       'Vitrina Ácidos - Armario 1',   'litros',   'peligroso',    8,   2),
+(3, 'Hidróxido de Sodio (NaOH)',        'QUI-REA-002', '1310-73-2', 'Reactivo',       'Vitrina Bases - Armario 2',    'gramos',   'peligroso',  500, 100),
+(3, 'Vaso de precipitados 250 ml',      'QUI-MAT-001', NULL,         'Cristalería',    'Repisa Central',               'unidades', 'normal',       40,  10),
+(3, 'Pipeta volumétrica 10 ml',         'QUI-MAT-002', NULL,         'Cristalería',    'Repisa Central',               'unidades', 'normal',       20,   5),
 
--- Lab Química
-(3, 'Ácido Clorhídrico (HCl) 37%', 'QUI-REA-001', '7647-01-0', 'Reactivos', 'Vitrina Ácidos - Armario 1', 'litros',   'peligroso', 8,  2, NULL),
-(3, 'Hidróxido de Sodio (NaOH)',   'QUI-REA-002', '1310-73-2', 'Reactivos', 'Vitrina Bases - Armario 2',  'gramos',   'peligroso', 500, 100, NULL),
-(3, 'Vasos de precipitados 250ml', 'QUI-MAT-001', NULL,        'Cristalería','Repisa Central', 'unidades', 'normal', 40, 10, NULL),
-(3, 'Pipetas volumétricas 10ml',   'QUI-MAT-002', NULL,        'Cristalería','Repisa Central', 'unidades', 'normal', 20,  5, NULL),
+-- Lab. Electrónica (id=4)
+(4, 'Osciloscopio Digital 100 MHz',     'ELE-OSC-001', NULL,         'Instrumento',    'Mesas E1/E2',                  'unidades', 'controlado',   4,   1),
+(4, 'Kit Arduino Uno R3',               'ELE-KIT-001', NULL,         'Kit',            'Cajón Kits',                   'unidades', 'controlado',  12,   4),
+(4, 'Resistencias surtidas (500 u.)',   'ELE-RES-001', NULL,         'Componente',     'Cajón Componentes',            'unidades', 'normal',     1500, 200);
 
--- Lab Electrónica
-(4, 'Osciloscopio Digital 100MHz', 'ELE-OSC-001', NULL, 'Instrumentos', 'Mesa E1/E2', 'unidades', 'controlado', 4, 1, NULL),
-(4, 'Kit Arduino Uno R3',          'ELE-KIT-001', NULL, 'Kits',         'Cajón Kits',  'unidades', 'controlado', 12, 4, NULL),
-(4, 'Resistencias surtidas (500u)','ELE-RES-001', NULL, 'Componentes',  'Cajón Componentes', 'unidades', 'normal', 1500, 200, NULL);
+-- IDs item_inventario: 1-4 (Redes), 5-8 (Software), 9-12 (Química), 13-15 (Electrónica)
 
 -- ===========================================================================
 -- 6. MOVIMIENTOS DE INVENTARIO
--- usuario_id=2 (Supervisor Laura) registra movimientos
+-- usuario_id 2 = Laura (Supervisora), 3 = Carlos (Supervisor)
 -- ===========================================================================
 INSERT INTO movimiento_inventario (item_id, usuario_id, tipo_movimiento, cantidad, observaciones) VALUES
--- Ingresos iniciales (carga inicial de inventario)
-(1,  2, 'ingreso', 500, 'Carga inicial de inventario ciclo 01-2026'),
-(4,  2, 'ingreso', 30,  'Renovación de licencias anuales Office 365'),
-(7,  2, 'ingreso', 10,  'Compra de reactivos para ciclo académico 01-2026'),
-(8,  2, 'ingreso', 600, 'Compra NaOH para prácticas de titulación'),
-(12, 2, 'ingreso', 15,  'Donación de kits Arduino por empresa patrocinadora'),
+-- Ingresos iniciales
+(1,  2, 'ingreso', 500,  'Carga inicial inventario ciclo 01-2026'),
+(5,  2, 'ingreso',  30,  'Renovación anual licencias Office 365'),
+(9,  2, 'ingreso',  10,  'Compra reactivos ciclo 01-2026'),
+(10, 2, 'ingreso', 600,  'Compra NaOH para prácticas de titulación'),
+(14, 3, 'ingreso',  15,  'Donación kits Arduino por empresa patrocinadora'),
 
 -- Egresos por uso
-(1,  2, 'egreso', 50,  'Instalación red nueva sala A3'),
-(7,  2, 'egreso', 2,   'Práctica Q-301: Diluciones ácidas'),
-(8,  2, 'egreso', 100, 'Práctica Q-302: Titulación ácido-base'),
-(9,  2, 'egreso', 3,   'Rotura durante práctica Q-303'),
-(12, 2, 'egreso', 3,   'Préstamo temporal a Lab. Electrónica Norte'),
+(1,  2, 'egreso',   50,  'Instalación red nueva — sala A3'),
+(9,  2, 'egreso',    2,  'Práctica Q-301: Diluciones ácidas'),
+(10, 2, 'egreso',  100,  'Práctica Q-302: Titulación ácido-base'),
+(11, 2, 'egreso',    3,  'Rotura durante práctica Q-303'),
+(14, 3, 'egreso',    3,  'Préstamo temporal Lab. Electrónica Norte'),
 
--- Ajuste de inventario (auditoría)
-(5,  2, 'ajuste', 2,   'Ajuste por conteo físico: 2 unidades no registradas en sistema'),
-(11, 2, 'ajuste', 1,   'Dado de baja un osciloscopio por daño irreparable — actualización manual');
+-- Ajustes por auditoría / baja
+(6,  2, 'ajuste',    2,  'Ajuste conteo físico: 2 unidades no registradas'),
+(13, 3, 'ajuste',    1,  'Baja de osciloscopio por daño irreparable — actualización manual');
 
 -- ===========================================================================
--- 7. RESERVA DE ÍTEMS (asociada a actividades de tipo reserva)
+-- 7. RESERVA DE ÍTEMS  (asociada a actividades existentes)
 -- ===========================================================================
 INSERT INTO reserva_items (actividad_id, item_id, cantidad_solicitada) VALUES
--- Actividad 4 (Kevin, Lab Software): solicitó memoria RAM extra
-(4, 5, 2),
--- Actividad 6 (Diego, Lab Redes): solicitó cable UTP y patch panel
-(6, 1, 10),
-(6, 3, 1),
--- Actividad 8 (Andrés, completada): usó una licencia Office
-(8, 4, 1);
+(4,  6,  2),   -- Kevin (act. 4) solicitó 2 memorias RAM
+(6,  1, 10),   -- Diego (act. 6) solicitó 10 m de cable UTP
+(6,  3,  1),   -- Diego (act. 6) solicitó 1 patch panel
+(8,  5,  1);   -- Andrés (act. 8) solicitó 1 licencia Office
 
 -- ===========================================================================
--- 8. BUZÓN DE SUGERENCIAS
+-- 8. BUZÓN DE SUGERENCIAS  (todos los estados del enum)
 -- ===========================================================================
-INSERT INTO buzon_sugerencias (usuario_id, laboratorio_id, titulo, comentario, estado_gestion, respuesta_coordinador) VALUES
-(9,  1, 'Ventilación insuficiente',
- 'Las temperaturas dentro del lab de Redes son muy altas, especialmente en las tardes. Se recomienda revisar el sistema de aire acondicionado.',
- 'en_revisión', 'Gracias por el reporte. Ya hemos solicitado una revisión al departamento de mantenimiento de instalaciones. Esperamos tener solución para la próxima semana.'),
+INSERT INTO buzon_sugerencias
+    (usuario_id, laboratorio_id, titulo, comentario, estado_gestion, respuesta_coordinador)
+VALUES
+(9,  1, 'Ventilación insuficiente en Lab Redes',
+ 'Las temperaturas dentro del laboratorio son muy altas por las tardes. Se recomienda revisar el aire acondicionado.',
+ 'en_revisión',
+ 'Gracias por el reporte. Ya solicitamos revisión al departamento de mantenimiento de instalaciones.'),
 
 (10, 2, 'Software desactualizado en PC-05',
- 'El compilador de Java en la PC-05 está en una versión muy antigua (Java 8). Sería útil actualizar a Java 21 LTS.',
- 'atendida', 'Se actualizó Java a la versión 21 LTS en todas las estaciones del Lab de Software. Gracias por tu observación.'),
+ 'El compilador de Java en la PC-05 está en versión 8. Sería útil actualizar a Java 21 LTS.',
+ 'atendida',
+ 'Se actualizó Java 21 LTS en todas las estaciones del Lab de Software. ¡Gracias por tu observación!'),
 
-(11, 3, 'Falta señalización de seguridad',
- 'No hay carteles de seguridad visibles para el manejo de ácidos. Solicito se coloquen las fichas de seguridad (SDS) en los puntos de uso.',
+(11, 3, 'Falta señalización de seguridad química',
+ 'No hay carteles visibles para manejo de ácidos. Solicito colocar las fichas SDS en los puntos de uso.',
  'pendiente', NULL),
 
-(12, NULL, 'Horario de atención del sistema',
- 'Sería conveniente poder hacer reservas hasta las 8pm, ya que el sistema actualmente no muestra disponibilidad después de las 6pm.',
+(12, NULL, 'Ampliar horario de reservas en el sistema',
+ 'Sería conveniente poder hacer reservas hasta las 8 p.m.; actualmente el sistema no muestra disponibilidad después de las 6 p.m.',
  'pendiente', NULL),
 
 (13, 2, 'Teclados en mal estado',
  'Varios teclados del Lab de Software tienen teclas dañadas. Los PCs 03 y 07 son los más afectados.',
- 'archivada', 'Esta solicitud fue trasladada a TI. Los teclados serán reemplazados en el próximo ciclo de compras.');
+ 'archivada',
+ 'Solicitud trasladada a TI. Los teclados serán reemplazados en el próximo ciclo de compras.');
 
 COMMIT;
 
 -- ===========================================================================
--- VERIFICACIÓN RÁPIDA (ejecutar después del seed)
+-- VERIFICACIÓN RÁPIDA (descomentar y ejecutar por separado)
 -- ===========================================================================
--- SELECT 'usuarios'          AS tabla, COUNT(*) FROM usuarios;
--- SELECT 'laboratorios'      AS tabla, COUNT(*) FROM laboratorios;
--- SELECT 'estaciones_trabajo'AS tabla, COUNT(*) FROM estaciones_trabajo;
--- SELECT 'actividades'       AS tabla, COUNT(*) FROM actividades;
--- SELECT 'clases_academicas' AS tabla, COUNT(*) FROM clases_academicas;
--- SELECT 'reservas_estudiantes' AS tabla, COUNT(*) FROM reservas_estudiantes;
--- SELECT 'reserva_estaciones'AS tabla, COUNT(*) FROM reserva_estaciones;
--- SELECT 'mantenimientos'    AS tabla, COUNT(*) FROM mantenimientos;
--- SELECT 'item_inventario'   AS tabla, COUNT(*) FROM item_inventario;
--- SELECT 'movimiento_inventario' AS tabla, COUNT(*) FROM movimiento_inventario;
--- SELECT 'reserva_items'     AS tabla, COUNT(*) FROM reserva_items;
--- SELECT 'buzon_sugerencias' AS tabla, COUNT(*) FROM buzon_sugerencias;
+-- SELECT 'usuarios'             AS tabla, COUNT(*) AS total FROM usuarios
+-- UNION ALL SELECT 'laboratorios',             COUNT(*) FROM laboratorios
+-- UNION ALL SELECT 'estaciones_trabajo',        COUNT(*) FROM estaciones_trabajo
+-- UNION ALL SELECT 'actividades',               COUNT(*) FROM actividades
+-- UNION ALL SELECT 'clases_academicas',         COUNT(*) FROM clases_academicas
+-- UNION ALL SELECT 'reservas_estudiantes',      COUNT(*) FROM reservas_estudiantes
+-- UNION ALL SELECT 'reserva_estaciones',        COUNT(*) FROM reserva_estaciones
+-- UNION ALL SELECT 'mantenimientos',            COUNT(*) FROM mantenimientos
+-- UNION ALL SELECT 'item_inventario',           COUNT(*) FROM item_inventario
+-- UNION ALL SELECT 'movimiento_inventario',     COUNT(*) FROM movimiento_inventario
+-- UNION ALL SELECT 'reserva_items',             COUNT(*) FROM reserva_items
+-- UNION ALL SELECT 'buzon_sugerencias',         COUNT(*) FROM buzon_sugerencias;
