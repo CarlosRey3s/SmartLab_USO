@@ -14,12 +14,9 @@ const login = async (correo, password) => {
       rol: 'administrador',
       estado: 'activo'
     };
-    
+
   }
-  //borrar depues 
-  if (correo === 'estudiante@prueba.com' && password === 'estudiante123') {
-    return { id: 8888, rol: 'estudiante', estado: 'activo' }; // <-- Agrega este
-  }
+
   // ----------------------------------
 
   // 1. Buscar usuario por correo
@@ -87,14 +84,14 @@ const loginMicrosoft = async (accessToken) => {
 const registerMicrosoft = async (accessToken, expediente, rol) => {
   const profile = await getMicrosoftProfile(accessToken);
   const correo = profile.mail || profile.userPrincipalName;
-  
+
   if (!correo) {
     throw new Error('No se pudo obtener el correo del perfil de Microsoft');
   }
 
   const nombre = profile.givenName || (profile.displayName ? profile.displayName.split(' ')[0] : 'Usuario');
   const apellido = profile.surname || (profile.displayName ? profile.displayName.split(' ').slice(1).join(' ') : 'Microsoft');
-  
+
   // Regla de Negocio: Correos estrictamente administradores
   const adminEmails = [
     'pg21i04001@usonsonate.edu.sv',
@@ -103,7 +100,7 @@ const registerMicrosoft = async (accessToken, expediente, rol) => {
   ];
 
   const correoLower = correo.toLowerCase();
-  
+
   if (adminEmails.includes(correoLower)) {
     rol = 'administrador';
   } else if (rol === 'administrador') {
