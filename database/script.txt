@@ -15,7 +15,8 @@ INSERT INTO usuarios (nombre, apellido, expediente, correo, password_hash, rol, 
 ('José',   'Hernández','EXP-0004', 'jose.hernandez@uso.edu.sv', '$2b$10$hashest01',   'estudiante',    'activo'),
 ('Lucía',  'Flores',   'EXP-0005', 'lucia.flores@uso.edu.sv',   '$2b$10$hashest02',   'estudiante',    'activo'),
 ('Pedro',  'Gómez',    'EXP-0006', 'pedro.gomez@uso.edu.sv',    '$2b$10$hashest03',   'estudiante',    'activo'),
-('Sofía',  'Cruz',     'EXP-0007', 'sofia.cruz@uso.edu.sv',     '$2b$10$hashadm01',   'administrador', 'activo');
+('Sofía',  'Cruz',     'EXP-0007', 'sofia.cruz@uso.edu.sv',     '$2b$10$hashadm01',   'administrador', 'activo'),
+('Luis',   'Méndez',   'EXP-0008', 'luis.mendez@uso.edu.sv',    '$2b$10$hashsup01',   'supervisor',    'activo');
 
 -- ===========================================================================
 -- LABORATORIOS (5 filas)
@@ -74,12 +75,12 @@ INSERT INTO clases_academicas (actividad_id, materia, docente_id, num_estudiante
 -- ===========================================================================
 -- RESERVAS_ESTUDIANTES (5 filas -> actividad_id 6 a 10)
 -- ===========================================================================
-INSERT INTO reservas_estudiantes (actividad_id, usuario_id, estacion_id, titulo, nota_adicional, estado_reserva) VALUES
-(6,  4, 1, 'Práctica de laboratorio de redes',     'Necesito switch adicional', 'aprobada'),
-(7,  5, 3, 'Avance de proyecto final',              NULL,                        'pendiente'),
-(8,  6, 4, 'Uso de osciloscopio',                   'Traer componentes propios', 'aprobada'),
-(9,  5, 3, 'Estudio grupal de algoritmos',          NULL,                        'completada'),
-(10, 4, NULL, 'Reserva de espacio completo Física', 'Grupo de 4 personas',       'cancelada');
+INSERT INTO reservas_estudiantes (actividad_id, usuario_id, estacion_id, titulo, nota_adicional, estado_reserva, resuelto_por, fecha_resolucion) VALUES
+(6,  4, 1, 'Práctica de laboratorio de redes',     'Necesito switch adicional', 'aprobada',   1, '2026-07-08 10:00-06'),
+(7,  5, 3, 'Avance de proyecto final',              NULL,                        'pendiente',  NULL, NULL),
+(8,  6, 4, 'Uso de osciloscopio',                   'Traer componentes propios', 'aprobada',   1, '2026-07-09 11:30-06'),
+(9,  5, 3, 'Estudio grupal de algoritmos',          NULL,                        'completada', 1, '2026-07-10 16:00-06'),
+(10, 4, NULL, 'Reserva de espacio completo Física', 'Grupo de 4 personas',       'rechazada',  1, '2026-07-11 08:15-06');
 
 -- ===========================================================================
 -- MANTENIMIENTOS (5 filas -> actividad_id 11 a 15)

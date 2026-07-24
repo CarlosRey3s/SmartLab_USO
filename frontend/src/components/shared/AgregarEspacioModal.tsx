@@ -77,9 +77,11 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
   useEffect(() => {
     if (user?.rol === 'administrador') {
       const fetchCoordinadores = async () => {
-        const data = await usuariosService.getUsuarios();
+        const data = await usuariosService.getUsuarios(user.id.toString());
+        console.log('fetchCoordinadores result:', data);
         if (data.status === 'success') {
           const coords = data.data.filter((u: any) => u.rol === 'coordinador');
+          console.log('coordinadores filtrados:', coords);
           setCoordinadores(coords);
           if (editData && editData.coordinador_id) {
             const found = coords.find((c: any) => c.id === editData.coordinador_id);

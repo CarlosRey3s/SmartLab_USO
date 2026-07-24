@@ -15,9 +15,9 @@ const login = async (req, res) => {
     // Generar Token
     const jwtSecret = process.env.JWT_SECRET || 'llave_secreta_temporal_muy_segura';
     const token = jwt.sign(
-      { id: user.id, rol: user.rol }, 
-      jwtSecret, 
-      { expiresIn: '30m' }
+      { id: user.id, rol: user.rol },
+      jwtSecret,
+      { expiresIn: '24h' }
     );
 
     res.json({
@@ -53,7 +53,7 @@ const loginMicrosoft = async (req, res) => {
     }
 
     const result = await authService.loginMicrosoft(accessToken);
-    
+
     // Si el usuario es nuevo, el servicio devuelve 'incomplete_profile'
     if (result.status === 'incomplete_profile') {
       return res.status(404).json(result);
@@ -63,8 +63,8 @@ const loginMicrosoft = async (req, res) => {
 
     const jwtSecret = process.env.JWT_SECRET || 'llave_secreta_temporal_muy_segura';
     const token = jwt.sign(
-      { id: user.id, rol: user.rol }, 
-      jwtSecret, 
+      { id: user.id, rol: user.rol },
+      jwtSecret,
       { expiresIn: '30m' }
     );
 
@@ -98,9 +98,9 @@ const registerMicrosoft = async (req, res) => {
 
     const jwtSecret = process.env.JWT_SECRET || 'llave_secreta_temporal_muy_segura';
     const token = jwt.sign(
-      { id: user.id, rol: user.rol }, 
-      jwtSecret, 
-      { expiresIn: '30m' }
+      { id: user.id, rol: user.rol },
+      jwtSecret,
+      { expiresIn: '24h' }
     );
 
     res.status(201).json({
