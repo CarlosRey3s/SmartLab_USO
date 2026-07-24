@@ -1,13 +1,9 @@
 -- ===========================================================================
 -- SCRIPT DE DATOS DE PRUEBA: PLATAFORMA SMARTLABS (USO)
--- Requiere: smartlab_uso_schema.sql ya ejecutado (tablas vacías)
--- Nota: los IDs son SERIAL, así que se generan automáticamente en orden
---       de inserción (usuarios: 1-7, laboratorios: 1-5, actividades: 1-15, etc.)
+-- Requiere: smartlabs_db.txt ya ejecutado (tablas vacías)
 -- ===========================================================================
 
--- ===========================================================================
--- USUARIOS (mínimo necesario para poder referenciar FKs en el resto de tablas)
--- ===========================================================================
+-- 1. USUARIOS (8 filas para abarcar todos los roles y tener suficientes usuarios)
 INSERT INTO usuarios (nombre, apellido, expediente, correo, password_hash, rol, estado) VALUES
 ('Ana',    'Martínez', 'EXP-0001', 'ana.martinez@uso.edu.sv',   '$2b$10$hashcoord01', 'coordinador',   'activo'),
 ('Carlos', 'Ramírez',  'EXP-0002', 'carlos.ramirez@uso.edu.sv', '$2b$10$hashdoc01',   'docente',       'activo'),
@@ -18,9 +14,7 @@ INSERT INTO usuarios (nombre, apellido, expediente, correo, password_hash, rol, 
 ('Sofía',  'Cruz',     'EXP-0007', 'sofia.cruz@uso.edu.sv',     '$2b$10$hashadm01',   'administrador', 'activo'),
 ('Luis',   'Méndez',   'EXP-0008', 'luis.mendez@uso.edu.sv',    '$2b$10$hashsup01',   'supervisor',    'activo');
 
--- ===========================================================================
--- LABORATORIOS (5 filas)
--- ===========================================================================
+-- 2. LABORATORIOS (5 filas)
 INSERT INTO laboratorios (nombre, descripcion, edificio, piso, aula, capacidad_maxima, estado, modo_reserva, coordinador_id) VALUES
 ('Lab de Redes',         'Laboratorio de redes y telecomunicaciones', 'Edificio A', 'Nivel 1',    'A-101', 20, 'disponible',       'por_estacion',    1),
 ('Lab de Programación',  'Laboratorio de desarrollo de software',     'Edificio A', 'Nivel 2',    'A-201', 25, 'disponible',       'por_estacion',    1),
@@ -28,9 +22,7 @@ INSERT INTO laboratorios (nombre, descripcion, edificio, piso, aula, capacidad_m
 ('Lab de Química',       'Laboratorio de análisis químico',           'Edificio C', 'Nivel 1',    'C-101', 15, 'en_mantenimiento', 'espacio_completo',1),
 ('Lab de Física',        'Laboratorio de mecánica y óptica',          'Edificio C', 'Nivel 2',    'C-201', 15, 'disponible',       'espacio_completo',1);
 
--- ===========================================================================
--- ESTACIONES_TRABAJO (5 filas)
--- ===========================================================================
+-- 3. ESTACIONES_TRABAJO (5 filas)
 INSERT INTO estaciones_trabajo (laboratorio_id, nombre, capacidad, estado) VALUES
 (1, 'PC-01',   1, 'disponible'),
 (1, 'PC-02',   1, 'disponible'),
@@ -38,33 +30,25 @@ INSERT INTO estaciones_trabajo (laboratorio_id, nombre, capacidad, estado) VALUE
 (3, 'MOD-01',  2, 'disponible'),
 (4, 'MESA-01', 4, 'disponible');
 
--- ===========================================================================
--- ACTIVIDADES (15 filas: 5 clases + 5 reservas + 5 mantenimientos)
--- IDs resultantes: 1-5 = clase, 6-10 = reserva, 11-15 = mantenimiento
--- ===========================================================================
+-- 4. ACTIVIDADES (15 filas: 5 clases + 5 reservas + 5 mantenimientos)
 INSERT INTO actividades (laboratorio_id, tipo, fecha_hora_inicio, fecha_hora_fin, recurrencia) VALUES
--- Clases (1-5)
 (1, 'clase', '2026-07-06 08:00-06', '2026-07-06 10:00-06', 'semanal'),
 (2, 'clase', '2026-07-06 10:00-06', '2026-07-06 12:00-06', 'semanal'),
 (3, 'clase', '2026-07-07 08:00-06', '2026-07-07 10:00-06', NULL),
 (4, 'clase', '2026-07-07 13:00-06', '2026-07-07 15:00-06', 'semanal'),
 (5, 'clase', '2026-07-08 09:00-06', '2026-07-08 11:00-06', NULL),
--- Reservas (6-10)
 (1, 'reserva', '2026-07-09 14:00-06', '2026-07-09 16:00-06', NULL),
 (2, 'reserva', '2026-07-09 16:00-06', '2026-07-09 18:00-06', NULL),
 (3, 'reserva', '2026-07-10 10:00-06', '2026-07-10 12:00-06', NULL),
 (2, 'reserva', '2026-07-10 15:00-06', '2026-07-10 17:00-06', NULL),
 (5, 'reserva', '2026-07-11 09:00-06', '2026-07-11 11:00-06', NULL),
--- Mantenimientos (11-15)
 (4, 'mantenimiento', '2026-07-05 07:00-06', '2026-07-05 12:00-06', NULL),
 (3, 'mantenimiento', '2026-07-12 07:00-06', '2026-07-12 09:00-06', NULL),
 (1, 'mantenimiento', '2026-07-13 07:00-06', '2026-07-13 08:00-06', NULL),
 (2, 'mantenimiento', '2026-07-13 08:00-06', '2026-07-13 09:00-06', NULL),
 (5, 'mantenimiento', '2026-07-14 07:00-06', '2026-07-14 09:00-06', NULL);
 
--- ===========================================================================
--- CLASES_ACADEMICAS (5 filas -> actividad_id 1 a 5)
--- ===========================================================================
+-- 5. CLASES_ACADEMICAS (5 filas -> actividad_id 1 a 5)
 INSERT INTO clases_academicas (actividad_id, materia, docente_id, num_estudiantes) VALUES
 (1, 'Redes de Computadoras',      2, 22),
 (2, 'Programación Orientada a Objetos', 3, 20),
@@ -72,19 +56,25 @@ INSERT INTO clases_academicas (actividad_id, materia, docente_id, num_estudiante
 (4, 'Química Analítica',          3, 12),
 (5, 'Física Mecánica',            2, 18);
 
--- ===========================================================================
--- RESERVAS_ESTUDIANTES (5 filas -> actividad_id 6 a 10)
--- ===========================================================================
-INSERT INTO reservas_estudiantes (actividad_id, usuario_id, estacion_id, titulo, nota_adicional, estado_reserva, resuelto_por, fecha_resolucion) VALUES
-(6,  4, 1, 'Práctica de laboratorio de redes',     'Necesito switch adicional', 'aprobada',   1, '2026-07-08 10:00-06'),
-(7,  5, 3, 'Avance de proyecto final',              NULL,                        'pendiente',  NULL, NULL),
-(8,  6, 4, 'Uso de osciloscopio',                   'Traer componentes propios', 'aprobada',   1, '2026-07-09 11:30-06'),
-(9,  5, 3, 'Estudio grupal de algoritmos',          NULL,                        'completada', 1, '2026-07-10 16:00-06'),
-(10, 4, NULL, 'Reserva de espacio completo Física', 'Grupo de 4 personas',       'rechazada',  1, '2026-07-11 08:15-06');
+-- 6. RESERVAS_ESTUDIANTES (5 filas -> actividad_id 6 a 10)
+-- IMPORTANTE: Se removió 'estacion_id' según la nueva estructura de la base de datos
+INSERT INTO reservas_estudiantes (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva, resuelto_por, fecha_resolucion) VALUES
+(6,  4, 'Práctica de laboratorio de redes',     'Necesito switch adicional', 'aprobada',   1, '2026-07-08 10:00-06'),
+(7,  5, 'Avance de proyecto final',              NULL,                        'pendiente',  NULL, NULL),
+(8,  6, 'Uso de osciloscopio',                   'Traer componentes propios', 'aprobada',   1, '2026-07-09 11:30-06'),
+(9,  5, 'Estudio grupal de algoritmos',          NULL,                        'completada', 1, '2026-07-10 16:00-06'),
+(10, 4, 'Reserva de espacio completo Física', 'Grupo de 4 personas',       'rechazada',  1, '2026-07-11 08:15-06');
 
--- ===========================================================================
--- MANTENIMIENTOS (5 filas -> actividad_id 11 a 15)
--- ===========================================================================
+-- 7. RESERVA_ESTACIONES (5 filas)
+-- Vincula las reservas con las estaciones correspondientes
+INSERT INTO reserva_estaciones (actividad_id, estacion_id) VALUES
+(6, 1),
+(6, 2),
+(7, 3),
+(8, 4),
+(9, 3);
+
+-- 8. MANTENIMIENTOS (5 filas -> actividad_id 11 a 15)
 INSERT INTO mantenimientos (actividad_id, tecnico_id, descripcion_ti) VALUES
 (11, 7, 'Revisión de campanas de extracción y llaves de gas'),
 (12, 7, 'Calibración de multímetros y fuentes de poder'),
@@ -92,9 +82,7 @@ INSERT INTO mantenimientos (actividad_id, tecnico_id, descripcion_ti) VALUES
 (14, 7, 'Mantenimiento preventivo de estaciones de trabajo'),
 (15, 7, 'Revisión de instrumentos ópticos');
 
--- ===========================================================================
--- ITEM_INVENTARIO (5 filas)
--- ===========================================================================
+-- 9. ITEM_INVENTARIO (5 filas)
 INSERT INTO item_inventario (laboratorio_id, nombre, codigo_interno, numero_cas, categoria, ubicacion_fisica, unidad_medida, tipo_control, cantidad_actual, stock_minimo, imagen_url) VALUES
 (1, 'Switch Cisco 24 puertos',   'INV-0001', NULL,        'Equipo de red', 'Estante A1',  'unidad', 'activo_fijo',   8,  2, NULL),
 (2, 'Licencia Visual Studio',    'INV-0002', NULL,        'Software',      'Digital',     'unidad', 'licencia',      10, 3, NULL),
@@ -102,9 +90,7 @@ INSERT INTO item_inventario (laboratorio_id, nombre, codigo_interno, numero_cas,
 (4, 'Ácido clorhídrico',         'INV-0004', '7647-01-0', 'Reactivo',      'Gabinete C1', 'ml',     'controlado',    2000,500, NULL),
 (5, 'Osciloscopio digital',      'INV-0005', NULL,        'Equipo',        'Estante D2',  'unidad', 'activo_fijo',   4,  1, NULL);
 
--- ===========================================================================
--- MOVIMIENTO_INVENTARIO (5 filas)
--- ===========================================================================
+-- 10. MOVIMIENTO_INVENTARIO (5 filas)
 INSERT INTO movimiento_inventario (item_id, usuario_id, tipo_movimiento, cantidad, observaciones) VALUES
 (1, 7, 'ingreso', 4,  'Compra de nuevos switches'),
 (2, 7, 'ingreso', 10, 'Renovación anual de licencias'),
@@ -112,9 +98,7 @@ INSERT INTO movimiento_inventario (item_id, usuario_id, tipo_movimiento, cantida
 (4, 3, 'egreso',  100,'Uso en clase de química analítica'),
 (5, 7, 'ajuste',  1,  'Corrección de inventario físico');
 
--- ===========================================================================
--- RESERVA_ITEMS (5 filas -> ligado a actividades tipo 'reserva' 6 a 10)
--- ===========================================================================
+-- 11. RESERVA_ITEMS (5 filas)
 INSERT INTO reserva_items (actividad_id, item_id, cantidad_solicitada) VALUES
 (6,  1, 1),
 (7,  2, 1),
@@ -122,9 +106,7 @@ INSERT INTO reserva_items (actividad_id, item_id, cantidad_solicitada) VALUES
 (9,  3, 10),
 (10, 4, 50);
 
--- ===========================================================================
--- BUZON_SUGERENCIAS (5 filas)
--- ===========================================================================
+-- 12. BUZON_SUGERENCIAS (5 filas)
 INSERT INTO buzon_sugerencias (usuario_id, laboratorio_id, titulo, comentario, estado_gestion, respuesta_coordinador) VALUES
 (4, 1, 'Mejorar velocidad de internet',      'La red del Lab de Redes se satura en horas pico.', 'atendida',    'Se amplió el ancho de banda.'),
 (5, 2, 'Más licencias de software',          'Faltan licencias de Visual Studio para todos.',    'en_revisión', NULL),

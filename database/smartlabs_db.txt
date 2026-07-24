@@ -14,7 +14,7 @@ CREATE TYPE estado_lab_enum AS ENUM ('disponible', 'en_mantenimiento', 'clausura
 CREATE TYPE modo_reserva_enum AS ENUM ('por_estacion', 'espacio_completo');
 CREATE TYPE estado_estacion_enum AS ENUM ('disponible', 'no_disponible'); 
 CREATE TYPE tipo_actividad_enum AS ENUM ('clase', 'reserva', 'mantenimiento');
-CREATE TYPE estado_reserva_enum AS ENUM ('pendiente', 'aprobada', 'cancelada', 'completada');
+CREATE TYPE estado_reserva_enum AS ENUM ('pendiente', 'aprobada', 'cancelada', 'completada','rechazada');
 CREATE TYPE tipo_movimiento_enum AS ENUM ('ingreso', 'egreso', 'ajuste');
 CREATE TYPE estado_sugerencia_enum AS ENUM ('pendiente', 'en_revisión', 'atendida', 'archivada');
 
@@ -92,9 +92,10 @@ CREATE TABLE reservas_estudiantes (
     usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
     titulo VARCHAR(150) NOT NULL,
     nota_adicional TEXT,
-    estado_reserva estado_reserva_enum NOT NULL DEFAULT 'pendiente'
+    estado_reserva estado_reserva_enum NOT NULL DEFAULT 'pendiente',
+    resuelto_por INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    fecha_resolucion TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
-
 -- [TABLA HIJA 3]: mantenimientos
 CREATE TABLE mantenimientos (
     actividad_id INTEGER PRIMARY KEY REFERENCES actividades(id) ON DELETE CASCADE,
@@ -173,10 +174,4 @@ CREATE INDEX idx_actividades_fechas ON actividades (fecha_hora_inicio, fecha_hor
 CREATE INDEX idx_actividades_lab ON actividades (laboratorio_id);
 CREATE INDEX idx_sugerencias_estado ON buzon_sugerencias (estado_gestion);
 
--- PASO 1: Agregar el estado 'rechazada' a tu catálogo de estados
-ALTER TYPE estado_reserva_enum ADD VALUE 'rechazada';
 
--- PASO 2: Agregar los campos de trazabilidad a la tabla hija
-ALTER TABLE reservas_estudiantes
-ADD COLUMN resuelto_por INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
-ADD COLUMN fecha_resolucion TIMESTAMP WITH TIME ZONE DEFAULT NULL;
