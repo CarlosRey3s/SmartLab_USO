@@ -1,4 +1,6 @@
-const API_URL = "http://localhost:4000/api";
+import { BASE_URL } from "../config/api";
+
+const API_URL = `${BASE_URL}/api`;
 
 export const laboratoriosService = {
   getLaboratorios: async () => {

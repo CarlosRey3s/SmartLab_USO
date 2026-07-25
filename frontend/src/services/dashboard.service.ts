@@ -5,25 +5,24 @@ import type {
     DashboardResponse
 } from "../types/dashboard";
 
+import { BASE_URL } from "../config/api";
 
-
-const API_URL =
-"http://localhost:4000/api/dashboard";
+const API_URL = `${BASE_URL}/api/dashboard`;
 
 
 
 
 export const getDashboard =
-async():Promise<DashboardResponse>=>{
+    async (): Promise<DashboardResponse> => {
 
 
-    const response =
-    await axios.get<DashboardResponse>(
-        API_URL
-    );
+        const response =
+            await axios.get<DashboardResponse>(
+                API_URL
+            );
 
 
-    return response.data;
+        return response.data;
 
 
-};
+    };

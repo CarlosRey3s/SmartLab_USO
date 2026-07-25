@@ -1,4 +1,6 @@
-const API_URL = 'http://localhost:4000/api/auth';
+import { BASE_URL } from "../config/api";
+
+const API_URL = `${BASE_URL}/api/auth`;
 
 export interface LoginResponse {
   token: string;
