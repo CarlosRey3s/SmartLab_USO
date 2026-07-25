@@ -7,6 +7,7 @@ import { customToast, CustomToastProvider } from '../custom-toast/CustomToast';
 import { ConfirmModal } from '../confirm-modal/ConfirmModal';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/inventario.css';
+import { BASE_URL } from "../../config/api";
 
 const OPCIONES_UNIDAD_MEDIDA: Record<string, {value: string, label: string}[]> = {
   'Mobiliario': [{value: 'Unidad', label: 'Unidades'}, {value: 'Juego', label: 'Juegos'}],
@@ -58,7 +59,7 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onCl
         setCantidad(editData.cantidad_actual || 0);
         setStockMinimo(editData.stock_minimo || 0);
         setUnidadMedida(editData.unidad_medida || 'Unidad');
-        setImagenPreview(editData.imagen_url ? (editData.imagen_url.startsWith('http') ? editData.imagen_url : `http://localhost:4000${editData.imagen_url}`) : null);
+        setImagenPreview(editData.imagen_url ? (editData.imagen_url.startsWith('http') ? editData.imagen_url : `${BASE_URL}${editData.imagen_url}`) : null);
         setImagenFile(null);
       } else {
         limpiarFormulario();

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { usuariosService } from '../services/usuarios.service';
 import { chequearDisponibilidad, obtenerInventarioDisponible } from '../services/actividades.service';
+import { BASE_URL } from "../config/api";
 
 export const DIAS_SEMANA: Record<number, { nombre: string; code: string }> = {
     0: { nombre: "domingo", code: "SU" },
@@ -201,7 +202,7 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
     useEffect(() => {
         const fetchlaboratorios = async () => {
             try {
-                const response = await fetch('http://localhost:4000/api/laboratorios');
+                const response = await fetch(`${BASE_URL}/api/laboratorios`);
                 const result = await response.json();
                 if (result.success || result.data) setLabsDesdeBD(result.data || result);
                 else if (Array.isArray(result)) setLabsDesdeBD(result);
@@ -239,7 +240,7 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
         const fetchEstaciones = async () => {
             setCargandoEstaciones(true);
             try {
-                const response = await fetch(`http://localhost:4000/api/laboratorios/${form.laboratorio}/estaciones`);
+                const response = await fetch(`${BASE_URL}/api/laboratorios/${form.laboratorio}/estaciones`);
                 const result = await response.json();
                 if (result.success || result.data) setEstacionesDesdeBD(result.data || result);
                 else if (Array.isArray(result)) setEstacionesDesdeBD(result);
