@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import '../../css/ModalNuevaActividad.css';
 import { FormularioMantenimiento } from './ModalActividades/FormularioMantenimiento';
 import { FormularioClase } from './ModalActividades/FormularioClase';
-import { FormularioReserva } from './ModalActividades/FormularioReserva';
+import { FormularioReserva } from './ModalActividades/FormularioReserva'; // Force TS reload
 import { SelectorInventario } from './ModalActividades/SelectorInventario';
 
 import { useActividadForm, type FormData, getDiaSemana } from '../../hooks/useActividadForm';
