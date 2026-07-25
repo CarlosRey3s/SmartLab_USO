@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, SlidersHorizontal, Plus, MoreVertical, CheckCircle, Monitor } from 'lucide-react';
 import '../../css/inventario.css';
-import '../../css/usuarios.css';
+import '../../css/Usuarios.css';
 import { AgregarItemModal } from '../../components/shared/AgregarItemModal';
 import { inventarioService } from '../../services/inventario.service';
 import { laboratoriosService } from '../../services/laboratorios.service';
