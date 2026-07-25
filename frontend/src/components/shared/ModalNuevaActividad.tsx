@@ -220,21 +220,21 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
               docente={form.docente}
               numPersonas={form.numPersonas}
               docentesOptions={docentesOptions}
-              onChange={(field, value) => set(field as keyof FormData, value)}
+              onChange={(field: string, value: any) => set(field as keyof FormData, value)}
             />
           )}
           {/* ── CONEXIÓN CON FORMULARIO MANTENIMIENTO ── */}
           {tipo === "mantenimiento" && currentStepKey === "datos" && (
             <FormularioMantenimiento
               descripcion={form.descripcion}
-              onChange={(field, value) => set(field as keyof FormData, value)}
+              onChange={(field: string, value: any) => set(field as keyof FormData, value)}
             />
           )}
           {/* ── CONEXIÓN CON FORMULARIO RESERVA ── */}
           {tipo === "reserva" && currentStepKey === "datos" && (
             <FormularioReserva
               titulo={form.titulo}
-              onChange={(field, value) => set(field as keyof FormData, value)}
+              onChange={(field: string, value: any) => set(field as keyof FormData, value)}
             />
           )}
 
