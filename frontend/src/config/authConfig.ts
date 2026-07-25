@@ -10,7 +10,6 @@ export const msalConfig: Configuration = {
     cacheLocation: "sessionStorage"
   }
 };
-
 export const loginRequest = {
   scopes: ["User.Read", "profile", "email"]
 };
