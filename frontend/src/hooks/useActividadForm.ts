@@ -123,6 +123,7 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
     // ── EFECTOS (Carga de datos y modo edición) ──
     useEffect(() => {
         if (actividadExistente) {
+                    console.log('DEBUG actividadExistente:', actividadExistente.laboratorio_id, actividadExistente.id);
             const start = new Date(actividadExistente.start);
             const end = new Date(actividadExistente.end);
 
@@ -258,7 +259,7 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
             if (form.laboratorio && form.fecha && form.desde && form.hasta) {
                 setCargandoInventario(true);
                 try {
-                    const res = await obtenerInventarioDisponible(parseInt(form.laboratorio), form.fecha, form.desde, form.hasta, actividadExistente?.id);
+                    const res = await obtenerInventarioDisponible(parseInt(form.laboratorio), form.fecha, form.desde, form.hasta,  (actividadExistente as any)?.idOriginal || actividadExistente?.id);
                     if (res.status === 'success') {
                         setInventarioDesdeBD(res.data);
                         // Sincronizar el stock de los equipos ya seleccionados por si cambia la fecha/hora
@@ -298,7 +299,8 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
             if (form.laboratorio && form.fecha && form.desde && form.hasta) {
                 setVerificando(true);
                 try {
-                    const result = await chequearDisponibilidad(parseInt(form.laboratorio), form.fecha, form.desde, form.hasta, actividadExistente?.id);
+                    console.log('DEBUG form.laboratorio:', form.laboratorio, typeof form.laboratorio);
+                    const result = await chequearDisponibilidad(parseInt(form.laboratorio), form.fecha, form.desde, form.hasta,     (actividadExistente as any)?.idOriginal || actividadExistente?.id );
                     if (result) {
                         setBloqueoTotal(result.bloqueoTotal);
                         setEstacionesOcupadas(result.estacionesOcupadas || []);

@@ -99,6 +99,8 @@ const consultarDisponibilidad = async (req, res) => {
         );
         res.status(200).json({ exito: true, data: disponibilidad });
     } catch (error) {
+         console.log('ERROR en consultarDisponibilidad:', error.message);
+        console.log('STACK:', error.stack);
         res.status(500).json({ exito: false, mensaje: error.message });
     }
 };

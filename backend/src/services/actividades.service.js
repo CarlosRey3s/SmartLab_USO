@@ -1,7 +1,5 @@
-// ✅ Como debe quedar (Extrayendo el pool y renombrándolo a db)
 const { pool: db } = require('../config/db');
 const { rrulestr } = require('rrule');
-
 
 /**
  * Función interna para verificar detalladamente los solapamientos de horarios y reglas de infraestructura.
@@ -15,9 +13,7 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
     if (resEstadoLab.rows.length === 0) {
         throw new Error('El laboratorio seleccionado no existe.');
     }
-
     const { estado: estadoActualLab, modo_reserva: modoReservaLab } = resEstadoLab.rows[0];
-
     // Validaciones físicas del estado
     if (estadoActualLab === 'clausurado') {
         throw new Error('No se puede programar ninguna actividad porque el laboratorio está CLAUSURADO.');
@@ -25,7 +21,6 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
     if (estadoActualLab === 'en_mantenimiento' && tipoNuevaActividad !== 'mantenimiento') {
         throw new Error('El laboratorio está bajo mantenimiento físico. No se permiten clases ni reservas.');
     }
-
     // 1.5 [MODIFICADO] Soporte para múltiples estaciones
     let estacionesNuevas = [];
     if (Array.isArray(datosModal.estaciones) && datosModal.estaciones.length > 0) {
@@ -66,9 +61,7 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
           AND a.fecha_hora_inicio < $2 
           AND a.fecha_hora_fin > $3
           -- Solo evaluamos conflicto si es Clase, Mantenimiento o una Reserva 'aprobada'
-          AND (a.tipo IN ('clase', 'mantenimiento') OR re.estado_reserva = 'aprobada')
-    `;
-
+          AND (a.tipo IN ('clase', 'mantenimiento') OR re.estado_reserva = 'aprobada')`;
     const parametros = [laboratorio_id, finDatetime, inicioDatetime];
 
     if (idActividadExcluir) {
@@ -386,6 +379,11 @@ const obtenerDisponibilidad = async (laboratorioId, fechaInicio, fechaFin, exclu
     // 1. Verificar si hay un evento que bloquee TODO el laboratorio 
     // (Ej. Clases, Mantenimientos o reservas del espacio completo)
     // =========================================================================
+     console.log('DEBUG disponibilidad:', { laboratorioId, fechaInicio, fechaFin, excludeId });
+    
+    if (!laboratorioId || !fechaInicio || !fechaFin) {
+        throw new Error(`Parámetros inválidos: ${JSON.stringify({ laboratorioId, fechaInicio, fechaFin })}`);
+    }
     let queryBloqueo = `
         SELECT a.tipo 
         FROM actividades a
@@ -490,7 +488,7 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista) => 
                 a.fecha_hora_inicio AS start, 
                 a.fecha_hora_fin AS end, 
                 a.tipo,
-                a.recurrencia, -- ⚠️ ¡CRUCIAL! La necesitábamos para alimentar el motor de RRule
+                a.recurrencia,
                 
                 -- Datos del Laboratorio
                 a.laboratorio_id,
@@ -546,16 +544,12 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista) => 
             LEFT JOIN mantenimientos m ON a.id = m.actividad_id
             LEFT JOIN usuarios u_tecnico ON m.tecnico_id = u_tecnico.id
             LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id
-            
-            -- ====================================================================
-            -- 🚨 FILTROS PRINCIPALES
-            -- ====================================================================
+
             WHERE (
                 (a.recurrencia IS NULL AND a.fecha_hora_inicio <= $2 AND a.fecha_hora_fin >= $1)
                 OR (a.recurrencia IS NOT NULL AND a.fecha_hora_inicio <= $2)
             )
-            AND (a.tipo != 'reserva' OR re.estado_reserva = 'aprobada');
-        `;
+            AND (a.tipo != 'reserva' OR re.estado_reserva = 'aprobada'); `;
 
         const { rows } = await client.query(query, [startVista, endVista]);
         const eventosListosParaReact = [];
@@ -651,8 +645,7 @@ const obtenerSolicitudesPendientes = async () => {
         JOIN usuarios u ON r.usuario_id = u.id
         JOIN laboratorios l ON a.laboratorio_id = l.id
         WHERE r.estado_reserva = 'pendiente'
-        ORDER BY a.fecha_creacion ASC;
-    `;
+        ORDER BY a.fecha_creacion ASC;`;
     const { rows } = await db.query(query);
     return rows;
 };
@@ -773,14 +766,12 @@ const resolverSolicitud = async (actividadId, accion, resolutorId) => {
     throw { status: 400, message: 'Acción no válida. Use "aprobar" o "rechazar".' };
 };
 
-
 module.exports = {
     programarActividad,
     actualizarActividad,
     eliminarActividad,
     obtenerDisponibilidad,
     obtenerActividadesExpandidas,
-    //agregado actualmente
     obtenerSolicitudesPendientes,
     obtenerTodasSolicitudes,
     resolverSolicitud
