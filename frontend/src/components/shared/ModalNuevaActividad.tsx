@@ -1,8 +1,4 @@
-import { Search, Plus, X, Monitor, Building2, Grid } from 'lucide-react';
-import Select from 'react-select';
-import { usuariosService } from '../../services/usuarios.service';
-import { chequearDisponibilidad, obtenerInventarioDisponible } from '../../services/actividades.service';
-import { laboratoriosService } from '../../services/laboratorios.service';
+import { Monitor, Building2, Grid } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/ModalNuevaActividad.css';
 import { FormularioMantenimiento } from './ModalActividades/FormularioMantenimiento';
@@ -12,9 +8,6 @@ import { SelectorInventario } from './ModalActividades/SelectorInventario';
 
 import { useActividadForm, type FormData, getDiaSemana } from '../../hooks/useActividadForm';
 import { canCreateClassesOrMaintenance, isLimitedToOwnLaboratories } from '../../utils/roleGuard';
-
-
-import { type TipoActividad, type ModoReserva, type LaboratorioDB, type EstacionDB, type EquipoSeleccionado, type ItemInventarioDB } from '../../hooks/useActividadForm';
 
 const getRecurrenciaClase = (diaNombre: string) => [
   "No se repite",
@@ -126,9 +119,9 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
     form, set, tipo, stepIndex,
     labsDesdeBD, cargandoLabs,
     estacionesDesdeBD, cargandoEstaciones,
-    inventarioDesdeBD, cargandoInventario,
+    inventarioDesdeBD,
     docentesOptions,
-    estacionesOcupadas, bloqueoTotal, verificando, mostrarSoloDisponibles, setMostrarSoloDisponibles,
+    estacionesOcupadas, bloqueoTotal, mostrarSoloDisponibles, setMostrarSoloDisponibles,
     equiposSeleccionados, estacionesSeleccionadas,
     agregarEquipo, quitarEquipo, aumentarCantidad, disminuirCantidad, toggleEstacion,
     handleTipo, handleAtras, handleSiguiente, canSave,
@@ -620,14 +613,6 @@ function UserIcon({ color }: { color: string }) {
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={color} strokeWidth="1.5">
       <circle cx="8" cy="6" r="3" />
       <path d="M2 14c0-3 2.7-5 6-5s6 2 6 5" />
-    </svg>
-  );
-}
-function RecurIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ flexShrink: 0, color: "#888" }}>
-      <path d="M2 8a6 6 0 016-6 6 6 0 014.5 2M14 8a6 6 0 01-6 6 6 6 0 01-4.5-2" />
-      <path d="M12 2l2.5 2L12 6M4 10l-2.5 2L4 14" />
     </svg>
   );
 }

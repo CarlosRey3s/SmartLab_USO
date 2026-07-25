@@ -1,7 +1,5 @@
 // src/services/actividades.service.ts
 import axios from 'axios';
-import type { EventoLaboratorio } from '..//pages/admin/Calendario.tsx'; // Ajusta la ruta a donde tengas tu interfaz
-// Ajusta la ruta a donde tengas tu interfaz
 
 // Reemplaza esto con la URL real de tu backend si es diferente
 const API_URL = "http://localhost:4000/api/actividades"

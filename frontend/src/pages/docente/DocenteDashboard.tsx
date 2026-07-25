@@ -1,10 +1,4 @@
 import "../../css/docente-dashboard.css";
-import {
-  Calendar,
-  BookOpen,
-  Monitor,
-  Bell
-} from "lucide-react";
 
 export default function DocenteDashboard() {
   return (

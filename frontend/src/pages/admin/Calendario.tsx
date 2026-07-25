@@ -1,7 +1,7 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import {
   Search, Calendar as CalendarIcon, ChevronLeft, ChevronRight,
-  ChevronDown, ChevronUp, Plus, Printer, X, User, Wrench, FileText, Info,
+  ChevronDown, ChevronUp, Plus, Printer, X, User, Wrench, FileText,
   Edit2, Trash2, Filter
 } from 'lucide-react';
 import { Calendar, dateFnsLocalizer, type ToolbarProps, type View } from 'react-big-calendar';
@@ -27,7 +27,7 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
-const NavegacionContext = createContext({ irAFecha: (fecha: Date) => { } });
+const NavegacionContext = createContext({ irAFecha: (_fecha: Date) => { } });
 
 // [CORREGIDO] Sacamos minTime y maxTime fuera del componente para que no causen re-renders infinitos
 const minTime = new Date(); minTime.setHours(6, 0, 0);

@@ -1,5 +1,3 @@
-import { type LaboratorioResponse } from "../types/laboratorio.types";
-
 const API_URL = "http://localhost:4000/api";
 
 export const laboratoriosService = {

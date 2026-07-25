@@ -161,10 +161,6 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
     }
   };
 
-  const formatEstado = (estado: string) => {
-    return estado.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  };
-
   return (
     <div className="vista-estaciones-container">
       <div className="vista-estaciones-header">
@@ -325,12 +321,12 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
 
       <ConfirmModal
         isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
+        onCancel={() => setIsDeleteModalOpen(false)}
         onConfirm={confirmDelete}
         title="Eliminar Estación"
         message="¿Estás seguro que deseas eliminar esta estación? Esta acción no se puede deshacer."
         confirmText="Eliminar"
-        confirmColor="#EB5757"
+        type="danger"
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, SlidersHorizontal, Plus, MoreVertical, CheckCircle, ArrowUp, ArrowDown, Monitor } from 'lucide-react';
+import { Search, SlidersHorizontal, Plus, MoreVertical, CheckCircle, Monitor } from 'lucide-react';
 import '../../css/inventario.css';
 import '../../css/usuarios.css';
 import { AgregarItemModal } from '../../components/shared/AgregarItemModal';

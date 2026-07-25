@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Monitor, FlaskConical, X, Upload } from 'lucide-react';
+import { Monitor, FlaskConical, X, Upload } from 'lucide-react';
 import { inventarioService } from '../../services/inventario.service';
 import { laboratoriosService } from '../../services/laboratorios.service';
 import type { Laboratorio } from '../../types/laboratorio.types';
