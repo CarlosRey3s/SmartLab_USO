@@ -14,8 +14,8 @@ import '../../css/calendario.css';
 import { customToast } from '../../components/custom-toast/CustomToast.tsx';
 import { useAuth } from '../../context/AuthContext';
 import { isReadOnlyView } from '../../utils/roleGuard';
+import { format, parse, startOfWeek, getDay, isToday, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 
-import { format, parse, startOfWeek, getDay, isToday, startOfMonth, endOfMonth } from 'date-fns';
 
 // ── 1. CONFIGURACIÓN DE FECHAS E IDIOMA ──
 const locales = { 'es': es };
@@ -292,37 +292,30 @@ export const CalendarioView = () => {
       const arregloEventos = Array.isArray(data) ? data : (data?.data || []);
 
       const eventosMapeados = arregloEventos.map((act: any) => {
-        // 🌟 ESCUDO DE ORO: Validamos dinámicamente cómo vienen las llaves del JSON
         const rawStart = act.start || act.fecha_hora_inicio;
         const rawEnd = act.end || act.fecha_hora_fin;
 
-        return {
-          ...act,
-          id: act.id_instancia || act.id,   // Llave única para evitar crasheos en React
-          idOriginal: act.id,               // ID real de PostgreSQL para operaciones CRUD
+            return {
+        ...act,
+        id: act.id_instancia || act.id,
+        idOriginal: act.id,
+        title: act.title || (act.tipo === 'clase' ? act.materia : act.tipo === 'mantenimiento' ? 'Mantenimiento' : act.titulo),
+        start: parseISO(rawStart),
+        end: parseISO(rawEnd),
+        tipo: act.tipo,
+        laboratorio_id: act.laboratorio_id,
+        laboratorio_nombre: act.laboratorio_nombre || 'Laboratorio',
+      };
+});
 
-          // Si el backend ya calculó un title, úsalo; si no, elígelo por tipo
-          title: act.title || (act.tipo === 'clase' ? act.materia : act.tipo === 'mantenimiento' ? 'Mantenimiento' : act.titulo),
-
-          // 🌟 Construimos los objetos Date usando las variables protegidas
-          start: new Date(rawStart),
-          end: new Date(rawEnd),
-
-          tipo: act.tipo,
-          laboratorio_id: act.laboratorio_id,
-          laboratorio_nombre: act.laboratorio_nombre || 'Laboratorio',
-        };
-      });
-
-      console.log("🚀 Eventos mapeados con éxito para React:", eventosMapeados);
-      setEventos(eventosMapeados);
-    } catch (error) {
-      console.error('Error al cargar eventos en el componente:', error);
-    } finally {
-      setCargando(false);
-    }
-  };
-
+console.log("🚀 Eventos mapeados con éxito para React:", eventosMapeados);
+setEventos(eventosMapeados);
+} catch (error) {
+  console.error('Error al cargar eventos en el componente:', error);
+} finally {
+  setCargando(false);
+}
+};
   useEffect(() => {
     cargarDatos();
   }, [fechaActual]);
