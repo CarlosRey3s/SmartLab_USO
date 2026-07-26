@@ -1,6 +1,13 @@
 const { pool: db } = require('../config/db');
 const { rrulestr } = require('rrule');
 
+const ZONA_HORARIA = 'America/El_Salvador';
+
+const dayjs = require('dayjs');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
+dayjs.extend(utc);
+dayjs.extend(timezone);
 /**
  * Función interna para verificar detalladamente los solapamientos de horarios y reglas de infraestructura.
  */
@@ -154,8 +161,8 @@ const programarActividad = async (datosModal, usuarioLogueado) => {
     const rolUsuario = usuarioLogueado.rol;
 
     // 2. Transformar las fechas y horas a formato DATETIME/TIMESTAMP
-    const inicioDatetime = new Date(`${fecha}T${desde}`);
-    const finDatetime = new Date(`${fecha}T${hasta}`);
+     const inicioDatetime = dayjs.tz(`${fecha} ${desde}`, ZONA_HORARIA).toDate();
+     const finDatetime = dayjs.tz(`${fecha} ${hasta}`, ZONA_HORARIA).toDate();
 
     // Procesas dinamicamente el objeto JSON de recurrencia
     const reglaRecurrenciaPlana = formatearRecurrencia(recurrencia);
@@ -250,12 +257,14 @@ const programarActividad = async (datosModal, usuarioLogueado) => {
 /*
  * Modificar Actividad (PUT)
  */
+
 const actualizarActividad = async (idActividad, datosModal, idUsuarioLogueado) => {
     const { tipo, laboratorio, fecha, desde, hasta, numPersonas, recurrencia } = datosModal;
 
-    // CORRECCIÓN: Renombrado a Datetime por consistencia
-    const inicioDatetime = new Date(`${fecha}T${desde}`);
-    const finDatetime = new Date(`${fecha}T${hasta}`);
+    // CORRECCIÓN: construir la fecha explícitamente en la zona horaria de El Salvador
+    // en vez de depender del TZ implícito del proceso de Node
+    const inicioDatetime = dayjs.tz(`${fecha} ${desde}`, ZONA_HORARIA).toDate();
+    const finDatetime = dayjs.tz(`${fecha} ${hasta}`, ZONA_HORARIA).toDate();
 
     // CORRECCIÓN HUECO 4: Usar la misma función que al crear para guardar el RRULE válido
     const dbRecurrencia = formatearRecurrencia(recurrencia);
