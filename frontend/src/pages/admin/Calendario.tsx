@@ -1,9 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import {
-  Search, Calendar as CalendarIcon, ChevronLeft, ChevronRight,
-  ChevronDown, ChevronUp, Plus, Printer, X, User, Wrench, FileText,
-  Edit2, Trash2, Filter
-} from 'lucide-react';
+import {  Search, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, Printer, X, User, Wrench, FileText,  Edit2, Trash2, Filter} from 'lucide-react';
 import { Calendar, dateFnsLocalizer, type ToolbarProps, type View } from 'react-big-calendar';
 import { es } from 'date-fns/locale/es';
 import { PanelSolicitudes } from './PanelSolicitudes.tsx';
@@ -22,14 +18,13 @@ const locales = { 'es': es };
 const localizer = dateFnsLocalizer({
   format,
   parse,
-  startOfWeek, // [CORREGIDO] Pasado como referencia limpia para evitar el bucle infinito
+  startOfWeek, 
   getDay,
   locales,
 });
 
 const NavegacionContext = createContext({ irAFecha: (_fecha: Date) => { } });
 
-// [CORREGIDO] Sacamos minTime y maxTime fuera del componente para que no causen re-renders infinitos
 const minTime = new Date(); minTime.setHours(6, 0, 0);
 const maxTime = new Date(); maxTime.setHours(23, 59, 59);
 
@@ -112,7 +107,6 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
 
   const cambiarVista = (nuevaVista: View) => { toolbar.onView(nuevaVista); setMenuVistaAbierto(false); };
 
-  // [CORREGIDO] Agregado fallback de 'Sin título' para prevenir crashes
   const resultadosBusqueda = terminoBusqueda.trim() === ''
     ? []
     : toolbar.eventos.filter(e => (e.title || 'Sin título').toLowerCase().includes(terminoBusqueda.toLowerCase()));
@@ -278,23 +272,17 @@ export const CalendarioView = () => {
     tipoEspacio: 'Todos'
   });
 
-  // [CORREGIDO] Función cargarDatos protegida
   const cargarDatos = async () => {
     try {
       setCargando(true);
 
       const fechaInicio = startOfMonth(fechaActual).toISOString();
       const fechaFin = endOfMonth(fechaActual).toISOString();
-
       const data = await obtenerActividades(fechaInicio, fechaFin);
-
-      
-      // Escudo por si la API devuelve el objeto envuelto o directo
       const arregloEventos = Array.isArray(data) ? data : (data?.data || []);
-
       const eventosMapeados = arregloEventos.map((act: any) => {
-        const rawStart = act.start || act.fecha_hora_inicio;
-        const rawEnd = act.end || act.fecha_hora_fin;
+      const rawStart = act.start || act.fecha_hora_inicio;
+      const rawEnd = act.end || act.fecha_hora_fin;
 
             return {
         ...act,
@@ -309,13 +297,13 @@ export const CalendarioView = () => {
       };
 });
 
-console.log("🚀 Eventos mapeados con éxito para React:", eventosMapeados);
-setEventos(eventosMapeados);
-} catch (error) {
-  console.error('Error al cargar eventos en el componente:', error);
-} finally {
-  setCargando(false);
-}
+        console.log("🚀 Eventos mapeados con éxito para React:", eventosMapeados);
+        setEventos(eventosMapeados);
+    } catch (error) {
+        console.error('Error al cargar eventos en el componente:', error);
+    } finally {
+        setCargando(false);
+    }
 };
   useEffect(() => {
     cargarDatos();
@@ -369,7 +357,6 @@ setEventos(eventosMapeados);
   const handleGuardarActividad = async (datosModal: any) => {
     try {
       if (actividadAEditar) {
-        // Usamos el idOriginal para el backend
         const idAEditar = (actividadAEditar as any).idOriginal || actividadAEditar.id;
         console.log("Actualizando actividad existente ID:", idAEditar, datosModal);
         const resultado = await actualizarActividad(idAEditar, datosModal);
@@ -393,7 +380,6 @@ setEventos(eventosMapeados);
     if (evento.tipo === 'clase' && !filtros.clases) return false;
     if (evento.tipo === 'mantenimiento' && !filtros.mantenimientos) return false;
     if (evento.tipo === 'reserva' && !filtros.reservas) return false;
-    //if (filtros.laboratorio !== 'Todos' && evento.laboratorio_nombre !== filtros.laboratorio) return false;
     return true;
   });
 
@@ -402,9 +388,7 @@ setEventos(eventosMapeados);
   return (
     <NavegacionContext.Provider value={{ irAFecha: (fecha) => setFechaActual(fecha) }}>
       <div className="calendar-page-wrapper" onClick={() => eventoSeleccionado && setEventoSeleccionado(null)}>
-
         {cargando && <div className="loading-overlay">Cargando base de datos smartlabs...</div>}
-
         {eventoSeleccionado && (
           <div
             className="event-popover-container"
@@ -495,7 +479,6 @@ setEventos(eventosMapeados);
             </div>
           </div>
         )}
-
         {modalAbierto && (
           <ModalNuevaActividad
             onClose={() => { setModalAbierto(false); setActividadAEditar(null); }}
@@ -503,7 +486,6 @@ setEventos(eventosMapeados);
             actividadExistente={actividadAEditar}
           />
         )}
-
         <div className="calendar-main-container">
           <Calendar
             localizer={localizer}
@@ -531,9 +513,7 @@ setEventos(eventosMapeados);
               <Plus size={20} /> Crear
             </button>
           )}
-
           {esAutoridad && <PanelSolicitudes />}
-
           {esAutoridad && (
             <button className="btn-exportar">
               <Printer size={20} /> Exportar

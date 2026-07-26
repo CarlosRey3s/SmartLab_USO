@@ -39,7 +39,6 @@ app.get('/api/health', async (req, res) => {
 
 console.log("APP DASHBOARD ACTIVA");
 
-
 app.listen(port, async () => {
   console.log(`🚀 Servidor backend corriendo en http://localhost:${port}`);
   

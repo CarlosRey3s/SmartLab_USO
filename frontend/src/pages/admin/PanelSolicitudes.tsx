@@ -253,7 +253,6 @@ const PanelSolicitudes: React.FC = () => {
                     )}
                   </button>
                 </div>
-
               </div>
             );
           })}

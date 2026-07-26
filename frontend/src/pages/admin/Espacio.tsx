@@ -58,7 +58,6 @@ export const EspacioView: React.FC = () => {
     } else {
       document.removeEventListener("mousedown", handleClickOutside);
     }
-    
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };

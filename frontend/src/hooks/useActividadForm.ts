@@ -221,9 +221,6 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
             try {
                 const data = await usuariosService.getUsuarios();
                 const usuarios = Array.isArray(data) ? data : data.data || [];
-
-                // Los técnicos fueron eliminados ya que el mantenimiento no requiere responsable asignado manualmente
-
                 const docentes = usuarios.filter((u: any) => ['docente', 'Docente', 'DOCENTE'].includes(u.rol));
                 setDocentesOptions(docentes.map((d: any) => ({ value: d.id, label: `${d.nombre} ${d.apellido || ''}`.trim() })));
             } catch (error) {

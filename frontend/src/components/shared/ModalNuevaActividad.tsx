@@ -59,8 +59,6 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
   const { user } = useAuth();
 
   //TRADUCTOR DE RECURRENCIA (dE TEXTO UI  a ojeto Estructurado)
-
-  // ── TRADUCTOR DE RECURRENCIA CORREGIDO ──
   const mapearRecurrenciaAObjeto = (textoRecurrencia: string) => {
     if (!textoRecurrencia || textoRecurrencia === "No se repite") return null;
 
