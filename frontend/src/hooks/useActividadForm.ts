@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { usuariosService } from '../services/usuarios.service';
 import { chequearDisponibilidad, obtenerInventarioDisponible } from '../services/actividades.service';
+import { BASE_URL } from "../config/api";
 
 export const DIAS_SEMANA: Record<number, { nombre: string; code: string }> = {
     0: { nombre: "domingo", code: "SU" },
@@ -122,6 +123,7 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
     // ── EFECTOS (Carga de datos y modo edición) ──
     useEffect(() => {
         if (actividadExistente) {
+                    console.log('DEBUG actividadExistente:', actividadExistente.laboratorio_id, actividadExistente.id);
             const start = new Date(actividadExistente.start);
             const end = new Date(actividadExistente.end);
 
@@ -201,7 +203,7 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
     useEffect(() => {
         const fetchlaboratorios = async () => {
             try {
-                const response = await fetch('http://localhost:4000/api/laboratorios');
+                const response = await fetch(`${BASE_URL}/api/laboratorios`);
                 const result = await response.json();
                 if (result.success || result.data) setLabsDesdeBD(result.data || result);
                 else if (Array.isArray(result)) setLabsDesdeBD(result);
@@ -239,7 +241,7 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
         const fetchEstaciones = async () => {
             setCargandoEstaciones(true);
             try {
-                const response = await fetch(`http://localhost:4000/api/laboratorios/${form.laboratorio}/estaciones`);
+                const response = await fetch(`${BASE_URL}/api/laboratorios/${form.laboratorio}/estaciones`);
                 const result = await response.json();
                 if (result.success || result.data) setEstacionesDesdeBD(result.data || result);
                 else if (Array.isArray(result)) setEstacionesDesdeBD(result);
@@ -257,7 +259,7 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
             if (form.laboratorio && form.fecha && form.desde && form.hasta) {
                 setCargandoInventario(true);
                 try {
-                    const res = await obtenerInventarioDisponible(parseInt(form.laboratorio), form.fecha, form.desde, form.hasta, actividadExistente?.id);
+                    const res = await obtenerInventarioDisponible(parseInt(form.laboratorio), form.fecha, form.desde, form.hasta,  (actividadExistente as any)?.idOriginal || actividadExistente?.id);
                     if (res.status === 'success') {
                         setInventarioDesdeBD(res.data);
                         // Sincronizar el stock de los equipos ya seleccionados por si cambia la fecha/hora
@@ -297,7 +299,8 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
             if (form.laboratorio && form.fecha && form.desde && form.hasta) {
                 setVerificando(true);
                 try {
-                    const result = await chequearDisponibilidad(parseInt(form.laboratorio), form.fecha, form.desde, form.hasta, actividadExistente?.id);
+                    console.log('DEBUG form.laboratorio:', form.laboratorio, typeof form.laboratorio);
+                    const result = await chequearDisponibilidad(parseInt(form.laboratorio), form.fecha, form.desde, form.hasta,     (actividadExistente as any)?.idOriginal || actividadExistente?.id );
                     if (result) {
                         setBloqueoTotal(result.bloqueoTotal);
                         setEstacionesOcupadas(result.estacionesOcupadas || []);

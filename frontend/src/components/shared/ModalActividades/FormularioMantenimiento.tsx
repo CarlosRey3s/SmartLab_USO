@@ -1,5 +1,3 @@
-import Select from 'react-select';
-
 interface FormularioMantenimientoProps {
     descripcion?: string;
     onChange: (field: string, value: any) => void;

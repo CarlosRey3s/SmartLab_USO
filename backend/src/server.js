@@ -13,6 +13,13 @@ app.use(express.json());
 // Servir la carpeta de uploads de manera estática
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
+// ← AQUÍ, antes de cualquier app.use de rutas
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+});
+
+
 // Importar rutas
 const authRoutes = require('./routes/auth.routes');
 const usuarioRoutes = require('./routes/usuario.routes');

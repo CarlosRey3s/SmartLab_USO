@@ -6,7 +6,6 @@ import Login from '../pages/auth/Login';
 
 // ESTUDIANTE
 import Dashboard from "../pages/estudiante/Dashboard";
-import Reservar from "../pages/estudiante/Reservar";
 import { BuzonSugerencias } from "../pages/estudiante/BuzonSugerencias";
 
 // DOCENTE

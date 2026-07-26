@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X,Trash2 } from 'lucide-react';
 import { laboratoriosService } from '../../services/laboratorios.service';
 import { ConfirmModal } from '../confirm-modal/ConfirmModal';
 import { customToast } from '../custom-toast/CustomToast';

@@ -5,8 +5,6 @@ import { obtenerTodasSolicitudes, resolverSolicitud } from '../../services/solic
 import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
 import { customToast } from '../../components/custom-toast/CustomToast';
 import '../../css/solicitudes.css';
-import { useAuth } from '../../context/AuthContext';
-import { isReadOnlyView } from '../../utils/roleGuard';
 
 type TabType = 'pendiente' | 'aprobada' | 'rechazada';
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, SlidersHorizontal, Plus, MoreVertical, CheckCircle, ArrowUp, ArrowDown, Monitor } from 'lucide-react';
+import { Search, SlidersHorizontal, Plus, MoreVertical, CheckCircle, Monitor } from 'lucide-react';
 import '../../css/inventario.css';
-import '../../css/usuarios.css';
+import '../../css/Usuarios.css';
 import { AgregarItemModal } from '../../components/shared/AgregarItemModal';
 import { inventarioService } from '../../services/inventario.service';
 import { laboratoriosService } from '../../services/laboratorios.service';
@@ -9,6 +9,7 @@ import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
 import { customToast } from '../../components/custom-toast/CustomToast';
 import { useAuth } from '../../context/AuthContext';
 import { isReadOnlyView } from '../../utils/roleGuard';
+import { BASE_URL } from "../../config/api";
 
 interface InventoryItem {
   id: string | number;
@@ -372,9 +373,9 @@ export const InventarioView: React.FC = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         {item.imagen_url ? (
                           <div className="item-thumbnail-container">
-                            <img src={`http://localhost:4000${item.imagen_url}`} alt={item.nombre} className="item-thumbnail" />
+                            <img src={`${BASE_URL}${item.imagen_url}`} alt={item.nombre} className="item-thumbnail" />
                             <div className="item-image-preview-tooltip">
-                              <img src={`http://localhost:4000${item.imagen_url}`} alt={item.nombre} />
+                              <img src={`${BASE_URL}${item.imagen_url}`} alt={item.nombre} />
                             </div>
                           </div>
                         ) : (
@@ -436,7 +437,7 @@ export const InventarioView: React.FC = () => {
 
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               {item.imagen_url ? (
-                <img src={`http://localhost:4000${item.imagen_url}`} alt={item.nombre} style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #e2e8f0' }} />
+                <img src={`${BASE_URL}${item.imagen_url}`} alt={item.nombre} style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #e2e8f0' }} />
               ) : (
                 <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
                   <Monitor size={24} />

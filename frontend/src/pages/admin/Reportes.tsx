@@ -5,6 +5,7 @@ import { customToast } from "../../components/custom-toast/CustomToast";
 import { useAuth } from "../../context/AuthContext";
 import { isLimitedToOwnLaboratories, isReadOnlyView } from "../../utils/roleGuard";
 import { exportToExcel } from "../../utils/exportExcel";
+import { BASE_URL } from "../../config/api";
 
 interface LaboratorioDB {
   id: number;
@@ -104,7 +105,7 @@ export const ReportesView: React.FC = () => {
       const nextYear = parseInt(mesFin) === 12 ? parseInt(anio) + 1 : parseInt(anio);
       const endDate = new Date(new Date(`${nextYear}-${String(nextMonth).padStart(2, '0')}-01T00:00:00`).getTime() - 1).toISOString().split('T')[0];
 
-      const response = await fetch(`http://localhost:4000/api/reportes/uso-laboratorios?startDate=${startDate}&endDate=${endDate}`);
+      const response = await fetch(`${BASE_URL}/api/reportes/uso-laboratorios?startDate=${startDate}&endDate=${endDate}`);
       const result = await response.json();
       
       if (result.status === 'success' && result.data) {
@@ -128,7 +129,7 @@ export const ReportesView: React.FC = () => {
       if (user?.id) queryParams.append('usuario_id', String(user.id));
       if (user?.rol) queryParams.append('rol', user.rol);
 
-      const res = await fetch(`http://localhost:4000/api/sugerencias?${queryParams.toString()}`);
+      const res = await fetch(`${BASE_URL}/api/sugerencias?${queryParams.toString()}`);
       const data = await res.json();
       if (data.status === "success") {
         setSugerencias(data.data);
@@ -147,7 +148,7 @@ export const ReportesView: React.FC = () => {
 
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/sugerencias/${selectedMessage.id}`, {
+      const res = await fetch(`${BASE_URL}/api/sugerencias/${selectedMessage.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

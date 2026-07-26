@@ -9,7 +9,7 @@ import { isReadOnlyView } from '../../utils/roleGuard';
 import { laboratoriosService } from '../../services/laboratorios.service';
 import '../../css/inventario.css';
 import '../../css/espacios.css';
-import '../../css/usuarios.css';
+import '../../css/Usuarios.css';
 
 interface EspacioItem {
   id: string;

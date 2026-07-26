@@ -1,10 +1,8 @@
 // src/services/actividades.service.ts
 import axios from 'axios';
-import type { EventoLaboratorio } from '..//pages/admin/Calendario.tsx'; // Ajusta la ruta a donde tengas tu interfaz
-// Ajusta la ruta a donde tengas tu interfaz
 
-// Reemplaza esto con la URL real de tu backend si es diferente
-const API_URL = "http://localhost:4000/api/actividades"
+import { BASE_URL } from "../config/api";
+const API_URL = `${BASE_URL}/api/actividades`;
 
 // Helper para enviar el token
 const getAuthHeaders = () => {
@@ -18,7 +16,7 @@ const getAuthHeaders = () => {
 export const obtenerActividades = async (start: string, end: string) => {
     try {
         // Hacemos la petición directa al puerto 4000 de tu backend
-        const respuesta = await axios.get(API_URL, { 
+        const respuesta = await axios.get(API_URL, {
             params: { start, end },
             headers: getAuthHeaders()
         });
@@ -83,7 +81,7 @@ export const eliminarActividad = async (idActividad: number | string): Promise<a
 // Añade esta función en tu servicio del frontend
 export const chequearDisponibilidad = async (laboratorio_id: number, fecha: string, hora_inicio: string, hora_fin: string, exclude_id?: number) => {
     try {
-        let url = `http://localhost:4000/api/actividades/disponibilidad?laboratorio_id=${laboratorio_id}&fecha=${fecha}&hora_inicio=${hora_inicio}&hora_fin=${hora_fin}`;
+        let url = `${import.meta.env.VITE_API_URL}/api/actividades/disponibilidad?laboratorio_id=${laboratorio_id}&fecha=${fecha}&hora_inicio=${hora_inicio}&hora_fin=${hora_fin}`;
         if (exclude_id) url += `&exclude_id=${exclude_id}`;
 
         const response = await axios.get(url, { headers: getAuthHeaders() });
@@ -103,7 +101,7 @@ export const obtenerInventarioDisponible = async (
     excludeActividadId?: string | number
 ) => {
     try {
-        let url = `http://localhost:4000/api/inventario/disponibilidad?laboratorio_id=${laboratorioId}&fecha=${fecha}&hora_inicio=${horaInicio}&hora_fin=${horaFin}`;
+        let url = `${import.meta.env.VITE_API_URL}/api/inventario/disponibilidad?laboratorio_id=${laboratorioId}&fecha=${fecha}&hora_inicio=${horaInicio}&hora_fin=${horaFin}`;
 
         // Si estamos editando una actividad, pasamos su ID para no restarnos nuestro propio stock
         if (excludeActividadId) {
