@@ -288,6 +288,7 @@ export const CalendarioView = () => {
 
       const data = await obtenerActividades(fechaInicio, fechaFin);
 
+      
       // Escudo por si la API devuelve el objeto envuelto o directo
       const arregloEventos = Array.isArray(data) ? data : (data?.data || []);
 
