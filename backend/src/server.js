@@ -32,6 +32,7 @@ const actividadesRoutes = require('./routes/actividadesRoutes');
 const sugerenciasRoutes = require('./routes/sugerencia.routes');
 const reportesRoutes = require('./routes/reportes.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
+const estudianteDashboardRoutes = require("./routes/estudianteDashboard.routes");
 
 
 // Montar rutas
@@ -44,6 +45,7 @@ app.use('/api/actividades', actividadesRoutes); // 2. Montamos las nuevas rutas
 app.use('/api/sugerencias', sugerenciasRoutes);
 app.use('/api/reportes', reportesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/estudiante/dashboard',estudianteDashboardRoutes); // 3. Montamos las rutas del dashboard del estudiante
 
 app.get('/api/health', async (req, res) => {
   try {

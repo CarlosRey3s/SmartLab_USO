@@ -1,133 +1,834 @@
-import { useState } from "react";
+import {
+    useEffect,
+    useState
+} from "react";
+
 import "../../css/evaluaciones.css";
 
-export default function Dashboard() {
-  // Definimos que el estado acepta tipos 'string' o 'null'
-  const [openAccordion, setOpenAccordion] = useState<string | null>("sistemas_l1");
 
-  // Tipamos el parámetro 'id' explícitamente como 'string'
-  const toggleAccordion = (id: string): void => {
-    if (openAccordion === id) {
-      setOpenAccordion(null); // Lo cierra si ya estaba abierto
-    } else {
-      setOpenAccordion(id); // Lo abre si estaba cerrado
+import {
+    obtenerDashboardEstudiante
+} from "../../services/estudianteDashboard.service";
+
+
+import type {
+    EstudianteDashboard
+} from "../../types/estudianteDashboard.types";
+
+
+
+export default function Dashboard(){
+
+
+    const [
+        dashboard,
+        setDashboard
+    ] = useState<EstudianteDashboard | null>(null);
+
+
+
+    const [
+        openAccordion,
+        setOpenAccordion
+    ] = useState<string | null>(null);
+
+
+
+
+
+    const toggleAccordion = (id:string)=>{
+
+
+        if(openAccordion === id){
+
+            setOpenAccordion(null);
+
+        }else{
+
+            setOpenAccordion(id);
+
+        }
+
+
+    };
+
+
+
+
+
+
+    useEffect(()=>{
+
+
+        cargarDashboard();
+
+
+    },[]);
+
+
+
+
+
+
+    const cargarDashboard = async()=>{
+
+
+        try{
+
+
+            console.log(
+                "Dashboard estudiante funcionando"
+            );
+
+
+            const data =
+            await obtenerDashboardEstudiante();
+
+
+
+            console.log(
+                "Datos recibidos:",
+                data
+            );
+
+
+
+            setDashboard(data);
+
+
+
+
+            if(data.horario.length > 0){
+
+
+                setOpenAccordion(
+                    `horario_${data.horario[0].id}`
+                );
+
+
+            }
+
+
+
+        }catch(error){
+
+
+            console.error(
+                "Error cargando dashboard estudiante",
+                error
+            );
+
+
+        }
+
+
+    };
+
+
+
+
+
+
+    if(!dashboard){
+
+
+        return (
+
+            <div className="student-dashboard">
+
+
+                <h2 className="section-main-title">
+
+                    Cargando laboratorios...
+
+                </h2>
+
+
+            </div>
+
+        );
+
+
     }
-  };
 
-  return (
-    <div className="student-dashboard">
-      <h2 className="section-main-title">Mis Laboratorios</h2>
 
-      {/* ================= SECCIÓN: HORARIO ACADÉMICO ================= */}
-      <div className="category-block">
-        <div className="category-header">
-          <span className="checkbox-icon"></span>
-          <h3>HORARIO ACADÉMICO</h3>
-        </div>
 
-        <div className="accordion-list">
-          
-          {/* Item 1: LABORATORIO FÍSICA Lab L2 */}
-          <div className={`accordion-item ${openAccordion === "fisica_l2" ? "open" : "closed"}`}>
-            <div 
-              className="accordion-summary" 
-              onClick={() => toggleAccordion("fisica_l2")} 
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="summary-left">
-                <span className="icon-lab microscope">🔬</span>
-                <span className="label-type">Clases</span>
-                <span className="label-name">LABORATORIO FÍSICA Lab L2</span>
-              </div>
-              <span className="arrow-icon">{openAccordion === "fisica_l2" ? "▲" : "▼"}</span>
+
+
+
+    return (
+
+
+        <div className="student-dashboard">
+
+
+
+            <h2 className="section-main-title">
+
+                Mis Laboratorios
+
+            </h2>
+
+
+
+
+
+
+            {/* ================= HORARIO ACADÉMICO ================= */}
+
+
+
+            <div className="category-block">
+
+
+
+                <div className="category-header">
+
+
+                    <span className="checkbox-icon"></span>
+
+
+                    <h3>
+
+                        HORARIO ACADÉMICO
+
+                    </h3>
+
+
+                </div>
+
+
+
+
+
+
+
+                <div className="accordion-list">
+
+
+
+                    {
+                        dashboard.horario.length === 0 &&
+
+
+                        <p>
+                            No tienes clases asignadas.
+                        </p>
+
+                    }
+
+
+
+
+
+
+                    {
+                        dashboard.horario.map((item)=>{
+
+
+                            const id =
+                            `horario_${item.id}`;
+
+
+
+                            return (
+
+
+                                <div
+
+                                    key={item.id}
+
+                                    className={
+                                        `accordion-item ${
+                                            openAccordion === id
+                                            ?
+                                            "open"
+                                            :
+                                            "closed"
+                                        }`
+                                    }
+
+                                >
+
+
+
+
+
+                                    <div
+
+                                        className="accordion-summary"
+
+                                        onClick={()=>toggleAccordion(id)}
+
+                                        style={{
+                                            cursor:"pointer"
+                                        }}
+
+                                    >
+
+
+
+
+                                        <div className="summary-left">
+
+
+
+                                            <span className="icon-lab microscope">
+
+                                                🔬
+
+                                            </span>
+
+
+
+                                            <span className="label-type">
+
+                                                Clases
+
+                                            </span>
+
+
+
+                                            <span className="label-name">
+
+                                                {item.laboratorio}
+
+                                            </span>
+
+
+
+                                        </div>
+
+
+
+
+
+                                        <span className="arrow-icon">
+
+
+                                            {
+                                                openAccordion === id
+                                                ?
+                                                "▲"
+                                                :
+                                                "▼"
+                                            }
+
+
+                                        </span>
+
+
+
+
+                                    </div>
+
+
+
+
+
+
+
+
+
+                                    {
+                                        openAccordion === id &&
+
+
+
+                                        <div className="accordion-content">
+
+
+
+
+
+                                            <div className="info-group">
+
+
+                                                <h4>
+
+                                                    Horario asignado
+
+                                                </h4>
+
+
+
+                                                <p>
+
+                                                    {item.inicio}
+
+                                                    {" - "}
+
+                                                    {item.fin}
+
+
+                                                </p>
+
+
+
+                                            </div>
+
+
+
+
+
+
+
+
+                                            <div className="info-group details-section">
+
+
+
+                                                <h4>
+
+                                                    Detalles del Laboratorio
+
+                                                </h4>
+
+
+
+
+
+                                                <p>
+
+                                                    <strong>
+                                                        Materia:
+                                                    </strong>
+
+                                                    {" "}
+
+                                                    {item.materia}
+
+                                                </p>
+
+
+
+
+
+                                                <p>
+
+                                                    <strong>
+                                                        Docente:
+                                                    </strong>
+
+                                                    {" "}
+
+                                                    {item.docente}
+
+                                                </p>
+
+
+
+
+
+
+                                                <p>
+
+                                                    <strong>
+                                                        Edificio:
+                                                    </strong>
+
+                                                    {" "}
+
+                                                    {item.edificio}
+
+                                                </p>
+
+
+
+
+
+
+                                                <p>
+
+                                                    <strong>
+                                                        Aula:
+                                                    </strong>
+
+                                                    {" "}
+
+                                                    {item.aula}
+
+                                                </p>
+
+
+
+
+
+
+                                                <p>
+
+                                                    <strong>
+                                                        Estado:
+                                                    </strong>
+
+
+                                                    {" "}
+
+
+                                                    <span className="status-active">
+
+                                                        Activo
+
+                                                    </span>
+
+
+                                                </p>
+
+
+
+
+                                            </div>
+
+
+
+
+                                        </div>
+
+
+                                    }
+
+
+
+
+
+                                </div>
+
+
+
+                            );
+
+
+                        })
+
+
+                    }
+
+
+
+
+
+                </div>
+
+
+
+
             </div>
-            
-            {/* Contenido condicional para Física L2 */}
-            {openAccordion === "fisica_l2" && (
-              <div className="accordion-content">
-                <div className="info-group">
-                  <h4>Horarios asignado</h4>
-                  <p>Martes: 08:00 am - 10:00 am</p>
-                </div>
-              </div>
-            )}
-          </div>
 
-          {/* Item 2: SISTEMAS DIGITALES Lab L1 */}
-          <div className={`accordion-item ${openAccordion === "sistemas_l1" ? "open" : "closed"}`}>
-            <div 
-              className="accordion-summary" 
-              onClick={() => toggleAccordion("sistemas_l1")} 
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="summary-left">
-                <span className="icon-lab microscope">🔬</span>
-                <span className="label-type">Clases</span>
-                <span className="label-name">SISTEMAS DIGITALES Lab L1</span>
-              </div>
-              <span className="arrow-icon">{openAccordion === "sistemas_l1" ? "▲" : "▼"}</span>
+
+
+
+
+
+
+
+
+            {/* ================= RESERVAS ================= */}
+
+
+
+            <div className="category-block">
+
+
+
+                <div className="category-header">
+
+
+
+                    <span className="checkbox-icon"></span>
+
+
+
+                    <h3>
+
+                        RESERVAS DE LABORATORIO
+
+                    </h3>
+
+
+
+                </div>
+
+
+
+
+
+
+
+                <div className="accordion-list">
+
+
+
+
+
+                    {
+                        dashboard.reservas.length === 0 &&
+
+
+                        <p>
+
+                            No tienes reservas realizadas.
+
+                        </p>
+
+
+                    }
+
+
+
+
+
+
+                    {
+                        dashboard.reservas.map((item)=>{
+
+
+                            const id =
+                            `reserva_${item.id}`;
+
+
+
+
+                            return (
+
+
+                                <div
+
+                                    key={item.id}
+
+                                    className={
+                                        `accordion-item ${
+                                            openAccordion === id
+                                            ?
+                                            "open"
+                                            :
+                                            "closed"
+                                        }`
+                                    }
+
+
+                                >
+
+
+
+
+                                    <div
+
+                                        className="accordion-summary"
+
+                                        onClick={()=>toggleAccordion(id)}
+
+                                        style={{
+                                            cursor:"pointer"
+                                        }}
+
+                                    >
+
+
+
+                                        <div className="summary-left">
+
+
+
+                                            <span className="icon-lab folder">
+
+                                                📁
+
+                                            </span>
+
+
+
+                                            <span className="label-type">
+
+                                                Reserva
+
+                                            </span>
+
+
+
+
+                                            <span className="label-name">
+
+                                                {item.laboratorio}
+
+                                            </span>
+
+
+
+
+                                        </div>
+
+
+
+
+
+
+                                        <span className="arrow-icon">
+
+
+                                            {
+                                                openAccordion === id
+                                                ?
+                                                "▲"
+                                                :
+                                                "▼"
+                                            }
+
+
+                                        </span>
+
+
+
+                                    </div>
+
+
+
+
+
+
+
+                                    {
+                                        openAccordion === id &&
+
+
+                                        <div className="accordion-content">
+
+
+
+                                            <div className="info-group">
+
+
+
+                                                <h4>
+
+                                                    Información de reserva
+
+                                                </h4>
+
+
+
+
+
+                                                <p>
+
+                                                    <strong>
+                                                        Título:
+                                                    </strong>
+
+                                                    {" "}
+
+                                                    {item.titulo}
+
+                                                </p>
+
+
+
+
+
+
+                                                <p>
+
+                                                    <strong>
+                                                        Inicio:
+                                                    </strong>
+
+                                                    {" "}
+
+                                                    {item.inicio}
+
+                                                </p>
+
+
+
+
+
+
+                                                <p>
+
+                                                    <strong>
+                                                        Estado:
+                                                    </strong>
+
+                                                    {" "}
+
+                                                    {item.estado_reserva}
+
+                                                </p>
+
+
+
+
+
+
+                                                {
+                                                    item.nota_adicional &&
+
+
+                                                    <p>
+
+                                                        <strong>
+                                                            Nota:
+                                                        </strong>
+
+
+                                                        {" "}
+
+                                                        {item.nota_adicional}
+
+
+                                                    </p>
+
+
+                                                }
+
+
+
+
+
+                                            </div>
+
+
+
+                                        </div>
+
+
+                                    }
+
+
+
+
+
+                                </div>
+
+
+                            );
+
+
+
+                        })
+
+
+                    }
+
+
+
+
+
+                </div>
+
+
+
+
             </div>
-            
-            {/* Contenido condicional para Sistemas Digitales */}
-            {openAccordion === "sistemas_l1" && (
-              <div className="accordion-content">
-                <div className="info-group">
-                  <h4>Horarios asignado</h4>
-                  <p>Lunes: 10:00 am - 12:00 pm</p>
-                  <p>Viernes: 10:00 am - 12:00 pm</p>
-                </div>
 
-                <div className="info-group details-section">
-                  <h4>Detalles del Laboratorio 001:</h4>
-                  <p><strong>Edificio:</strong> L1</p>
-                  <p><strong>Descripcion:</strong> Especialidad en electronica digital</p>
-                  <p><strong>Estado:</strong> <span className="status-active">Activo</span></p>
-                </div>
-              </div>
-            )}
-          </div>
+
+
+
+
 
         </div>
-      </div>
 
-      {/* ================= SECCIÓN: RESERVAS DE LABORATORIO ================= */}
-      <div className="category-block">
-        <div className="category-header">
-          <span className="checkbox-icon"></span>
-          <h3>RESERVAS DE LABORATORIO</h3>
-        </div>
 
-        <div className="accordion-list">
-          
-          {/* Item 3: LABORATORIO FÍSICA Lab 01 */}
-          <div className={`accordion-item ${openAccordion === "fisica_01" ? "open" : "closed"}`}>
-            <div 
-              className="accordion-summary" 
-              onClick={() => toggleAccordion("fisica_01")} 
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="summary-left">
-                <span className="icon-lab folder">📁</span>
-                <span className="label-type">Clases</span>
-                <span className="label-name">LABORATORIO FÍSICA Lab 01</span>
-              </div>
-              <span className="arrow-icon">{openAccordion === "fisica_01" ? "▲" : "▼"}</span>
-            </div>
+    );
 
-            {/* Contenido condicional para Física 01 */}
-            {openAccordion === "fisica_01" && (
-              <div className="accordion-content">
-                <div className="info-group">
-                  <h4>Horarios asignado</h4>
-                  <p>Miércoles: 02:00 pm - 04:00 pm</p>
-                </div>
-              </div>
-            )}
-          </div>
 
-        </div>
-      </div>
-
-    </div>
-  );
 }
