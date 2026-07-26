@@ -90,9 +90,12 @@ const consultarDisponibilidad = async (req, res) => {
             return res.status(400).json({ exito: false, mensaje: 'Faltan parámetros de tiempo o laboratorio' });
         }
 
+        const inicioDatetime = new Date(`${fecha}T${hora_inicio}`);
+        const finDatetime = new Date(`${fecha}T${hora_fin}`);
+
         // Importante: Asegurar que actividadesService.obtenerDisponibilidad existe, o usar la ruta correcta
         const disponibilidad = await actividadesService.obtenerDisponibilidad(
-            laboratorio_id, fecha, hora_inicio, hora_fin, exclude_id
+            laboratorio_id, inicioDatetime, finDatetime, exclude_id
         );
         res.status(200).json({ exito: true, data: disponibilidad });
     } catch (error) {

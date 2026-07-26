@@ -381,12 +381,12 @@ const eliminarActividad = async (idActividad) => {
     }
 };
 
-const obtenerDisponibilidad = async (laboratorioId, fechaInicio, fechaFin) => {
+const obtenerDisponibilidad = async (laboratorioId, fechaInicio, fechaFin, excludeId = null) => {
     // =========================================================================
     // 1. Verificar si hay un evento que bloquee TODO el laboratorio 
     // (Ej. Clases, Mantenimientos o reservas del espacio completo)
     // =========================================================================
-    const queryBloqueo = `
+    let queryBloqueo = `
         SELECT a.tipo 
         FROM actividades a
         LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id
@@ -395,7 +395,12 @@ const obtenerDisponibilidad = async (laboratorioId, fechaInicio, fechaFin) => {
           AND a.fecha_hora_fin > $2
           AND (a.tipo != 'reserva' OR re.estado_reserva NOT IN ('cancelada', 'rechazada'))
     `;
-    const resultBloqueo = await db.query(queryBloqueo, [laboratorioId, fechaInicio, fechaFin]);
+    const paramsBloqueo = [laboratorioId, fechaInicio, fechaFin];
+    if (excludeId) {
+        queryBloqueo += ` AND a.id != $4`;
+        paramsBloqueo.push(excludeId);
+    }
+    const resultBloqueo = await db.query(queryBloqueo, paramsBloqueo);
 
     // Si detectamos clases o mantenimientos, el laboratorio entero está bloqueado
     const bloqueoTotal = resultBloqueo.rows.find(row => row.tipo === 'clase' || row.tipo === 'mantenimiento');
@@ -406,7 +411,7 @@ const obtenerDisponibilidad = async (laboratorioId, fechaInicio, fechaFin) => {
     // =========================================================================
     // 2. Obtener las Estaciones Ocupadas en ese rango de tiempo
     // =========================================================================
-    const queryEstaciones = `
+    let queryEstaciones = `
         SELECT res_est.estacion_id 
         FROM reserva_estaciones res_est
         JOIN actividades a ON res_est.actividad_id = a.id
@@ -416,13 +421,18 @@ const obtenerDisponibilidad = async (laboratorioId, fechaInicio, fechaFin) => {
           AND a.fecha_hora_fin > $2
           AND (a.tipo != 'reserva' OR re.estado_reserva NOT IN ('cancelada', 'rechazada'))
     `;
-    const resultEstaciones = await db.query(queryEstaciones, [laboratorioId, fechaInicio, fechaFin]);
+    const paramsEstaciones = [laboratorioId, fechaInicio, fechaFin];
+    if (excludeId) {
+        queryEstaciones += ` AND a.id != $4`;
+        paramsEstaciones.push(excludeId);
+    }
+    const resultEstaciones = await db.query(queryEstaciones, paramsEstaciones);
     const estacionesOcupadas = resultEstaciones.rows.map(r => r.estacion_id);
 
     // =========================================================================
     // 3. Obtener el Inventario Ocupado en ese rango de tiempo
     // =========================================================================
-    const queryItems = `
+    let queryItems = `
         SELECT ri.item_id, SUM(ri.cantidad_solicitada) as total_ocupado
         FROM reserva_items ri
         JOIN actividades a ON ri.actividad_id = a.id
@@ -431,9 +441,15 @@ const obtenerDisponibilidad = async (laboratorioId, fechaInicio, fechaFin) => {
           AND a.fecha_hora_inicio < $3 
           AND a.fecha_hora_fin > $2
           AND (a.tipo != 'reserva' OR re.estado_reserva NOT IN ('cancelada', 'rechazada'))
-        GROUP BY ri.item_id
     `;
-    const resultItems = await db.query(queryItems, [laboratorioId, fechaInicio, fechaFin]);
+    const paramsItems = [laboratorioId, fechaInicio, fechaFin];
+    if (excludeId) {
+        queryItems += ` AND a.id != $4`;
+        paramsItems.push(excludeId);
+    }
+    queryItems += ` GROUP BY ri.item_id`;
+    
+    const resultItems = await db.query(queryItems, paramsItems);
 
     // Transformamos el resultado en un objeto clave-valor { id_item: cantidad_ocupada }
     const itemsOcupados = {};

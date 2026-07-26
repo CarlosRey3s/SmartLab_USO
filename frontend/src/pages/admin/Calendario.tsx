@@ -1,7 +1,7 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import {
   Search, Calendar as CalendarIcon, ChevronLeft, ChevronRight,
-  ChevronDown, ChevronUp, Plus, Printer, X, User, Wrench, FileText,
+  ChevronDown, ChevronUp, Plus, Printer, X, User, Wrench, FileText, Info,
   Edit2, Trash2, Filter
 } from 'lucide-react';
 import { Calendar, dateFnsLocalizer, type ToolbarProps, type View } from 'react-big-calendar';
@@ -15,7 +15,7 @@ import { customToast } from '../../components/custom-toast/CustomToast.tsx';
 import { useAuth } from '../../context/AuthContext';
 import { isReadOnlyView } from '../../utils/roleGuard';
 
-import { format, parse, startOfWeek, endOfWeek, getDay, isToday } from 'date-fns';
+import { format, parse, startOfWeek, getDay, isToday, startOfMonth, endOfMonth } from 'date-fns';
 
 // ── 1. CONFIGURACIÓN DE FECHAS E IDIOMA ──
 const locales = { 'es': es };
@@ -27,7 +27,7 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
-const NavegacionContext = createContext({ irAFecha: (_fecha: Date) => { } });
+const NavegacionContext = createContext({ irAFecha: (fecha: Date) => { } });
 
 // [CORREGIDO] Sacamos minTime y maxTime fuera del componente para que no causen re-renders infinitos
 const minTime = new Date(); minTime.setHours(6, 0, 0);
@@ -258,13 +258,6 @@ export const CalendarioView = () => {
 
   const [fechaActual, setFechaActual] = useState(new Date());
   const [vistaActual, setVistaActual] = useState<View>('week');
-  const [rangoVisible, setRangoVisible] = useState<{ start: Date; end: Date }>(() => {
-    const hoy = new Date();
-    return {
-      start: startOfWeek(hoy, { weekStartsOn: 1 }),
-      end: endOfWeek(hoy, { weekStartsOn: 1 })
-    };
-  });
   const [modalAbierto, setModalAbierto] = useState(false);
 
   const [eventoSeleccionado, setEventoSeleccionado] = useState<EventoLaboratorio | null>(null);
@@ -286,41 +279,40 @@ export const CalendarioView = () => {
   });
 
   // [CORREGIDO] Función cargarDatos protegida
-  const cargarDatos = async (rango: { start: Date; end: Date } = rangoVisible) => {
+  const cargarDatos = async () => {
     try {
       setCargando(true);
 
-      const fechaInicio = rango.start.toISOString();
-      const fechaFin = rango.end.toISOString();
+      const fechaInicio = startOfMonth(fechaActual).toISOString();
+      const fechaFin = endOfMonth(fechaActual).toISOString();
 
       const data = await obtenerActividades(fechaInicio, fechaFin);
 
       // Escudo por si la API devuelve el objeto envuelto o directo
-      const arregloEventos = Array.isArray(data) ? data : ((data as any)?.data ?? []);
+      const arregloEventos = Array.isArray(data) ? data : (data?.data || []);
 
       const eventosMapeados = arregloEventos.map((act: any) => {
-        const rawStart = act.start ?? act.fecha_hora_inicio ?? act.inicio ?? act.fechaInicio;
-        const rawEnd = act.end ?? act.fecha_hora_fin ?? act.fin ?? act.fechaFin;
-
-        const startDate = rawStart ? new Date(rawStart) : new Date();
-        const endDate = rawEnd ? new Date(rawEnd) : new Date(startDate.getTime() + 60 * 60 * 1000);
-
-        const title = act.title
-          ?? act.titulo
-          ?? (act.tipo === 'clase' ? act.materia : act.tipo === 'mantenimiento' ? 'Mantenimiento' : 'Actividad');
+        // 🌟 ESCUDO DE ORO: Validamos dinámicamente cómo vienen las llaves del JSON
+        const rawStart = act.start || act.fecha_hora_inicio;
+        const rawEnd = act.end || act.fecha_hora_fin;
 
         return {
           ...act,
-          id: act.id_instancia ?? act.id,
-          idOriginal: act.id,
-          title,
-          start: startDate,
-          end: endDate,
+          id: act.id_instancia || act.id,   // Llave única para evitar crasheos en React
+          idOriginal: act.id,               // ID real de PostgreSQL para operaciones CRUD
+
+          // Si el backend ya calculó un title, úsalo; si no, elígelo por tipo
+          title: act.title || (act.tipo === 'clase' ? act.materia : act.tipo === 'mantenimiento' ? 'Mantenimiento' : act.titulo),
+
+          // 🌟 Construimos los objetos Date usando las variables protegidas
+          start: new Date(rawStart),
+          end: new Date(rawEnd),
+
           tipo: act.tipo,
           laboratorio_id: act.laboratorio_id,
           laboratorio_nombre: act.laboratorio_nombre || 'Laboratorio',
         };
-      }).filter((evento: any) => evento.start instanceof Date && !Number.isNaN(evento.start.getTime()));
+      });
 
       console.log("🚀 Eventos mapeados con éxito para React:", eventosMapeados);
       setEventos(eventosMapeados);
@@ -332,20 +324,8 @@ export const CalendarioView = () => {
   };
 
   useEffect(() => {
-    void cargarDatos(rangoVisible);
-  }, [rangoVisible.start, rangoVisible.end]);
-
-  const handleRangeChange = (range: Date[] | { start: Date; end: Date }) => {
-    if (Array.isArray(range)) {
-      const [start, end] = range;
-      setRangoVisible({ start, end });
-      setFechaActual(start);
-      return;
-    }
-
-    setRangoVisible(range);
-    setFechaActual(range.start);
-  };
+    cargarDatos();
+  }, [fechaActual]);
 
   const handleSelectEvent = (evento: EventoLaboratorio, e: any) => {
     const evt = e.nativeEvent as MouseEvent;
@@ -535,11 +515,8 @@ export const CalendarioView = () => {
             localizer={localizer}
             events={eventosFiltrados}
             startAccessor="start" endAccessor="end"
-            date={fechaActual}
-            onNavigate={(date) => setFechaActual(date)}
-            view={vistaActual}
-            onView={(view) => setVistaActual(view)}
-            onRangeChange={handleRangeChange}
+            date={fechaActual} onNavigate={setFechaActual}
+            view={vistaActual} onView={setVistaActual}
             min={minTime} /* [CORREGIDO] Variables externas */
             max={maxTime} /* [CORREGIDO] Variables externas */
             formats={{ timeGutterFormat: 'h a' }} culture="es"
