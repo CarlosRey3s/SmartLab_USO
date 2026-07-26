@@ -1,102 +1,344 @@
+import {
+    useEffect,
+    useState
+} from "react";
+
+
 import "../../css/docente-dashboard.css";
 
-export default function DocenteDashboard() {
-  return (
-    <div className="docente-container">
 
-      {/* HEADER SIMPLE (opcional pero recomendado) */}
-      <div className="docente-header">
-        <div>
-          <h2 className="docente-title">Dashboard Docente</h2>
-          <p className="docente-subtitle">
-            Gestión de clases, laboratorios y reservas
-          </p>
+import {
+    obtenerDashboardDocente
+} from "../../services/docenteDashboard.service";
+
+
+import type {
+    DocenteDashboard
+} from "../../types/docenteDashboard.types";
+
+
+
+export default function DocenteDashboard(){
+
+
+    const [
+        dashboard,
+        setDashboard
+    ] = useState<DocenteDashboard | null>(null);
+
+
+
+    useEffect(()=>{
+
+
+        cargarDashboard();
+
+
+    },[]);
+
+
+
+
+    const cargarDashboard = async()=>{
+
+
+        try{
+
+
+            const data =
+            await obtenerDashboardDocente();
+
+
+            console.log(
+                "Dashboard docente:",
+                data
+            );
+
+
+            setDashboard(data);
+
+
+
+        }catch(error){
+
+
+            console.error(
+                "Error dashboard docente:",
+                error
+            );
+
+
+        }
+
+
+    };
+
+
+
+
+
+    if(!dashboard){
+
+
+        return (
+
+            <h2>
+                Cargando dashboard docente...
+            </h2>
+
+        );
+
+
+    }
+
+
+
+
+    return (
+
+        <div className="docente-container">
+
+
+            <div className="docente-header">
+
+                <div>
+
+                    <h2 className="docente-title">
+                        Dashboard Docente
+                    </h2>
+
+
+                    <p className="docente-subtitle">
+                        Gestión de clases, laboratorios y reservas
+                    </p>
+
+
+                </div>
+
+            </div>
+
+
+
+
+
+            <div className="docente-grid">
+
+
+
+
+
+                <div className="docente-card panel">
+
+
+                    <h3>
+                        Mis Laboratorios
+                    </h3>
+
+
+
+                    {
+                        dashboard.laboratorios.map((lab)=>(
+
+
+                            <div
+                            className="item highlight"
+                            key={lab.id}
+                            >
+
+
+                                <strong>
+                                    {lab.nombre}
+                                </strong>
+
+
+                                <p>
+                                    Edificio: {lab.edificio}
+                                </p>
+
+
+                                <p>
+                                    Aula: {lab.aula}
+                                </p>
+
+
+                                <p>
+                                    Capacidad:
+                                    {" "}
+                                    {lab.capacidad_maxima}
+                                </p>
+
+
+                                <p>
+                                    Estado:
+                                    {" "}
+                                    {lab.estado}
+                                </p>
+
+
+                            </div>
+
+
+                        ))
+                    }
+
+
+
+                </div>
+
+
+
+
+
+
+
+                <div className="docente-card panel">
+
+
+                    <h3>
+                        Agenda Académica
+                    </h3>
+
+
+
+                    {
+                        dashboard.agenda.map((item)=>(
+
+
+                            <div
+                            className="item"
+                            key={item.id}
+                            >
+
+
+                                <span className="time">
+
+                                    {item.inicio}
+                                    {" - "}
+                                    {item.fin}
+
+                                </span>
+
+
+                                <strong>
+
+                                    {item.materia}
+
+                                </strong>
+
+
+                                <p>
+
+                                    {item.laboratorio}
+
+                                </p>
+
+
+                                <p>
+
+                                    {item.num_estudiantes}
+                                    {" estudiantes"}
+
+                                </p>
+
+
+
+                            </div>
+
+
+                        ))
+                    }
+
+
+
+                </div>
+
+
+
+
+
+
+
+                <div className="docente-card panel">
+
+
+                    <h3>
+                        Reservas y Notificaciones
+                    </h3>
+
+
+
+                    {
+                        dashboard.reservas.length === 0 &&
+
+                        <p>
+                            No hay reservas.
+                        </p>
+
+                    }
+
+
+
+                    {
+                        dashboard.reservas.map((reserva)=>(
+
+
+                            <div
+                            className="item warning"
+                            key={reserva.actividad_id}
+                            >
+
+
+                                <strong>
+                                    {reserva.titulo}
+                                </strong>
+
+
+                                <p>
+                                    {reserva.laboratorio}
+                                </p>
+
+
+                                <span>
+
+                                    {reserva.inicio}
+                                    {" - "}
+                                    {reserva.fin}
+
+                                </span>
+
+
+                                {
+                                    reserva.nota_adicional &&
+
+                                    <p>
+                                        Nota:
+                                        {" "}
+                                        {reserva.nota_adicional}
+                                    </p>
+
+                                }
+
+
+                            </div>
+
+
+                        ))
+                    }
+
+
+
+                </div>
+
+
+
+
+            </div>
+
+
         </div>
-      </div>
 
-      {/* GRID PRINCIPAL (sin KPIs) */}
-      <div className="docente-grid">
 
-        {/* MIS LABORATORIOS (ANTES KPI + PARTE DEL CONTENIDO) */}
-        <div className="docente-card panel">
+    );
 
-          <h3>Mis Laboratorios</h3>
 
-          <div className="item highlight">
-            <strong>Computo L1</strong>
-            <p>Edificio A</p>
-            <p>Capacidad: 30 estudiantes</p>
-            <p>Disponibilidad: 10 / 16 estaciones</p>
-          </div>
-
-          <div className="item">
-            <strong>Física L2</strong>
-            <p>Edificio B</p>
-            <p>Capacidad: 25 estudiantes</p>
-            <p>Disponibilidad: 12 / 16 estaciones</p>
-          </div>
-
-          <div className="item">
-            <strong>Electrónica L3</strong>
-            <p>Edificio C</p>
-            <p>Capacidad: 20 estudiantes</p>
-            <p>Disponibilidad: 14 / 20 estaciones</p>
-          </div>
-        </div>
-
-        {/* AGENDA */}
-        <div className="docente-card panel">
-
-          <h3>Agenda Académica</h3>
-
-          <div className="item">
-            <span className="time">08:00 - 10:00</span>
-            <strong>Sistemas Digitales</strong>
-            <p>Laboratorio Computo L1</p>
-            <p>28 estudiantes</p>
-          </div>
-
-          <div className="item">
-            <span className="time">10:00 - 12:00</span>
-            <strong>Física Aplicada</strong>
-            <p>Laboratorio Física L2</p>
-            <p>25 estudiantes</p>
-          </div>
-
-          <div className="item">
-            <span className="time">14:00 - 16:00</span>
-            <strong>Electrónica</strong>
-            <p>Laboratorio Electrónica L3</p>
-            <p>20 estudiantes</p>
-          </div>
-
-        </div>
-
-        {/* RESERVAS + NOTIFICACIONES (UNIFICADO MÁS LIMPIO) */}
-        <div className="docente-card panel">
-
-          <h3>Reservas y Notificaciones</h3>
-
-          <div className="item warning">
-            <strong>Reserva Directa</strong>
-            <p>Computo L1 · Estación 04</p>
-            <span>09:00 - 11:00</span>
-          </div>
-
-          <div className="item">
-            <strong>Mantenimiento</strong>
-            <p>Física L2</p>
-            <span>14:00 - 16:00</span>
-          </div>
-
-          <div className="item info">
-            <strong>Notificación</strong>
-            <p>Reserva aprobada por coordinador</p>
-          </div>
-
-        </div>
-
-      </div>
-    </div>
-  );
 }
