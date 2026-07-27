@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, SlidersHorizontal, Plus, MoreVertical, CheckCircle, ArrowUp, ArrowDown, Monitor } from 'lucide-react';
+import { Search, SlidersHorizontal, Plus, MoreVertical, CheckCircle, ArrowUp, ArrowDown, Monitor, Bell, Package } from 'lucide-react';
 import '../../css/inventario.css';
 import '../../css/usuarios.css';
 import { AgregarItemModal } from '../../components/shared/AgregarItemModal';
@@ -29,7 +29,7 @@ interface InventoryItem {
 export const InventarioView: React.FC = () => {
   const { user } = useAuth();
   const readOnly = user ? isReadOnlyView(user.rol as any) : false;
-  const [activeTab, setActiveTab] = useState<'inventario' | 'reportes'>('inventario');
+  const [activeTab, setActiveTab] = useState<'inventario' | 'alertas'>('inventario');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeMenu, setActiveMenu] = useState<string | number | null>(null);
   const [reportStatusFilter, setReportStatusFilter] = useState('Todos los Estados');
@@ -178,8 +178,8 @@ export const InventarioView: React.FC = () => {
     }
   });
 
-  // Estado para la tabla de Reportes de Inventario (Ejemplos estáticos)
-  const [reportes] = useState<any[]>([
+  // Estado para la tabla de Alertas de Inventario (Ejemplos estáticos)
+  const [alertas] = useState<any[]>([
     {
       id: 1,
       item_nombre: 'Microscopio Binocular',
@@ -241,14 +241,18 @@ export const InventarioView: React.FC = () => {
           <button 
             className={`tab ${activeTab === 'inventario' ? 'active' : ''}`}
             onClick={() => setActiveTab('inventario')}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
+            <Package size={18} />
             Inventario
           </button>
           <button 
-            className={`tab ${activeTab === 'reportes' ? 'active' : ''}`}
-            onClick={() => setActiveTab('reportes')}
+            className={`tab ${activeTab === 'alertas' ? 'active' : ''}`}
+            onClick={() => setActiveTab('alertas')}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
-            Reportes
+            <Bell size={18} />
+            Alertas
           </button>
         </div>
       </div>
@@ -526,8 +530,8 @@ export const InventarioView: React.FC = () => {
   </div>
 )}
 
-      {/* VISTA 2: TABLA DE REPORTES DE DAÑOS/INCIDENCIAS */}
-      {activeTab === 'reportes' && (
+      {/* VISTA 2: TABLA DE ALERTAS DE DAÑOS/INCIDENCIAS */}
+      {activeTab === 'alertas' && (
         <div className="table-container" style={{ overflow: 'visible' }}>
           <table className="users-table">
             <thead>
@@ -543,12 +547,12 @@ export const InventarioView: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {reportes.length === 0 ? (
+              {alertas.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '20px' }}>No hay reportes para mostrar</td>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '20px' }}>No hay alertas para mostrar</td>
                 </tr>
               ) : (
-                reportes.map((reporte) => (
+                alertas.map((reporte) => (
                   <tr key={reporte.id}>
                     <td>#{reporte.id}</td>
                     <td>
