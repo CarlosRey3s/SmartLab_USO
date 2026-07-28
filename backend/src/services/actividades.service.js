@@ -1,6 +1,6 @@
-// ✅ Como debe quedar (Extrayendo el pool y renombrándolo a db)
 const { pool: db } = require('../config/db');
 const { rrulestr } = require('rrule');
+const { crearAlerta } = require('./alertas.service');
 
 
 /**
@@ -116,6 +116,57 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
     }
 };
 
+/**
+ * Verifica si hay stock disponible para los equipos solicitados en el rango de fechas,
+ * considerando las reservas futuras que ya están programadas (aprobadas o pendientes)
+ * y que se cruzan en tiempo, para NO sobre-prometer inventario.
+ */
+const verificarDisponibilidadItems = async (client, inicioDatetime, finDatetime, equiposSolicitados, idActividadExcluir = null) => {
+    if (!equiposSolicitados || equiposSolicitados.length === 0) return;
+
+    for (const equipo of equiposSolicitados) {
+        const itemId = equipo.id;
+        const cantPedida = parseInt(equipo.cantidad || 1, 10);
+
+        // 1. Consultar Stock Físico (cantidad_actual)
+        const queryItem = `SELECT nombre, cantidad_actual FROM item_inventario WHERE id = $1`;
+        const resItem = await client.query(queryItem, [itemId]);
+        if (resItem.rows.length === 0) throw new Error(`El equipo con ID ${itemId} no existe en el inventario.`);
+        
+        const itemInfo = resItem.rows[0];
+        const stockFisico = parseInt(itemInfo.cantidad_actual, 10);
+
+        // 2. Sumar la cantidad comprometida en reservas concurrentes (que aún no se han entregado)
+        let queryChoques = `
+            SELECT COALESCE(SUM(ri.cantidad_solicitada), 0) as comprometidos
+            FROM actividades a
+            JOIN reserva_items ri ON a.id = ri.actividad_id
+            LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id
+            WHERE ri.item_id = $1
+              AND a.fecha_hora_inicio < $2 
+              AND a.fecha_hora_fin > $3
+              -- Solo nos importan reservas que separan stock pero NO lo han retirado físicamente aún
+              AND (re.estado_reserva IN ('pendiente', 'aprobada'))
+        `;
+        const params = [itemId, finDatetime, inicioDatetime];
+
+        if (idActividadExcluir) {
+            queryChoques += ` AND a.id != $4`;
+            params.push(idActividadExcluir);
+        }
+
+        const resChoques = await client.query(queryChoques, params);
+        const comprometidos = parseInt(resChoques.rows[0].comprometidos, 10);
+
+        // 3. Evaluar Disponibilidad Proyectada
+        const disponibleProyectado = stockFisico - comprometidos;
+
+        if (cantPedida > disponibleProyectado) {
+            throw new Error(`Para el horario seleccionado, solo tenemos ${Math.max(0, disponibleProyectado)} unidades disponibles de "${itemInfo.nombre}". Se están ocupando ${comprometidos} en otras reservas cruzadas.`);
+        }
+    }
+};
+
 const formatearRecurrencia = (recurrenciaObj) => {
     if (!recurrenciaObj || typeof recurrenciaObj !== 'object') return null;
 
@@ -173,6 +224,11 @@ const programarActividad = async (datosModal, usuarioLogueado) => {
 
         // [VALIDACIÓN CRÍTICA]: Ejecutar el árbol lógico de choques de horarios e infraestructura
         await verificarChoqueHorario(client, laboratorio, inicioDatetime, finDatetime, tipo, datosModal);
+
+        // [NUEVA VALIDACIÓN CRÍTICA]: Choques de Inventario Proyectado
+        if (datosModal.equipos && Array.isArray(datosModal.equipos) && datosModal.equipos.length > 0) {
+            await verificarDisponibilidadItems(client, inicioDatetime, finDatetime, datosModal.equipos);
+        }
 
         // Si la nueva actividad es un mantenimiento, actualizamos físicamente el estado
         if (tipo === 'mantenimiento') {
@@ -773,6 +829,147 @@ const resolverSolicitud = async (actividadId, accion, resolutorId) => {
     throw { status: 400, message: 'Acción no válida. Use "aprobar" o "rechazar".' };
 };
 
+// ==========================================
+// 3. ENTREGAR EQUIPOS (Descuenta inventario)
+// ==========================================
+const registrarEntregaEquipos = async (actividadId, usuarioId) => {
+    // Asegurarnos de que el ENUM tiene 'entregado' ANTES de iniciar la transacción.
+    try {
+        await db.query(`ALTER TYPE estado_reserva_enum ADD VALUE IF NOT EXISTS 'entregado'`);
+    } catch (e) { /* ignoramos */ }
+
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Verificar estado actual (debe ser aprobada)
+        const resQuery = await client.query(
+            `SELECT estado_reserva FROM reservas_estudiantes WHERE actividad_id = $1 FOR UPDATE`, 
+            [actividadId]
+        );
+
+        if (resQuery.rows.length === 0) {
+            throw new Error("Reserva no encontrada");
+        }
+        if (resQuery.rows[0].estado_reserva !== 'aprobada') {
+            throw new Error(`No se puede entregar equipos porque la reserva está en estado: ${resQuery.rows[0].estado_reserva}`);
+        }
+
+        // 2. Cambiar estado a 'entregado'
+        await client.query(
+            `UPDATE reservas_estudiantes SET estado_reserva = 'entregado' WHERE actividad_id = $1`,
+            [actividadId]
+        );
+
+        // 3. Descontar Inventario Físico
+        const resItems = await client.query(
+            `SELECT item_id, cantidad_solicitada FROM reserva_items WHERE actividad_id = $1`,
+            [actividadId]
+        );
+
+        for (const fila of resItems.rows) {
+            // Restar inventario
+            const rest = await client.query(
+                `UPDATE item_inventario SET cantidad_actual = cantidad_actual - $1 WHERE id = $2 AND cantidad_actual >= $1 RETURNING id`,
+                [fila.cantidad_solicitada, fila.item_id]
+            );
+            if (rest.rowCount === 0) {
+                throw new Error(`Stock insuficiente para el ítem con ID ${fila.item_id} al intentar entregar.`);
+            }
+
+            // Registrar movimiento de egreso
+            await client.query(
+                `INSERT INTO movimiento_inventario (item_id, usuario_id, tipo_movimiento, cantidad, observaciones) VALUES ($1, $2, 'egreso', $3, 'Entrega de equipos por reserva de actividad ID ' || $4)`,
+                [fila.item_id, usuarioId, fila.cantidad_solicitada, actividadId]
+            );
+        }
+
+        await client.query('COMMIT');
+        return { exito: true, mensaje: 'Equipos entregados y descontados del inventario exitosamente.' };
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+// ==========================================
+// 4. DEVOLVER EQUIPOS (Suma inventario y reporta daños)
+// ==========================================
+const registrarDevolucionEquipos = async (actividadId, reporteDano = null, resolutorId) => {
+    // Asegurarnos de que el ENUM tiene 'devuelto' ANTES de iniciar la transacción
+    try {
+        await db.query(`ALTER TYPE estado_reserva_enum ADD VALUE IF NOT EXISTS 'devuelto'`);
+    } catch (e) { /* ignoramos */ }
+
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Verificar estado actual (debe ser entregado)
+        const resQuery = await client.query(
+            `SELECT estado_reserva FROM reservas_estudiantes WHERE actividad_id = $1 FOR UPDATE`, 
+            [actividadId]
+        );
+
+        if (resQuery.rows.length === 0) {
+            throw new Error("Reserva no encontrada");
+        }
+        if (resQuery.rows[0].estado_reserva !== 'entregado') {
+            throw new Error(`No se puede devolver equipos porque la reserva está en estado: ${resQuery.rows[0].estado_reserva}`);
+        }
+
+        // 2. Cambiar estado a 'devuelto' (o 'completada' si prefiere)
+        // La cambiaremos a completada que ya existe en el ENUM, pero representará "devuelto"
+        await client.query(
+            `UPDATE reservas_estudiantes SET estado_reserva = 'completada', resuelto_por = $1, fecha_resolucion = CURRENT_TIMESTAMP WHERE actividad_id = $2`,
+            [resolutorId, actividadId]
+        );
+
+        // 3. Sumar Inventario Físico
+        const resItems = await client.query(
+            `SELECT item_id, cantidad_solicitada FROM reserva_items WHERE actividad_id = $1`,
+            [actividadId]
+        );
+
+        for (const fila of resItems.rows) {
+            // Aumentar inventario (sin importar si está dañado, vuelve al inventario y la alerta lo marcará)
+            // O podríamos restarlo si se dio de baja, pero la alerta de daño solo lo reporta.
+            await client.query(
+                `UPDATE item_inventario SET cantidad_actual = cantidad_actual + $1 WHERE id = $2`,
+                [fila.cantidad_solicitada, fila.item_id]
+            );
+
+            // Registrar movimiento de ingreso
+            await client.query(
+                `INSERT INTO movimiento_inventario (item_id, usuario_id, tipo_movimiento, cantidad, observaciones) VALUES ($1, $2, 'ingreso', $3, 'Devolución de equipos por reserva de actividad ID ' || $4)`,
+                [fila.item_id, resolutorId, fila.cantidad_solicitada, actividadId]
+            );
+        }
+
+        // 4. Procesar reporte de daño si existe
+        if (reporteDano) {
+            const { item_id, tipo_problema, descripcion, cantidad_afectada } = reporteDano;
+            
+            // Insertar la alerta vinculada a la actividad
+            await client.query(
+                `INSERT INTO alertas_inventario 
+                (item_id, actividad_id, usuario_reporta_id, tipo_problema, descripcion, cantidad_afectada, estado) 
+                VALUES ($1, $2, $3, $4, $5, $6, 'pendiente')`,
+                [item_id, actividadId, resolutorId, tipo_problema, descripcion, cantidad_afectada]
+            );
+        }
+
+        await client.query('COMMIT');
+        return { exito: true, mensaje: 'Equipos devueltos al inventario exitosamente.' };
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
+};
 
 module.exports = {
     programarActividad,
@@ -783,6 +980,7 @@ module.exports = {
     //agregado actualmente
     obtenerSolicitudesPendientes,
     obtenerTodasSolicitudes,
-    resolverSolicitud
-
+    resolverSolicitud,
+    registrarEntregaEquipos,
+    registrarDevolucionEquipos
 };

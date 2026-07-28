@@ -21,10 +21,10 @@ Estas alertas se generan manualmente por el coordinador para reportar incidencia
 * **Resolución:** Una vez que se repara el equipo (o se toma una decisión definitiva), el coordinador marca manualmente la alerta como `resuelto`. El sistema guarda quién cerró la incidencia y la fecha exacta.
 
 ### C. Flujo de Préstamos (Reservas de Ítems)
-El manejo de préstamos de inventario tiene su propio ciclo de vida y funciona como un "recordatorio/alerta" para el coordinador:
+*Nota Arquitectónica: Los préstamos y sus estados ("Entregado", "Devuelto") son operaciones normales del laboratorio y se manejan en las tablas de `actividades` y `reserva_items`. El módulo de Alertas solo interviene si ocurre una anomalía durante este flujo.*
 
-1. **Revisión y Entrega:** Cuando un docente o estudiante hace una reserva que incluye ítems, el coordinador debe revisar qué están solicitando. Al momento de entregar físicamente los equipos, el coordinador presiona el botón **"Entregar"**. El estado de esta solicitud/alerta cambia a `entregado`.
-2. **Aviso de Finalización:** Cuando el tiempo de la reserva termina, el sistema envía una **notificación/aviso automático** al coordinador (la alerta vuelve a destacar) indicando que la reserva finalizó y que debe esperar los equipos de regreso.
+1. **Revisión y Entrega:** Cuando se entregan físicamente los equipos, el estado en la tabla de la reserva cambia a `entregado` (No genera alerta).
+2. **Aviso de Finalización:** El sistema envía una notificación al coordinador indicando que la reserva finalizó.
 3. **Confirmación de Devolución:** El estudiante/docente devuelve los equipos. El coordinador los inspecciona y presiona **"Marcar Devuelto"**. La alerta de préstamo se cierra y el ciclo de la solicitud termina.
 4. **Reporte de Daños en Devolución:** Si al inspeccionarlo el coordinador nota que el ítem viene dañado, marca el préstamo original como devuelto, pero el sistema automáticamente **crea una nueva alerta separada** de tipo `daño`. Esta nueva alerta:
    - Queda vinculada a la misma reserva (`actividad_id`) para saber quién lo dañó.
@@ -39,12 +39,11 @@ El manejo de préstamos de inventario tiene su propio ciclo de vida y funciona c
 A continuación, el script SQL actualizado con los tipos y campos necesarios para soportar esta lógica:
 
 ```sql
--- 1. Tipos ENUM para estandarizar los datos de las alertas
--- Nota: Se agregó 'bajo_stock' para las alertas automáticas del sistema
-CREATE TYPE tipo_alerta_enum AS ENUM ('daño', 'bajo_stock', 'agotado', 'prestamo', 'extravio', 'otro');
+-- 1. Tipos ENUM para estandarizar los datos de las alertas (Exclusivo para anomalías)
+CREATE TYPE tipo_alerta_enum AS ENUM ('daño', 'bajo_stock', 'agotado', 'extravio', 'otro');
 
 -- Tipos de estado por los que puede pasar una alerta
-CREATE TYPE estado_alerta_enum AS ENUM ('pendiente', 'en_revision', 'entregado', 'resuelto', 'devuelto', 'descartado');
+CREATE TYPE estado_alerta_enum AS ENUM ('pendiente', 'en_revision', 'resuelto', 'descartado');
 
 -- 2. Estructura de la tabla principal
 CREATE TABLE alertas_inventario (
@@ -73,14 +72,25 @@ CREATE TABLE alertas_inventario (
     fecha_resolucion TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     
     -- Usuario (Coordinador/Admin) que resolvió la alerta.
-    -- Si es NULL pero el estado es 'resuelto', significa que el sistema la AUTO-RESOLVIÓ.
     resuelto_por_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL
 );
 
--- 3. Índices recomendados para optimizar búsquedas frecuentes en el panel
+-- 3. Tabla de Trazabilidad (Historial de Alertas)
+CREATE TABLE historial_alertas (
+    id SERIAL PRIMARY KEY,
+    alerta_id INTEGER NOT NULL REFERENCES alertas_inventario(id) ON DELETE CASCADE,
+    estado_anterior estado_alerta_enum,
+    estado_nuevo estado_alerta_enum NOT NULL,
+    cambiado_por_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    fecha_cambio TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    comentario TEXT
+);
+
+-- 4. Índices recomendados para optimizar búsquedas frecuentes
 CREATE INDEX idx_alertas_estado ON alertas_inventario(estado);
 CREATE INDEX idx_alertas_item ON alertas_inventario(item_id);
 CREATE INDEX idx_alertas_actividad ON alertas_inventario(actividad_id);
+CREATE INDEX idx_historial_alerta ON historial_alertas(alerta_id);
 ```
 
 ---
