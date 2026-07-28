@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { usuariosService } from '../services/usuarios.service';
 import { chequearDisponibilidad, obtenerInventarioDisponible } from '../services/actividades.service';
 import { BASE_URL } from "../config/api";
+import { format } from 'date-fns'; // ← agregar al inicio del archivo si no está
 
 export const DIAS_SEMANA: Record<number, { nombre: string; code: string }> = {
     0: { nombre: "domingo", code: "SU" },
@@ -123,13 +124,27 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
     // ── EFECTOS (Carga de datos y modo edición) ──
     useEffect(() => {
         if (actividadExistente) {
-                    console.log('DEBUG actividadExistente:', actividadExistente.laboratorio_id, actividadExistente.id);
-            const start = new Date(actividadExistente.start);
-            const end = new Date(actividadExistente.end);
+            console.log('DEBUG actividadExistente:', actividadExistente.laboratorio_id, actividadExistente.id);
+            // const start = new Date(actividadExistente.start);
+            // const end = new Date(actividadExistente.end);
 
-            const fechaLocal = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
-            const desdeLocal = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`;
-            const hastaLocal = `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
+            /*  const fechaLocal = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+              const desdeLocal = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`;
+              const hastaLocal = `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
+  */
+
+            const start = actividadExistente.start instanceof Date
+                ? actividadExistente.start
+                : new Date(actividadExistente.start);
+            const end = actividadExistente.end instanceof Date
+                ? actividadExistente.end
+                : new Date(actividadExistente.end);
+
+            const fechaLocal = format(start, 'yyyy-MM-dd');
+            const desdeLocal = format(start, 'HH:mm');
+            const hastaLocal = format(end, 'HH:mm');
+
+
 
             // --- DECODIFICAR RRULE A ESTADO DEL FORMULARIO ---
             let recurrenciaForm = "No se repite";
@@ -256,7 +271,7 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
             if (form.laboratorio && form.fecha && form.desde && form.hasta) {
                 setCargandoInventario(true);
                 try {
-                    const res = await obtenerInventarioDisponible(parseInt(form.laboratorio), form.fecha, form.desde, form.hasta,  (actividadExistente as any)?.idOriginal || actividadExistente?.id);
+                    const res = await obtenerInventarioDisponible(parseInt(form.laboratorio), form.fecha, form.desde, form.hasta, (actividadExistente as any)?.idOriginal || actividadExistente?.id);
                     if (res.status === 'success') {
                         setInventarioDesdeBD(res.data);
                         // Sincronizar el stock de los equipos ya seleccionados por si cambia la fecha/hora
@@ -297,7 +312,7 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
                 setVerificando(true);
                 try {
                     console.log('DEBUG form.laboratorio:', form.laboratorio, typeof form.laboratorio);
-                    const result = await chequearDisponibilidad(parseInt(form.laboratorio), form.fecha, form.desde, form.hasta,     (actividadExistente as any)?.idOriginal || actividadExistente?.id );
+                    const result = await chequearDisponibilidad(parseInt(form.laboratorio), form.fecha, form.desde, form.hasta, (actividadExistente as any)?.idOriginal || actividadExistente?.id);
                     if (result) {
                         setBloqueoTotal(result.bloqueoTotal);
                         setEstacionesOcupadas(result.estacionesOcupadas || []);
