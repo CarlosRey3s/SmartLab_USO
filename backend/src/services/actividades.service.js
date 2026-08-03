@@ -161,8 +161,8 @@ const programarActividad = async (datosModal, usuarioLogueado) => {
     const rolUsuario = usuarioLogueado.rol;
 
     // 2. Transformar las fechas y horas a formato DATETIME/TIMESTAMP
-     const inicioDatetime = dayjs.tz(`${fecha} ${desde}`, ZONA_HORARIA).toDate();
-     const finDatetime = dayjs.tz(`${fecha} ${hasta}`, ZONA_HORARIA).toDate();
+    const inicioDatetime = dayjs.tz(`${fecha} ${desde}`, ZONA_HORARIA).toDate();
+    const finDatetime = dayjs.tz(`${fecha} ${hasta}`, ZONA_HORARIA).toDate();
 
     // Procesas dinamicamente el objeto JSON de recurrencia
     const reglaRecurrenciaPlana = formatearRecurrencia(recurrencia);
@@ -210,7 +210,7 @@ const programarActividad = async (datosModal, usuarioLogueado) => {
         } else if (tipo === 'reserva') {
 
             // LÓGICA DE ROLES: Dependiendo del rol, pasa a pendiente o aprobada automáticamente
-            const estadoInicial = (rolUsuario === 'administrador') ? 'aprobada' : 'pendiente';
+            const estadoInicial = (rolUsuario === 'administrador' || rolUsuario === 'coordinador') ? 'aprobada' : 'pendiente';
 
             const queryHija = `INSERT INTO reservas_estudiantes (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva) VALUES ($1, $2, $3, $4, $5)`;
             await client.query(queryHija, [idGenerado, idUsuario, datosModal.titulo, datosModal.nota_adicional || null, estadoInicial]);
@@ -388,8 +388,8 @@ const obtenerDisponibilidad = async (laboratorioId, fechaInicio, fechaFin, exclu
     // 1. Verificar si hay un evento que bloquee TODO el laboratorio 
     // (Ej. Clases, Mantenimientos o reservas del espacio completo)
     // =========================================================================
-     console.log('DEBUG disponibilidad:', { laboratorioId, fechaInicio, fechaFin, excludeId });
-    
+    console.log('DEBUG disponibilidad:', { laboratorioId, fechaInicio, fechaFin, excludeId });
+
     if (!laboratorioId || !fechaInicio || !fechaFin) {
         throw new Error(`Parámetros inválidos: ${JSON.stringify({ laboratorioId, fechaInicio, fechaFin })}`);
     }
@@ -455,7 +455,7 @@ const obtenerDisponibilidad = async (laboratorioId, fechaInicio, fechaFin, exclu
         paramsItems.push(excludeId);
     }
     queryItems += ` GROUP BY ri.item_id`;
-    
+
     const resultItems = await db.query(queryItems, paramsItems);
 
     // Transformamos el resultado en un objeto clave-valor { id_item: cantidad_ocupada }
@@ -476,24 +476,25 @@ const obtenerDisponibilidad = async (laboratorioId, fechaInicio, fechaFin, exclu
  * Extrae las actividades con toda su infraestructura agrupada (PCs, Inventario, Nombres)
  * y expande dinámicamente las instancias recurrentes (RRULE) dentro del rango de la vista del calendario.
  */
-const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista) => {
+const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usuarioId, rol) => {
     const client = await db.connect();
 
     try {
-        // 1. Convertir los strings de fecha que envía el frontend a objetos Date de JavaScript
         const startVista = new Date(fechaInicioVista);
         const endVista = new Date(fechaFinVista);
 
-        // 2. CONSULTA FUSIONADA: Estructura masiva + Filtro temporal inteligente
         const query = `
             SELECT 
                 a.id, 
+                
+                -- Asignación limpia de títulos
                 CASE 
                     WHEN a.tipo = 'clase' THEN ca.materia
+                    WHEN a.tipo = 'mantenimiento' THEN 'Laboratorio en Mantenimiento'
                     WHEN a.tipo = 'reserva' THEN re.titulo
-                    WHEN a.tipo = 'mantenimiento' THEN 'Mantenimiento Preventivo'
                     ELSE 'Actividad'
                 END AS title, 
+                
                 a.fecha_hora_inicio AS start, 
                 a.fecha_hora_fin AS end, 
                 a.tipo,
@@ -521,14 +522,14 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista) => 
                 re.estado_reserva,
                 re.usuario_id AS reserva_usuario_id,
                 
-                -- Subconsulta para empaquetar estaciones en un Array []
+                -- Subconsulta para estaciones
                 (
                     SELECT COALESCE(array_agg(estacion_id), '{}') 
                     FROM reserva_estaciones 
                     WHERE actividad_id = a.id
                 ) AS estaciones,
                  
-                -- Subconsulta para empaquetar equipos en un Array de Objetos JSON [{}]
+                -- Subconsulta para equipos
                 (
                     SELECT COALESCE(
                         json_agg(
@@ -546,7 +547,6 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista) => 
 
             FROM actividades a
             
-            -- Uniones estratégicas para traer la metadata correspondiente
             LEFT JOIN laboratorios l ON a.laboratorio_id = l.id
             LEFT JOIN clases_academicas ca ON a.id = ca.actividad_id
             LEFT JOIN usuarios u_docente ON ca.docente_id = u_docente.id
@@ -558,50 +558,60 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista) => 
                 (a.recurrencia IS NULL AND a.fecha_hora_inicio <= $2 AND a.fecha_hora_fin >= $1)
                 OR (a.recurrencia IS NOT NULL AND a.fecha_hora_inicio <= $2)
             )
-            AND (a.tipo != 'reserva' OR re.estado_reserva = 'aprobada'); `;
+            -- 🚀 MATRIZ DE CONTROL DE ACCESO (RBAC + DOMINIO)
+            AND (
+                -- 1. administrador: Ve absolutamente todo el campus
+                $4 = 'administrador'
+                
+                -- 2. coordinador / docente: Solo ve laboratorios a su cargo o sus propias clases
+                OR (
+                    $4 = 'coordinador' AND (
+                        l.coordinador_id = $3 
+                        OR ca.docente_id = $3
+                    )
+                )
+                
+                -- 3. estudiante: Ve sus clases, mantenimientos y únicamente sus reservas
+                OR (
+                    $4 = 'estudiante' AND (
+                        a.tipo = 'clase'
+                        OR a.tipo = 'mantenimiento'
+                        OR (a.tipo = 'reserva' AND re.usuario_id = $3 AND re.estado_reserva = 'aprobada')
+                    )
+                )
+            );
+        `;
 
-        const { rows } = await client.query(query, [startVista, endVista]);
+        const { rows } = await client.query(query, [startVista, endVista, usuarioId, rol]);
         const eventosListosParaReact = [];
 
-        // 3. El Motor de Expansión Procesando Objetos Complejos
+        // Motor de expansión RRule (sin cambios)
         for (const fila of rows) {
             if (!fila.recurrencia) {
-                // CASO A: Evento Único (No se repite)
-                // Conserva toda la estructura intacta y asignamos id_instancia estándar
                 fila.id_instancia = fila.id.toString();
                 eventosListosParaReact.push(fila);
             } else {
-                // CASO B: Evento Recurrente (Multiplicación por RRule)
                 const fechaInicioOriginal = new Date(fila.start);
                 const fechaFinOriginal = new Date(fila.end);
-
-                // Calculamos la duración exacta (ej: 2 horas de clase) en milisegundos
                 const duracionMilisegundos = fechaFinOriginal.getTime() - fechaInicioOriginal.getTime();
 
-                // Inicializamos la regla matemática con el string de la BD
                 try {
                     const regla = rrulestr(fila.recurrencia, {
                         dtstart: fechaInicioOriginal
                     });
 
-                    // Extraemos todas las fechas clonadas que caen en la vista actual (ej: todos los miércoles del mes)
                     const fechasClonadas = regla.between(startVista, endVista, true);
 
                     for (const fechaClon of fechasClonadas) {
-                        // Clonamos el objeto de la fila con TODO su contenido (estaciones, equipos, nombres)
                         const eventoClonado = { ...fila };
-
-                        // Modificamos únicamente las propiedades de tiempo para esta instancia específica
                         eventoClonado.start = fechaClon;
                         eventoClonado.end = new Date(fechaClon.getTime() + duracionMilisegundos);
-
-                        // Llave única compuesta para evitar duplicidad de keys en React Big Calendar
                         eventoClonado.id_instancia = `${fila.id}-${fechaClon.getTime()}`;
 
                         eventosListosParaReact.push(eventoClonado);
                     }
                 } catch (rruleError) {
-                    console.warn(`[Advertencia] Error al procesar regla de recurrencia para la actividad ID ${fila.id}. Regla: ${fila.recurrencia}`, rruleError.message);
+                    console.warn(`[Advertencia] Error RRule ID ${fila.id}:`, rruleError.message);
                 }
             }
         }
@@ -662,7 +672,9 @@ const obtenerSolicitudesPendientes = async () => {
 // ==========================================
 // OBTENER TODAS LAS SOLICITUDES (pendientes, aprobadas, rechazadas)
 // ==========================================
-const obtenerTodasSolicitudes = async () => {
+const obtenerTodasSolicitudes = async (usuarioId, rol) => {
+    // Recibimos el ID y el ROL del usuario que hace la petición
+
     const query = `
         SELECT 
             r.actividad_id,
@@ -696,9 +708,18 @@ const obtenerTodasSolicitudes = async () => {
         JOIN actividades a ON r.actividad_id = a.id
         JOIN usuarios u ON r.usuario_id = u.id
         JOIN laboratorios l ON a.laboratorio_id = l.id
+        
+        -- 🚀 AQUÍ ESTÁ LA MAGIA DEL CONTROL DE ACCESO (RBAC)
+        WHERE (
+            LOWER($2) = 'administrador' -- 1. El Admin ve TODO
+            OR (LOWER($2) = 'coordinador' AND l.coordinador_id = $1) -- 2. El Coordinador ve lo de sus laboratorios
+            OR r.usuario_id = $1 -- 3. TODODS (incluyendo estudiantes/docentes) ven sus PROPIAS solicitudes
+        )
         ORDER BY a.fecha_creacion DESC;
     `;
-    const { rows } = await db.query(query);
+
+    // Pasamos los parámetros de forma segura a PostgreSQL para evitar Inyección SQL
+    const { rows } = await db.query(query, [usuarioId, rol]);
     return rows;
 };
 

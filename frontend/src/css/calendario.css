@@ -1517,3 +1517,206 @@
   }
 
 } 
+
+/* --- COMPACT THEME FILTER MODAL --- */
+.dark-filter {
+  background-color: #ffffff; /* Fondo blanco limpio */
+  color: #374151;
+  width: 280px; 
+  border: 1px solid #e5e7eb;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.filter-subtitle.dark {
+  color: #6b7280; /* Gris neutro */
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.filter-pills-dark {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.dark-pill {
+  background-color: #f3f4f6; /* Gris muy claro para inactivos */
+  border: 1px solid #e5e7eb;
+  color: #4b5563;
+  padding: 6px 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dark-pill:hover {
+  background-color: #e5e7eb;
+}
+
+/* Estilos base para píldoras activas (los colores se definen individualmente abajo) */
+.dark-pill.active {
+  border-color: transparent;
+}
+
+/* Clases: Teal */
+.pill-clases.active {
+  background-color: #e6f4f2;
+  border-color: #b2dfdb;
+  color: #0d524d;
+}
+.pill-clases.active .pill-dot { background-color: #0f766e; }
+.dot-clases-dark { background-color: transparent; } /* Inactivo */
+
+/* Reservas: Amarillo/Ámbar */
+.pill-reservas.active {
+  background-color: #fffbeb;
+  border-color: #fde68a;
+  color: #78350f;
+}
+.pill-reservas.active .pill-dot { background-color: #d97706; }
+.dot-reservas-dark { background-color: transparent; } /* Inactivo */
+
+/* Mantenimientos: Rojo */
+.pill-mantenimientos.active {
+  background-color: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+.pill-mantenimientos.active .pill-dot { background-color: #b91c1c; }
+.dot-mantenimientos-dark { background-color: transparent; } /* Inactivo */
+
+.pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #9ca3af; /* Color de punto por defecto cuando está inactivo */
+  transition: background-color 0.2s;
+}
+
+.dark-checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.dark-checkbox-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  background-color: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border: 1px solid transparent;
+}
+
+.dark-checkbox-item:hover {
+  background-color: #f9fafb;
+}
+
+.dark-checkbox-item.selected {
+  background-color: #f2f9f8; /* Fondo muy sutil verde */
+  border-color: #e6f2f0;
+}
+
+.checkbox-box {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+  transition: all 0.2s;
+}
+
+.dark-checkbox-item.selected .checkbox-box {
+  background-color: #22806B;
+  border-color: #22806B;
+}
+
+.checkbox-check {
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.checkbox-label {
+  flex-grow: 1;
+  font-size: 0.85rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+.checkbox-badge {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 999px; /* Forma de píldora */
+  font-weight: 600;
+}
+
+.dark-checkbox-item.selected .checkbox-badge {
+  background-color: #e6f2f0;
+  color: #22806B;
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.btn-aplicar-filtros {
+  background-color: #22806B; /* Verde principal */
+  color: #ffffff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+.btn-aplicar-filtros:hover {
+  background-color: #1a6655; /* Verde más oscuro al hover */
+  box-shadow: 0 4px 6px -1px rgba(34, 128, 107, 0.3);
+}
+
+/* Info badges for search dropdown */
+.result-info {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+
+.info-badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.info-badge.doc { background-color: #eff6ff; color: #3b82f6; border: 1px solid #bfdbfe; }
+.info-badge.tec { background-color: #fffbeb; color: #f59e0b; border: 1px solid #fde68a; }

@@ -79,21 +79,15 @@ export function FormularioClase({ materia, docente, numPersonas, docentesOptions
             </div>
             <div className="na-field-group">
                 <label className="na-field-label">N° DE ESTUDIANTES</label>
-                <div className="na-num-row">
-                    <button
-                        className="na-num-btn"
-                        onClick={() => onChange("numPersonas", Math.max(1, (numPersonas || 1) - 1))}
-                    >
-                        −
-                    </button>
-                    <span className="na-num-val">{numPersonas}</span>
-                    <button
-                        className="na-num-btn"
-                        onClick={() => onChange("numPersonas", (numPersonas || 0) + 1)}
-                    >
-                        +
-                    </button>
-                </div>
+                <input
+                    className="na-input"
+                    type="number"
+                    min={1}
+                    value={numPersonas || ""}
+                    onChange={(e) => onChange("numPersonas", Math.max(1, parseInt(e.target.value) || 1))}
+                    placeholder="Ej: 25"
+                    style={{ width: '120px' }}
+                />
             </div>
         </div>
     );

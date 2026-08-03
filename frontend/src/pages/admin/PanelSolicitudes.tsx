@@ -4,11 +4,20 @@ import type { SolicitudPendiente } from '../../types/solicitudes.types';
 import { obtenerTodasSolicitudes, resolverSolicitud } from '../../services/solicitudes.services';
 import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
 import { customToast } from '../../components/custom-toast/CustomToast';
+// 👇 1. IMPORTA TU CONTEXTO DE AUTENTICACIÓN AQUÍ
+import { useAuth } from '../../context/AuthContext';
 import '../../css/solicitudes.css';
 
 type TabType = 'pendiente' | 'aprobada' | 'rechazada';
 
 const PanelSolicitudes: React.FC = () => {
+  // 👇 2. EXTRAE EL USUARIO LOGUEADO
+  const { user } = useAuth();
+
+  // 👇 3. VARIABLE MÁGICA DE CONTROL DE ACCESO (RBAC Frontend)
+  const rolUsuario = user?.rol?.toLowerCase() || '';
+  const esAutoridad = rolUsuario === 'administrador' || rolUsuario === 'coordinador';
+
   const [solicitudes, setSolicitudes] = useState<SolicitudPendiente[]>([]);
   const [cargando, setCargando] = useState<boolean>(true);
   const [tabActiva, setTabActiva] = useState<TabType>('pendiente');
@@ -101,7 +110,7 @@ const PanelSolicitudes: React.FC = () => {
 
       {/* ── Encabezado ── */}
       <div className="ps-header">
-        <h2 className="ps-titulo">Solicitudes</h2>
+        <h2 className="ps-titulo">{esAutoridad ? 'Solicitudes Recibidas' : 'Mis Solicitudes'}</h2>
         {contadorPendientes > 0 && (
           <span className="ps-badge-contador">{contadorPendientes} pendientes</span>
         )}
@@ -141,7 +150,7 @@ const PanelSolicitudes: React.FC = () => {
                 {/* ── Cabecera compacta ── */}
                 <div className="tarjeta-header">
                   <span className="tarjeta-titulo">{solicitud.laboratorio_nombre}</span>
-                  {rol && (
+                  {rol && esAutoridad && (
                     <span className={`badge-rol badge-rol--${solicitud.solicitante_rol?.toLowerCase()}`}>
                       {rol}
                     </span>
@@ -150,9 +159,13 @@ const PanelSolicitudes: React.FC = () => {
 
                 {/* ── Info resumida ── */}
                 <div className="tarjeta-info-resumida">
+                  {esAutoridad && (
+                    <span className="tarjeta-solicitante">
+                      {solicitud.solicitante_nombre} {solicitud.solicitante_apellido}
+                      {' · '}
+                    </span>
+                  )}
                   <span className="tarjeta-solicitante">
-                    {solicitud.solicitante_nombre} {solicitud.solicitante_apellido}
-                    {' · '}
                     {formatearFechaCorta(solicitud.fecha_hora_inicio)}
                   </span>
                   <span className="tarjeta-horario">
@@ -164,20 +177,25 @@ const PanelSolicitudes: React.FC = () => {
                 {/* ── Detalle expandible ── */}
                 {estaAbierto && (
                   <div className="tarjeta-detalle">
-                    <div className="detalle-fila">
-                      <User size={14} />
-                      <span>
-                        <strong>Correo:</strong> {solicitud.solicitante_correo}
-                      </span>
-                    </div>
-                    {solicitud.solicitante_expediente && (
-                      <div className="detalle-fila">
-                        <User size={14} />
-                        <span>
-                          <strong>Expediente:</strong> {solicitud.solicitante_expediente}
-                        </span>
-                      </div>
+                    {esAutoridad && (
+                      <>
+                        <div className="detalle-fila">
+                          <User size={14} />
+                          <span>
+                            <strong>Correo:</strong> {solicitud.solicitante_correo}
+                          </span>
+                        </div>
+                        {solicitud.solicitante_expediente && (
+                          <div className="detalle-fila">
+                            <User size={14} />
+                            <span>
+                              <strong>Expediente:</strong> {solicitud.solicitante_expediente}
+                            </span>
+                          </div>
+                        )}
+                      </>
                     )}
+
                     <div className="detalle-fila">
                       <Clock size={14} />
                       <span>
@@ -223,22 +241,30 @@ const PanelSolicitudes: React.FC = () => {
                   </div>
                 )}
 
-                {/* ── Footer: botones + Ver detalle ── */}
+                {/* 👇 4. Footer Modificado con control de acceso */}
                 <div className="tarjeta-footer">
                   {tabActiva === 'pendiente' && (
                     <div className="tarjeta-acciones">
-                      <button
-                        className="btn-aprobar"
-                        onClick={() => solicitarResolucion(solicitud.actividad_id, 'aprobar')}
-                      >
-                        <Check size={15} /> Aprobar
-                      </button>
-                      <button
-                        className="btn-rechazar"
-                        onClick={() => solicitarResolucion(solicitud.actividad_id, 'rechazar')}
-                      >
-                        <X size={15} /> Rechazar
-                      </button>
+                      {esAutoridad ? (
+                        <>
+                          <button
+                            className="btn-aprobar"
+                            onClick={() => solicitarResolucion(solicitud.actividad_id, 'aprobar')}
+                          >
+                            <Check size={15} /> Aprobar
+                          </button>
+                          <button
+                            className="btn-rechazar"
+                            onClick={() => solicitarResolucion(solicitud.actividad_id, 'rechazar')}
+                          >
+                            <X size={15} /> Rechazar
+                          </button>
+                        </>
+                      ) : (
+                        <span style={{ fontSize: '0.85rem', color: '#856404', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <Clock size={14} /> En espera de revisión
+                        </span>
+                      )}
                     </div>
                   )}
 
@@ -260,19 +286,21 @@ const PanelSolicitudes: React.FC = () => {
       )}
 
       {/* ── Modal de Confirmación ── */}
-      <ConfirmModal
-        isOpen={isConfirmOpen}
-        title={confirmData?.accion === 'aprobar' ? 'Aprobar Solicitud' : 'Rechazar Solicitud'}
-        message={`¿Estás seguro de que deseas ${confirmData?.accion} esta solicitud?`}
-        confirmText={confirmData?.accion === 'aprobar' ? 'Aprobar' : 'Rechazar'}
-        cancelText="Cancelar"
-        type={confirmData?.accion === 'aprobar' ? 'info' : 'danger'}
-        onConfirm={procesarResolucion}
-        onCancel={() => {
-          setIsConfirmOpen(false);
-          setConfirmData(null);
-        }}
-      />
+      {esAutoridad && (
+        <ConfirmModal
+          isOpen={isConfirmOpen}
+          title={confirmData?.accion === 'aprobar' ? 'Aprobar Solicitud' : 'Rechazar Solicitud'}
+          message={`¿Estás seguro de que deseas ${confirmData?.accion} esta solicitud?`}
+          confirmText={confirmData?.accion === 'aprobar' ? 'Aprobar' : 'Rechazar'}
+          cancelText="Cancelar"
+          type={confirmData?.accion === 'aprobar' ? 'info' : 'danger'}
+          onConfirm={procesarResolucion}
+          onCancel={() => {
+            setIsConfirmOpen(false);
+            setConfirmData(null);
+          }}
+        />
+      )}
     </div>
   );
 };

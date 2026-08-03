@@ -15,12 +15,13 @@ const { verificarToken } = require('../middlewares/auth.middleware');
  */
 
 // 4. NUESTRA RUTA GET UNIFICADA (Para leer el calendario)
-router.get('/', actividadesController.obtenerActividades);
+router.get('/', verificarToken, actividadesController.obtenerActividades);
 
 //Rutas específicas PRIMERO
 router.get('/solicitudes/pendientes', verificarToken, actividadesController.obtenerPendientes);
 router.get('/solicitudes/todas', verificarToken, actividadesController.obtenerTodas);
 router.get('/disponibilidad', verificarToken, actividadesController.consultarDisponibilidad); // ← AQUÍ
+//router.get('/', verificarToken, actividadesController.obtenerTodas);
 
 // RUTAS PROTEGIDAS: Ahora usan verificarToken para leer el token de Postman/Frontend
 router.put('/solicitudes/:id/resolver', verificarToken, actividadesController.resolverReserva);

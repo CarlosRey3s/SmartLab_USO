@@ -1,5 +1,7 @@
 const actividadesService = require('../services/actividades.service');
 
+
+
 const crearActividad = async (req, res) => {
     try {
         // 1. Extraer el usuario que viene del middleware 'verificarToken'
@@ -99,7 +101,7 @@ const consultarDisponibilidad = async (req, res) => {
         );
         res.status(200).json({ exito: true, data: disponibilidad });
     } catch (error) {
-         console.log('ERROR en consultarDisponibilidad:', error.message);
+        console.log('ERROR en consultarDisponibilidad:', error.message);
         console.log('STACK:', error.stack);
         res.status(500).json({ exito: false, mensaje: error.message });
     }
@@ -111,6 +113,19 @@ const obtenerActividades = async (req, res) => {
         // 1. React Big Calendar nos mandará el rango de fechas que está viendo el usuario
         const { start, end } = req.query;
 
+        // NUEVO: Extraemos el ID y el rol del usuario desde el token JWT
+        // (Tu middleware de autenticación debería estar inyectando 'req.usuario' o 'req.user')
+        const usuarioId = req.usuario.id;
+        const rol = req.usuario.rol;
+
+
+
+        // 🚀 AGREGA ESTA LÍNEA AQUÍ:
+        console.log("=== DEBUG SEGURIDAD ===");
+        console.log("ID del usuario:", usuarioId);
+        console.log("Rol detectado:", rol);
+        console.log("=======================");
+
         // 2. Validamos que el frontend sí nos esté mandando ese rango
         if (!start || !end) {
             return res.status(400).json({
@@ -120,7 +135,8 @@ const obtenerActividades = async (req, res) => {
         }
 
         // 3. Delegamos el trabajo a nuestra nueva súper función del servicio
-        const actividadesExpandidas = await actividadesService.obtenerActividadesExpandidas(start, end);
+        // NUEVO: Ahora pasamos los 4 parámetros (fechas + credenciales de privacidad)
+        const actividadesExpandidas = await actividadesService.obtenerActividadesExpandidas(start, end, usuarioId, rol);
 
         // 4. Devolvemos el arreglo listo para que React lo dibuje y lea los modales
         res.status(200).json({
@@ -150,10 +166,16 @@ const obtenerPendientes = async (req, res) => {
 };
 
 
-// Controlador para obtener TODAS las solicitudes (pendientes, aprobadas, rechazadas)
+// Controlador para obtener TODAS las solicitudes con filtro de seguridad (RBAC)
 const obtenerTodas = async (req, res) => {
     try {
-        const todas = await actividadesService.obtenerTodasSolicitudes();
+        // 1. Extraemos el ID y el ROL del usuario desde el token (inyectado por el middleware)
+        const usuarioId = req.usuario.id;
+        const rol = req.usuario.rol;
+
+        // 2. Le pasamos las credenciales al servicio para que filtre las solicitudes
+        const todas = await actividadesService.obtenerTodasSolicitudes(usuarioId, rol);
+
         res.status(200).json(todas);
     } catch (error) {
         console.error('Error al obtener todas las solicitudes:', error);
