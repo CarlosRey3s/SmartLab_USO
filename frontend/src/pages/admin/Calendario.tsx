@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { Search, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, Printer, X, User, Wrench, FileText, Edit2, Trash2, Filter } from 'lucide-react';
+import { Search, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, Printer, X, User, Users, Wrench, FileText, Edit2, Trash2, Filter, Info } from 'lucide-react';
 import { Calendar, dateFnsLocalizer, type ToolbarProps, type View } from 'react-big-calendar';
 import { es } from 'date-fns/locale/es';
 import { PanelSolicitudes } from './PanelSolicitudes.tsx';
@@ -49,6 +49,9 @@ export interface EventoLaboratorio {
   reserva_nota?: string;
   estado_reserva?: string;
   usuario_id?: number;
+  reserva_solicitante_nombre?: string;
+  reserva_solicitante_apellido?: string;
+  reserva_solicitante_expediente?: string;
   estaciones?: number[];
   equipos?: Array<{ id: number; nombre: string; cantidad: number }>;
 }
@@ -74,12 +77,22 @@ const CustomDateHeader = ({ label, date, isOffRange }: any) => (
   </div>
 );
 
-const CustomEvent = ({ event }: any) => (
-  <div className='custom-event-content'>
-    <span className="event-title">{event.title}</span>
-    <span className="event-time">{`${format(event.start, 'h:mm')} - ${format(event.end, 'h:mm')}`}</span>
-  </div>
-);
+const CustomEvent = ({ event }: any) => {
+  const diffMs = event.end.getTime() - event.start.getTime();
+  const diffMins = Math.round(diffMs / 60000);
+  const hours = Math.floor(diffMins / 60);
+  const mins = diffMins % 60;
+  const durationStr = hours > 0 ? (mins > 0 ? `${hours}h ${mins}m` : `${hours}h`) : `${mins}m`;
+
+  return (
+    <div className='custom-event-content'>
+      <span className="event-title">{event.title}</span>
+      <span className="event-time">
+        {`${format(event.start, 'h:mm')} - ${format(event.end, 'h:mm')} • ${durationStr}`}
+      </span>
+    </div>
+  );
+};
 
 const eventStyleGetter = (event: EventoLaboratorio) => {
   let className = 'evento-base';
@@ -585,6 +598,9 @@ export const CalendarioView = () => {
                 <>
                   <div className="popover-row"><FileText size={16} className="popover-icon" /> <span>Materia: {eventoSeleccionado.materia}</span></div>
                   <div className="popover-row"><User size={16} className="popover-icon" /> <span>Docente: {eventoSeleccionado.docente_nombre || 'No asignado'}</span></div>
+                  {eventoSeleccionado.clase_estudiantes != null && (
+                    <div className="popover-row"><Users size={16} className="popover-icon" /> <span>Estudiantes: {eventoSeleccionado.clase_estudiantes}</span></div>
+                  )}
                 </>
               )}
 
@@ -597,12 +613,42 @@ export const CalendarioView = () => {
 
               {eventoSeleccionado.tipo === 'reserva' && (
                 <>
-                  <div className="popover-row"><User size={16} className="popover-icon" /> <span>Reserva: {eventoSeleccionado.reserva_titulo}</span></div>
-                  <div className="popover-row"><FileText size={16} className="popover-icon" /> <span className="text-sm">Nota: {eventoSeleccionado.reserva_nota}</span></div>
+                  {eventoSeleccionado.reserva_solicitante_nombre && (
+                    <div className="popover-row">
+                      <User size={16} className="popover-icon" />
+                      <span>Reservado por: {eventoSeleccionado.reserva_solicitante_nombre} {eventoSeleccionado.reserva_solicitante_apellido} ({eventoSeleccionado.reserva_solicitante_expediente})</span>
+                    </div>
+                  )}
+                  {eventoSeleccionado.reserva_nota && (
+                    <div className="popover-row"><FileText size={16} className="popover-icon" /> <span className="text-sm">Nota: {eventoSeleccionado.reserva_nota}</span></div>
+                  )}
+                  {eventoSeleccionado.estado_reserva && (
+                    <div className="popover-row">
+                      <Info size={16} className="popover-icon" />
+                      <span>
+                        Estado:{' '}
+                        <span className={`estado-badge estado-${eventoSeleccionado.estado_reserva.toLowerCase()}`}>
+                          {eventoSeleccionado.estado_reserva.toUpperCase()}
+                        </span>
+                      </span>
+                    </div>
+                  )}
 
                   {eventoSeleccionado.estaciones && eventoSeleccionado.estaciones.length > 0 && (
-                    <div className="popover-row">
-                      <span className="text-sm text-gray-700">🖥️ Estaciones: {eventoSeleccionado.estaciones.join(', ')}</span>
+                    <div className="popover-section">
+                      <div className="flex justify-between items-center mb-1">
+                        <p className="popover-section-title mb-0">
+                          🖥️ ESTACIONES RESERVADAS:
+                        </p>
+                        <span className="text-xs font-bold text-gray-500">Total: {eventoSeleccionado.estaciones.length}</span>
+                      </div>
+                      <div className="estaciones-grid mt-1">
+                        {eventoSeleccionado.estaciones.map((est: number) => (
+                          <div key={est} className="estacion-badge">
+                            {est}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -653,7 +699,6 @@ export const CalendarioView = () => {
             style={{ height: '100%' }}
           />
         </div>
-
         <div className="calendar-sidebar-right">
           {(!user || !isReadOnlyView(user.rol as any)) && (
             <button className="btn-crear" onClick={() => setModalAbierto(true)}>

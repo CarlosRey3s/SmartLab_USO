@@ -521,6 +521,9 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usu
                 re.nota_adicional AS reserva_nota,
                 re.estado_reserva,
                 re.usuario_id AS reserva_usuario_id,
+                u_reserva.nombre AS reserva_solicitante_nombre,
+                u_reserva.apellido AS reserva_solicitante_apellido,
+                u_reserva.expediente AS reserva_solicitante_expediente,
                 
                 -- Subconsulta para estaciones
                 (
@@ -553,6 +556,7 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usu
             LEFT JOIN mantenimientos m ON a.id = m.actividad_id
             LEFT JOIN usuarios u_tecnico ON m.tecnico_id = u_tecnico.id
             LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id
+            LEFT JOIN usuarios u_reserva ON re.usuario_id = u_reserva.id
 
             WHERE (
                 (a.recurrencia IS NULL AND a.fecha_hora_inicio <= $2 AND a.fecha_hora_fin >= $1)
