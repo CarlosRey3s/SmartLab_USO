@@ -91,7 +91,7 @@ interface UseActividadFormProps {
     onClose: () => void;
 }
 
-export function useActividadForm({ actividadExistente, onGuardar, onClose }: UseActividadFormProps) {
+export function useActividadForm({ actividadExistente, onGuardar }: UseActividadFormProps) {
     const [labsDesdeBD, setLabsDesdeBD] = useState<LaboratorioDB[]>([]);
     const [cargandoLabs, setCargandoLabs] = useState(true);
     const [estacionesDesdeBD, setEstacionesDesdeBD] = useState<EstacionDB[]>([]);
@@ -430,7 +430,7 @@ export function useActividadForm({ actividadExistente, onGuardar, onClose }: Use
 
     const handleGuardar = () => {
         onGuardar({ ...form, tipo });
-        onClose();
+        //onClose();
     };
 
     const handleSiguiente = () => {
