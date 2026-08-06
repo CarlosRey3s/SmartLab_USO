@@ -360,3 +360,86 @@
 .btn-ver-detalle:hover {
   color: #1B5E52;
 }
+
+/* Botón Cancelar — Para el solicitante */
+.btn-cancelar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.65rem;
+  border: 1.5px solid #d97706;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #d97706;
+  background: transparent;
+  transition: all 0.18s;
+}
+
+.btn-cancelar:hover {
+  background-color: #d97706;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.btn-cancelar:active {
+  transform: translateY(0);
+}
+
+/* Badge Supervisor — Gris pizarra (observador) */
+.badge-rol--supervisor {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+/* ── Paginación ── */
+.ps-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0 0.15rem;
+  flex-shrink: 0;
+}
+
+.ps-pagination button {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ps-pagination button:hover:not(:disabled) {
+  background: #22806B;
+  color: white;
+  border-color: #22806B;
+}
+
+.ps-pagination button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ps-pagination span {
+  font-size: 0.72rem;
+  color: #6b7280;
+}
+
+/* Badge "Tu solicitud" — Para coordinadores viendo sus propias */
+.badge-propia {
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 0.12rem 0.4rem;
+  border-radius: 20px;
+  background-color: #e0f2fe;
+  color: #0369a1;
+  white-space: nowrap;
+  margin-top: 2px;
+}

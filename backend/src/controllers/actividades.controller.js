@@ -154,29 +154,19 @@ const obtenerActividades = async (req, res) => {
     }
 };
 
-// Controlador para obtener las solicitudes pendientes
-const obtenerPendientes = async (req, res) => {
-    try {
-        const pendientes = await actividadesService.obtenerSolicitudesPendientes();
-        res.status(200).json(pendientes);
-    } catch (error) {
-        console.error('Error al obtener solicitudes pendientes:', error);
-        res.status(500).json({ message: 'Error interno al cargar las solicitudes' });
-    }
-};
 
-
-// Controlador para obtener TODAS las solicitudes con filtro de seguridad (RBAC)
+// Controlador para obtener TODAS las solicitudes con filtro de seguridad (RBAC) + Paginación
 const obtenerTodas = async (req, res) => {
     try {
-        // 1. Extraemos el ID y el ROL del usuario desde el token (inyectado por el middleware)
         const usuarioId = req.usuario.id;
         const rol = req.usuario.rol;
+        const { estado, page = 1, limit = 10 } = req.query;
 
-        // 2. Le pasamos las credenciales al servicio para que filtre las solicitudes
-        const todas = await actividadesService.obtenerTodasSolicitudes(usuarioId, rol);
+        const resultado = await actividadesService.obtenerTodasSolicitudes(
+            usuarioId, rol, estado || null, parseInt(page, 10), parseInt(limit, 10)
+        );
 
-        res.status(200).json(todas);
+        res.status(200).json(resultado);
     } catch (error) {
         console.error('Error al obtener todas las solicitudes:', error);
         res.status(500).json({ message: 'Error interno al cargar las solicitudes' });
@@ -203,9 +193,26 @@ const resolverReserva = async (req, res) => {
     }
 };
 
+// Controlador para que el solicitante cancele su propia reserva pendiente
+const cancelarReserva = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const usuarioId = req.usuario.id;
+
+        const resultado = await actividadesService.cancelarSolicitud(id, usuarioId);
+        res.status(200).json(resultado);
+    } catch (error) {
+        console.error('Error al cancelar la solicitud:', error);
+        if (error.status) {
+            return res.status(error.status).json({ message: error.message });
+        }
+        res.status(500).json({ message: 'Error interno del servidor al cancelar la solicitud.' });
+    }
+};
+
 // Exórtala al final:
 module.exports = {
     crearActividad, actualizarActividad,
     eliminarActividad, obtenerActividades, consultarDisponibilidad,
-    obtenerPendientes, obtenerTodas, resolverReserva
+    obtenerTodas, resolverReserva, cancelarReserva
 };

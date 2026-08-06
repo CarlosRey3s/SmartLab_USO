@@ -631,55 +631,58 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usu
 };
 
 // ==========================================
-// 1. OBTENER SOLICITUDES PENDIENTES (GET)
+// OBTENER TODAS LAS SOLICITUDES — Paginado + RBAC + Contadores
 // ==========================================
-const obtenerSolicitudesPendientes = async () => {
-    // Usamos json_agg para agrupar las tablas hijas como arrays dentro del JSON de respuesta
-    const query = `
-        SELECT 
-            r.actividad_id,
-            r.titulo,
-            r.nota_adicional,
-            r.estado_reserva,
-            a.fecha_hora_inicio,
-            a.fecha_hora_fin,
-            a.fecha_creacion,
-            u.nombre AS solicitante_nombre,
-            u.apellido AS solicitante_apellido,
-            u.correo AS solicitante_correo,
-            u.expediente AS solicitante_expediente,
-            l.nombre AS laboratorio_nombre,
-            l.edificio,
-            l.aula,
-            (
-                SELECT COALESCE(json_agg(json_build_object('id', e.id, 'nombre', e.nombre)), '[]')
-                FROM reserva_estaciones re 
-                JOIN estaciones_trabajo e ON re.estacion_id = e.id 
-                WHERE re.actividad_id = r.actividad_id
-            ) AS estaciones,
-            (
-                SELECT COALESCE(json_agg(json_build_object('id', i.id, 'nombre', i.nombre, 'cantidad', ri.cantidad_solicitada)), '[]')
-                FROM reserva_items ri 
-                JOIN item_inventario i ON ri.item_id = i.id 
-                WHERE ri.actividad_id = r.actividad_id
-            ) AS inventario
+const obtenerTodasSolicitudes = async (usuarioId, rol, estado = null, page = 1, limit = 10) => {
+
+    // Fragmentos compartidos entre las queries
+    const baseFrom = `
         FROM reservas_estudiantes r
         JOIN actividades a ON r.actividad_id = a.id
         JOIN usuarios u ON r.usuario_id = u.id
         JOIN laboratorios l ON a.laboratorio_id = l.id
-        WHERE r.estado_reserva = 'pendiente'
-        ORDER BY a.fecha_creacion ASC;`;
-    const { rows } = await db.query(query);
-    return rows;
-};
+    `;
 
-// ==========================================
-// OBTENER TODAS LAS SOLICITUDES (pendientes, aprobadas, rechazadas)
-// ==========================================
-const obtenerTodasSolicitudes = async (usuarioId, rol) => {
-    // Recibimos el ID y el ROL del usuario que hace la petición
+    const rbacWhere = `
+        WHERE (
+            LOWER($2) = 'administrador'
+            OR (LOWER($2) = 'coordinador' AND l.coordinador_id = $1)
+            OR r.usuario_id = $1
+        )
+    `;
 
-    const query = `
+    const baseParams = [usuarioId, rol];
+
+    // 1. Contadores por estado (para los badges de las tabs)
+    const contadoresQuery = `
+        SELECT r.estado_reserva, COUNT(*) as cantidad
+        ${baseFrom}
+        ${rbacWhere}
+        GROUP BY r.estado_reserva
+    `;
+    const contadoresResult = await db.query(contadoresQuery, baseParams);
+    const contadores = {};
+    contadoresResult.rows.forEach(row => {
+        contadores[row.estado_reserva] = parseInt(row.cantidad, 10);
+    });
+
+    // 2. Construir parámetros dinámicos para la query paginada
+    const dataParams = [...baseParams];
+    let paramIndex = 3;
+    let estadoFilter = '';
+
+    if (estado) {
+        estadoFilter = ` AND r.estado_reserva = $${paramIndex}`;
+        dataParams.push(estado);
+        paramIndex++;
+    }
+
+    const limitParam = `$${paramIndex}`;
+    const offsetParam = `$${paramIndex + 1}`;
+    dataParams.push(limit, (page - 1) * limit);
+
+    // 3. Query principal con paginación
+    const dataQuery = `
         SELECT 
             r.actividad_id,
             r.titulo,
@@ -696,6 +699,7 @@ const obtenerTodasSolicitudes = async (usuarioId, rol) => {
             l.nombre AS laboratorio_nombre,
             l.edificio,
             l.aula,
+            (r.usuario_id = $1) AS es_propia,
             (
                 SELECT COALESCE(json_agg(json_build_object('id', e.id, 'nombre', e.nombre)), '[]')
                 FROM reserva_estaciones re 
@@ -708,23 +712,32 @@ const obtenerTodasSolicitudes = async (usuarioId, rol) => {
                 JOIN item_inventario i ON ri.item_id = i.id 
                 WHERE ri.actividad_id = r.actividad_id
             ) AS inventario
-        FROM reservas_estudiantes r
-        JOIN actividades a ON r.actividad_id = a.id
-        JOIN usuarios u ON r.usuario_id = u.id
-        JOIN laboratorios l ON a.laboratorio_id = l.id
-        
-        -- 🚀 AQUÍ ESTÁ LA MAGIA DEL CONTROL DE ACCESO (RBAC)
-        WHERE (
-            LOWER($2) = 'administrador' -- 1. El Admin ve TODO
-            OR (LOWER($2) = 'coordinador' AND l.coordinador_id = $1) -- 2. El Coordinador ve lo de sus laboratorios
-            OR r.usuario_id = $1 -- 3. TODODS (incluyendo estudiantes/docentes) ven sus PROPIAS solicitudes
-        )
-        ORDER BY a.fecha_creacion DESC;
+        ${baseFrom}
+        ${rbacWhere}
+        ${estadoFilter}
+        ORDER BY a.fecha_creacion DESC
+        LIMIT ${limitParam} OFFSET ${offsetParam}
     `;
 
-    // Pasamos los parámetros de forma segura a PostgreSQL para evitar Inyección SQL
-    const { rows } = await db.query(query, [usuarioId, rol]);
-    return rows;
+    const { rows } = await db.query(dataQuery, dataParams);
+
+    // 4. Calcular total para la paginación
+    let total;
+    if (estado && contadores[estado] !== undefined) {
+        total = contadores[estado];
+    } else if (!estado) {
+        total = Object.values(contadores).reduce((sum, val) => sum + val, 0);
+    } else {
+        total = 0;
+    }
+
+    return {
+        solicitudes: rows,
+        total,
+        page: parseInt(page, 10),
+        totalPages: Math.ceil(total / limit) || 1,
+        contadores
+    };
 };
 
 // ==========================================
@@ -800,14 +813,52 @@ const resolverSolicitud = async (actividadId, accion, resolutorId) => {
     throw { status: 400, message: 'Acción no válida. Use "aprobar" o "rechazar".' };
 };
 
+// ==========================================
+// 3. CANCELAR SOLICITUD (PUT - Solo el solicitante)
+// ==========================================
+const cancelarSolicitud = async (actividadId, usuarioId) => {
+    // 1. Verificar que la solicitud existe
+    const estadoQuery = await db.query(
+        `SELECT r.estado_reserva, r.usuario_id
+         FROM reservas_estudiantes r
+         WHERE r.actividad_id = $1`,
+        [actividadId]
+    );
+
+    if (estadoQuery.rows.length === 0) {
+        throw { status: 404, message: 'La solicitud no existe.' };
+    }
+
+    const reserva = estadoQuery.rows[0];
+
+    // 2. Solo el dueño puede cancelar su propia solicitud
+    if (reserva.usuario_id !== usuarioId) {
+        throw { status: 403, message: 'No tienes permiso para cancelar esta solicitud.' };
+    }
+
+    // 3. Solo se puede cancelar si está pendiente
+    if (reserva.estado_reserva !== 'pendiente') {
+        throw { status: 400, message: `No se puede cancelar una solicitud con estado: ${reserva.estado_reserva}` };
+    }
+
+    // 4. Actualizar estado a cancelada
+    await db.query(
+        `UPDATE reservas_estudiantes 
+         SET estado_reserva = 'cancelada'
+         WHERE actividad_id = $1`,
+        [actividadId]
+    );
+
+    return { message: 'Solicitud cancelada correctamente.' };
+};
+
 module.exports = {
     programarActividad,
     actualizarActividad,
     eliminarActividad,
     obtenerDisponibilidad,
     obtenerActividadesExpandidas,
-    obtenerSolicitudesPendientes,
     obtenerTodasSolicitudes,
-    resolverSolicitud
-
+    resolverSolicitud,
+    cancelarSolicitud
 };
