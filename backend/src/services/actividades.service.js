@@ -717,6 +717,20 @@ const obtenerSolicitudesPendientes = async () => {
 // OBTENER TODAS LAS SOLICITUDES (pendientes, aprobadas, rechazadas)
 // ==========================================
 const obtenerTodasSolicitudes = async () => {
+    try {
+        await db.query(`ALTER TYPE estado_reserva_enum ADD VALUE IF NOT EXISTS 'incompleto'`);
+        await db.query(`
+            UPDATE reservas_estudiantes r
+            SET estado_reserva = 'incompleto'
+            FROM actividades a
+            WHERE r.actividad_id = a.id
+              AND r.estado_reserva = 'aprobada'
+              AND a.fecha_hora_fin < NOW()
+        `);
+    } catch (e) {
+        console.warn('Advertencia al actualizar reservas incompletas:', e.message);
+    }
+
     const query = `
         SELECT 
             r.actividad_id,

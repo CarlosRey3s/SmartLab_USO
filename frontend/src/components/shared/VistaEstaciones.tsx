@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Monitor, Trash2, Plus, X } from 'lucide-react';
+import { ArrowLeft, Monitor, Trash2, Plus, X, Edit2, Check, Search } from 'lucide-react';
 import { laboratoriosService } from '../../services/laboratorios.service';
 import { ConfirmModal } from '../confirm-modal/ConfirmModal';
 import { customToast } from '../custom-toast/CustomToast';
@@ -38,6 +38,11 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [estacionToDelete, setEstacionToDelete] = useState<string | null>(null);
+
+  const [editandoEstacionId, setEditandoEstacionId] = useState<string | null>(null);
+  const [estacionEditData, setEstacionEditData] = useState<{ nombre: string; capacidad: number | '' }>({ nombre: '', capacidad: 1 });
+  
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchEstaciones = async () => {
     if (!laboratorioId) return;
@@ -149,6 +154,42 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
     }
   };
 
+  const iniciarEdicion = (est: Estacion) => {
+    setEditandoEstacionId(est.id);
+    setEstacionEditData({ nombre: est.nombre, capacidad: est.capacidad });
+  };
+
+  const cancelarEdicion = () => {
+    setEditandoEstacionId(null);
+    setEstacionEditData({ nombre: '', capacidad: 1 });
+  };
+
+  const guardarEdicion = async (estacionId: string) => {
+    if (!estacionEditData.nombre.trim() || !estacionEditData.capacidad) {
+      customToast.error('Nombre y capacidad son requeridos');
+      return;
+    }
+    setActualizandoEstadoId(estacionId);
+    try {
+      const json = await laboratoriosService.updateEstacion(estacionId, {
+        nombre: estacionEditData.nombre.trim(),
+        capacidad: Number(estacionEditData.capacidad)
+      });
+      if (json.status === 'success') {
+        customToast.success('Estación actualizada correctamente');
+        fetchEstaciones();
+        cancelarEdicion();
+      } else {
+        customToast.error(json.message || 'Error al actualizar estación');
+      }
+    } catch (err) {
+      console.error(err);
+      customToast.error('Error al actualizar');
+    } finally {
+      setActualizandoEstadoId(null);
+    }
+  };
+
   const getStatusColor = (estado: string) => {
     switch (estado.toLowerCase()) {
       case 'disponible': return '#219653'; // Verde
@@ -159,10 +200,6 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
       case 'ocupado': return '#2D9CDB'; // Azul
       default: return '#828282'; // Gris
     }
-  };
-
-  const formatEstado = (estado: string) => {
-    return estado.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   return (
@@ -261,9 +298,22 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
       )}
 
       <div className="estaciones-list-container">
-        <h3 className="section-label" style={{ marginBottom: '20px' }}>
-          Inventario de Estaciones ({estaciones.length})
-        </h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
+          <h3 className="section-label" style={{ margin: 0, whiteSpace: 'nowrap' }}>
+            Inventario de Estaciones ({estaciones.length})
+          </h3>
+          
+          <div className="search-inventory" style={{ flex: '1 1 200px', maxWidth: '400px', display: 'flex', alignItems: 'center', backgroundColor: '#f8fafc', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            <Search size={16} color="#94a3b8" style={{ marginRight: '8px' }} />
+            <input 
+              type="text"
+              placeholder="Buscar estación..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ border: 'none', backgroundColor: 'transparent', outline: 'none', width: '100%', fontSize: '14px' }}
+            />
+          </div>
+        </div>
         
         {loading ? (
           <div className="loading-state">Cargando estaciones...</div>
@@ -271,51 +321,124 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
           <div className="empty-state">No hay estaciones registradas en este espacio. Añade algunas arriba.</div>
         ) : (
           <div className="station-grid">
-            {[...estaciones].sort((a, b) => a.nombre.localeCompare(b.nombre, undefined, { numeric: true, sensitivity: 'base' })).map(est => {
+            {[...estaciones]
+              .filter(est => est.nombre.toLowerCase().includes(searchTerm.toLowerCase()))
+              .sort((a, b) => a.nombre.localeCompare(b.nombre, undefined, { numeric: true, sensitivity: 'base' }))
+              .map(est => {
               const displayState = est.ocupado ? 'ocupado' : est.estado;
               const color = getStatusColor(displayState);
               return (
                 <div key={est.id} className="station-card" style={{ borderTopColor: color }}>
-                  <div className="station-card-header">
-                    <div className="station-icon">
-                      <Monitor size={24} color={color} />
+                  {editandoEstacionId === est.id ? (
+                    // MODO EDICIÓN
+                    <div style={{ padding: '10px' }}>
+                      <div className="station-card-header" style={{ marginBottom: '10px' }}>
+                        <div className="station-icon">
+                          <Monitor size={24} color={color} />
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button 
+                            className="action-icon-btn save" 
+                            onClick={() => guardarEdicion(est.id)}
+                            title="Guardar"
+                            style={{ color: '#219653' }}
+                          >
+                            <Check size={16} />
+                          </button>
+                          <button 
+                            className="action-icon-btn cancel" 
+                            onClick={cancelarEdicion}
+                            title="Cancelar"
+                            style={{ color: '#EB5757' }}
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div style={{ marginBottom: '10px' }}>
+                        <label style={{ fontSize: '11px', color: '#64748b' }}>Nombre</label>
+                        <input 
+                          type="text" 
+                          value={estacionEditData.nombre}
+                          onChange={(e) => setEstacionEditData({...estacionEditData, nombre: e.target.value})}
+                          style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '14px', marginTop: '4px' }}
+                        />
+                      </div>
+                      
+                      <div className="station-details">
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '11px', color: '#64748b' }}>Capacidad</label>
+                          <input 
+                            type="number" 
+                            min="1"
+                            value={estacionEditData.capacidad}
+                            onChange={(e) => setEstacionEditData({...estacionEditData, capacidad: e.target.value === '' ? '' : parseInt(e.target.value)})}
+                            style={{ width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '14px', marginTop: '4px' }}
+                          />
+                        </div>
+                        
+                        <div style={{ display: 'flex', alignItems: 'flex-end', marginLeft: '10px' }}>
+                          {actualizandoEstadoId === est.id && (
+                            <span style={{ fontSize: '12px', color: '#64748b' }}>Guardando...</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <button 
-                      className="action-icon-btn delete" 
-                      onClick={() => handleEliminarClick(est.id)}
-                      title="Eliminar"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                  
-                  <div className="station-name">{est.nombre}</div>
-                  
-                  <div className="station-details">
-                    <span className="station-capacity">👥 {est.capacidad} {est.capacidad === 1 ? 'persona' : 'personas'}</span>
-                    
-                    {actualizandoEstadoId === est.id ? (
-                      <div className="station-badge" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }}>
-                        Actualizando...
+                  ) : (
+                    // MODO VISTA
+                    <>
+                      <div className="station-card-header">
+                        <div className="station-icon">
+                          <Monitor size={24} color={color} />
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button 
+                            className="action-icon-btn edit" 
+                            onClick={() => iniciarEdicion(est)}
+                            title="Editar"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button 
+                            className="action-icon-btn delete" 
+                            onClick={() => handleEliminarClick(est.id)}
+                            title="Eliminar"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
-                    ) : est.ocupado ? (
-                      <div className="station-badge" style={{ backgroundColor: `${color}15`, color: color }}>
-                        <span className="badge-dot" style={{ backgroundColor: color }}></span>
-                        Ocupado
+                      
+                      <div className="station-name">{est.nombre}</div>
+                      
+                      <div className="station-details">
+                        <span className="station-capacity">👥 {est.capacidad} {est.capacidad === 1 ? 'persona' : 'personas'}</span>
+                        
+                        {actualizandoEstadoId === est.id ? (
+                          <div className="station-badge" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }}>
+                            Actualizando...
+                          </div>
+                        ) : est.ocupado ? (
+                          <div className="station-badge" style={{ backgroundColor: `${color}15`, color: color }}>
+                            <span className="badge-dot" style={{ backgroundColor: color }}></span>
+                            Ocupado
+                          </div>
+                        ) : (
+                          <select 
+                            className="station-badge" 
+                            style={{ backgroundColor: `${color}15`, color: color, border: 'none', cursor: 'pointer', outline: 'none', appearance: 'none', paddingRight: '16px' }}
+                            value={est.estado}
+                            onChange={(e) => handleCambiarEstado(est.id, e.target.value)}
+                            title="Cambiar estado"
+                          >
+                            <option value="disponible">Disponible</option>
+                            <option value="no_disponible">No Disponible</option>
+                          </select>
+                        )}
                       </div>
-                    ) : (
-                      <select 
-                        className="station-badge" 
-                        style={{ backgroundColor: `${color}15`, color: color, border: 'none', cursor: 'pointer', outline: 'none', appearance: 'none', paddingRight: '16px' }}
-                        value={est.estado}
-                        onChange={(e) => handleCambiarEstado(est.id, e.target.value)}
-                        title="Cambiar estado"
-                      >
-                        <option value="disponible">Disponible</option>
-                        <option value="no_disponible">No Disponible</option>
-                      </select>
-                    )}
-                  </div>
+                    </>
+                  )}
                 </div>
               );
             })}
@@ -325,12 +448,12 @@ export const VistaEstaciones: React.FC<VistaEstacionesProps> = ({
 
       <ConfirmModal
         isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
+        onCancel={() => setIsDeleteModalOpen(false)}
         onConfirm={confirmDelete}
         title="Eliminar Estación"
         message="¿Estás seguro que deseas eliminar esta estación? Esta acción no se puede deshacer."
         confirmText="Eliminar"
-        confirmColor="#EB5757"
+        type="danger"
       />
     </div>
   );

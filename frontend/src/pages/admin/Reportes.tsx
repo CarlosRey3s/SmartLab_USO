@@ -190,7 +190,7 @@ export const ReportesView: React.FC = () => {
 
   const nombresMisLabs = React.useMemo(() => espaciosPermitidos.map(l => l.nombre), [espaciosPermitidos]);
 
-  const horasReservadas = labsFiltrados.reduce((acc, lab) => acc + (lab.horas_uso || 0), 0);
+  const horasReservadas = Math.round(labsFiltrados.reduce((acc, lab) => acc + (lab.horas_uso || 0), 0));
   const labFrecuente = labsFiltrados.length > 0 
     ? labsFiltrados.reduce((prev, curr) => (curr.total_reservas || 0) > (prev.total_reservas || 0) ? curr : prev).nombre 
     : 'N/A';
@@ -215,15 +215,22 @@ export const ReportesView: React.FC = () => {
 
   // Autoseleccionar mensaje o limpiar si no aplica (solo en desktop)
   useEffect(() => {
-    if (activeTab === "bandeja" && window.innerWidth > 1024) {
-      if (filteredSugerencias.length > 0) {
-        // Si no hay seleccionado, o el que está ya no figura en la lista, agarra el primero
-        const currentIsValid = selectedMessage && filteredSugerencias.some(s => s.id === selectedMessage.id);
-        if (!currentIsValid) {
-          setSelectedMessage(filteredSugerencias[0]);
+    if (activeTab === "bandeja") {
+      if (window.innerWidth > 1024) {
+        if (filteredSugerencias.length > 0) {
+          // Si no hay seleccionado, o el que está ya no figura en la lista, agarra el primero
+          const currentIsValid = selectedMessage && filteredSugerencias.some(s => s.id === selectedMessage.id);
+          if (!currentIsValid) {
+            setSelectedMessage(filteredSugerencias[0]);
+          }
+        } else {
+          setSelectedMessage(null);
         }
       } else {
-        setSelectedMessage(null);
+        // En móviles, si la selección actual no está en la lista filtrada, limpiar
+        if (selectedMessage && !filteredSugerencias.some(s => s.id === selectedMessage.id)) {
+          setSelectedMessage(null);
+        }
       }
     }
   }, [filteredSugerencias, activeTab]); // No poner selectedMessage aquí para no loopear
@@ -429,7 +436,7 @@ export const ReportesView: React.FC = () => {
             <div className="stat-box">
               <div className="stat-icon circle-orange">👥</div>
               <div className="stat-text">
-                <span>Estudiantes Activos</span>
+                <span>Usuarios Activos</span>
                 <h3>{globalStats.estudiantesActivos}</h3>
               </div>
             </div>
@@ -522,42 +529,44 @@ export const ReportesView: React.FC = () => {
               </div>
             </div>
 
-            <table className="custom-table">
-              <thead>
-                <tr>
-                  <th>Espacio</th>
-                  <th>Total Reservas</th>
-                  <th>Horas Uso</th>
-                  <th>Estado Actual</th>
-                </tr>
-              </thead>
+            <div className="table-responsive">
+              <table className="custom-table">
+                <thead>
+                  <tr>
+                    <th>Espacio</th>
+                    <th>Total Reservas</th>
+                    <th>Horas Uso</th>
+                    <th>Estado Actual</th>
+                  </tr>
+                </thead>
 
-              <tbody>
-                {labsFiltrados.map(lab => (
-                    <tr key={lab.id}>
-                      <td>{lab.nombre}</td>
-                      <td>{lab.total_reservas || 0}</td>
-                      <td>{lab.horas_uso || 0} h</td>
-                      <td className="status-cell">
-                        <span className={
-                          lab.estado_actual === 'Mantenimiento' ? 'status-warn' :
-                          lab.estado_actual === 'Ocupado' ? 'status-busy' : 'status-ok'
-                        }>
-                          {lab.estado_actual || 'Operativo'}
-                        </span>
+                <tbody>
+                  {labsFiltrados.map(lab => (
+                      <tr key={lab.id}>
+                        <td>{lab.nombre}</td>
+                        <td>{lab.total_reservas || 0}</td>
+                        <td>{lab.horas_uso || 0} h</td>
+                        <td className="status-cell">
+                          <span className={
+                            lab.estado_actual === 'Mantenimiento' ? 'status-warn' :
+                            lab.estado_actual === 'Ocupado' ? 'status-busy' : 'status-ok'
+                          }>
+                            {lab.estado_actual || 'Operativo'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  }
+                  {labsFiltrados.length === 0 && (
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
+                        No hay espacios asignados a tu cuenta
                       </td>
                     </tr>
-                  ))
-                }
-                {labsFiltrados.length === 0 && (
-                  <tr>
-                    <td colSpan={4} style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
-                      No hay espacios asignados a tu cuenta
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

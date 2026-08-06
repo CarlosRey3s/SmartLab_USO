@@ -77,7 +77,7 @@ export const ReportarItemModal: React.FC<ReportarItemModalProps> = ({
   return (
     <div className="modal-overlay" style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)',
+      backgroundColor: 'rgba(34, 128, 107, 0.15)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
       animation: 'fadeIn 0.2s ease-out'
     }}>

@@ -226,7 +226,7 @@ export default function Login() {
     if (rol === 'administrador') {
       navigate('/admin/dashboard');
     } else if (rol === 'coordinador' || rol === 'supervisor') {
-      navigate('/admin/dashboard');
+      navigate('/calendario');
     } else if (rol === 'docente') {
       navigate('/docente/dashboard');
     } else {

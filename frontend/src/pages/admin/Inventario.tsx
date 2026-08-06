@@ -109,16 +109,14 @@ export const InventarioView: React.FC = () => {
       
       // Filtramos las reservas
       const reservasEquipos = data.filter((r: any) => {
-        // 1. Debe tener equipos
         if (!r.inventario || r.inventario.length === 0) return false;
         
-        // 2. Ocultar completadas y rechazadas
-        if (r.estado_reserva === 'completada' || r.estado_reserva === 'rechazada' || r.estado_reserva === 'cancelada') return false;
+        if (r.estado_reserva === 'completada' || r.estado_reserva === 'rechazada' || r.estado_reserva === 'cancelada' || r.estado_reserva === 'incompleto' || r.estado_reserva === 'incompleta') return false;
 
-        // 3. Si ya se entregó el equipo, DEBE mostrarse para poder devolverlo, sin importar la hora
+        if (r.estado_reserva === 'aprobada' && ahora > new Date(r.fecha_hora_fin)) return false;
+
         if (r.estado_reserva === 'entregado') return true;
 
-        // 4. Si está "aprobada" esperando entrega, solo aparece cuando falten 15 minutos o menos para empezar
         const inicio = new Date(r.fecha_hora_inicio);
         const margenInicio = new Date(inicio.getTime() - 15 * 60000); // 15 minutos de gracia
         
@@ -126,7 +124,15 @@ export const InventarioView: React.FC = () => {
       });
 
       const historialEquipos = data.filter((r: any) => {
-        return r.inventario && r.inventario.length > 0 && (r.estado_reserva === 'completada' || r.estado_reserva === 'rechazada' || r.estado_reserva === 'cancelada' || r.estado_reserva === 'entregado');
+        if (!r.inventario || r.inventario.length === 0) return false;
+        const finPasado = r.estado_reserva === 'aprobada' && ahora > new Date(r.fecha_hora_fin);
+        return r.estado_reserva === 'completada' || 
+               r.estado_reserva === 'rechazada' || 
+               r.estado_reserva === 'cancelada' || 
+               r.estado_reserva === 'entregado' ||
+               r.estado_reserva === 'incompleto' ||
+               r.estado_reserva === 'incompleta' ||
+               finPasado;
       });
 
       setReservasList(reservasEquipos);
@@ -549,7 +555,7 @@ export const InventarioView: React.FC = () => {
             </button>
           )
         ) : activeTab === 'reservas' && showHistorialReservas ? (
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div className="date-filter-group">
             <input 
               type="date" 
               value={historyStartDate}
@@ -581,7 +587,7 @@ export const InventarioView: React.FC = () => {
             </button>
           </div>
         ) : activeTab === 'alertas' ? (
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div className="date-filter-group">
             <input 
               type="date" 
               value={alertasStartDate}
@@ -825,7 +831,8 @@ export const InventarioView: React.FC = () => {
 
       {/* VISTA 2: TABLA DE RESERVAS (PRÉSTAMOS) */}
       {activeTab === 'reservas' && (
-        <div className="table-container" style={{ overflow: 'visible' }}>
+        <>
+        <div className="table-container inventory-table-container" style={{ overflow: 'visible' }}>
           <table className="users-table">
             <thead>
               <tr>
@@ -872,7 +879,7 @@ export const InventarioView: React.FC = () => {
                       </div>
                     </td>
                     <td>
-                      <span className={`status-badge ${reserva.estado_reserva === 'aprobada' ? 'active' : reserva.estado_reserva === 'entregado' ? 'pending' : reserva.estado_reserva === 'completada' ? 'active' : 'inactive'}`}>
+                      <span className={`status-badge status-${reserva.estado_reserva} ${reserva.estado_reserva === 'aprobada' ? 'active' : reserva.estado_reserva === 'entregado' ? 'pending' : reserva.estado_reserva === 'completada' ? 'active' : (reserva.estado_reserva === 'incompleto' || reserva.estado_reserva === 'incompleta') ? 'incompleto' : 'inactive'}`}>
                         {reserva.estado_reserva.toUpperCase()}
                       </span>
                     </td>
@@ -905,11 +912,74 @@ export const InventarioView: React.FC = () => {
             </tbody>
           </table>
         </div>
+        <div className="inventory-cards reservas-cards">
+            {(showHistorialReservas ? filteredHistorial : filteredReservasList).length === 0 ? (
+              <div className="inventory-card empty">
+                {showHistorialReservas ? "No hay historial de préstamos" : "No hay reservas de equipos actualmente"}
+              </div>
+            ) : (
+              (showHistorialReservas ? filteredHistorial : filteredReservasList).map((reserva) => (
+                <div key={reserva.id || reserva.actividad_id} className="inventory-card">
+                  <div className="card-header">
+                    <div>
+                      <h3 style={{ fontSize: '15px' }}>{reserva.id || reserva.actividad_id ? `#${reserva.id || reserva.actividad_id} - ` : ''}{reserva.solicitante_nombre} {reserva.solicitante_apellido}</h3>
+                      <span style={{ fontSize: '12px', color: '#64748B' }}>{reserva.solicitante_rol}</span>
+                    </div>
+                    <span className={`status-badge status-${reserva.estado_reserva} ${reserva.estado_reserva === 'aprobada' ? 'active' : reserva.estado_reserva === 'entregado' ? 'pending' : reserva.estado_reserva === 'completada' ? 'active' : (reserva.estado_reserva === 'incompleto' || reserva.estado_reserva === 'incompleta') ? 'incompleto' : 'inactive'}`}>
+                      {reserva.estado_reserva.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="card-info" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
+                    <div>
+                      <span>Equipos solicitados:</span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                        {reserva.inventario.map((item: any) => (
+                          <span key={item.id} style={{ fontSize: '12px', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>
+                            {item.cantidad}x {item.nombre}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <span>Horario:</span>
+                      <strong>{new Date(reserva.fecha_hora_inicio).toLocaleDateString()}</strong>
+                      <span style={{ fontSize: '12px', color: '#64748B' }}>
+                        {new Date(reserva.fecha_hora_inicio).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(reserva.fecha_hora_fin).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </span>
+                    </div>
+                    <div style={{ marginTop: '8px' }}>
+                      {reserva.estado_reserva === 'aprobada' && (
+                        <button 
+                          style={{ width: '100%', padding: '8px 12px', background: '#3b82f6', color: 'white', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '500' }}
+                          onClick={() => handleEntregarEquipos(reserva.actividad_id)}
+                        >
+                          Entregar Equipos
+                        </button>
+                      )}
+                      {reserva.estado_reserva === 'entregado' && (
+                        <button 
+                          style={{ width: '100%', padding: '8px 12px', background: '#10b981', color: 'white', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '500' }}
+                          onClick={() => handleDevolverEquipos(reserva.actividad_id)}
+                        >
+                          Marcar Devuelto
+                        </button>
+                      )}
+                      {(reserva.estado_reserva !== 'aprobada' && reserva.estado_reserva !== 'entregado') && (
+                        <span style={{ color: '#94a3b8', fontSize: '12px' }}>Sin acción pendiente</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </>
       )}
 
-      {/* VISTA 2: TABLA DE ALERTAS DE DAÑOS/INCIDENCIAS */}
+      {/* VISTA 3: TABLA DE ALERTAS DE DAÑOS/INCIDENCIAS */}
       {activeTab === 'alertas' && (
-        <div className="table-container" style={{ overflow: 'visible' }}>
+        <>
+        <div className="table-container inventory-table-container" style={{ overflow: 'visible' }}>
           <table className="users-table">
             <thead>
               <tr>
@@ -985,6 +1055,70 @@ export const InventarioView: React.FC = () => {
             </tbody>
           </table>
         </div>
+        <div className="inventory-cards alertas-cards">
+            {filteredAlertas.length === 0 ? (
+              <div className="inventory-card empty">
+                No hay alertas para mostrar
+              </div>
+            ) : (
+              filteredAlertas.map((reporte) => (
+                <div key={reporte.id} className="inventory-card">
+                  <div className="card-header">
+                    <div>
+                      <h3 style={{ fontSize: '15px' }}>#{reporte.id} - {reporte.item_nombre || 'Desconocido'}</h3>
+                      <span style={{ fontSize: '12px', color: '#64748B' }}>Cód: {reporte.item_codigo || 'N/A'}</span>
+                    </div>
+                    <span className={`badge ${getReportStatusBadgeClass(reporte.estado)}`}>
+                      {reporte.estado.replace('_', ' ').toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="card-info" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
+                    <div>
+                      <span>Problema:</span>
+                      <strong>{reporte.tipo_problema}</strong>
+                      <p style={{ fontSize: '12px', color: '#475569', margin: '4px 0 0 0' }}>{reporte.descripcion}</p>
+                    </div>
+                    <div>
+                      <span>Cant. afectada:</span>
+                      <strong>{reporte.cantidad_afectada || 0}</strong>
+                    </div>
+                    <div>
+                      <span>Reportado por:</span>
+                      <strong>{reporte.usuario_nombre ? `${reporte.usuario_nombre} ${reporte.usuario_apellido}` : 'Sistema Automático'}</strong>
+                    </div>
+                    <div>
+                      <span>Fecha:</span>
+                      <strong>{new Date(reporte.fecha_reporte).toLocaleDateString()}</strong>
+                    </div>
+                    <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {reporte.estado === 'pendiente' && !readOnly && (
+                        <button 
+                          onClick={() => cambiarEstadoAlerta(reporte.id, 'en_revision')}
+                          style={{ background: '#f59e0b', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', justifyContent: 'center', fontWeight: '500' }}
+                        >
+                          En Revisión
+                        </button>
+                      )}
+                      {(reporte.estado === 'pendiente' || reporte.estado === 'en_revision') && !readOnly && (
+                        <button 
+                          onClick={() => cambiarEstadoAlerta(reporte.id, 'resuelto')}
+                          style={{ background: '#10b981', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', justifyContent: 'center', fontWeight: '500' }}
+                        >
+                          <CheckCircle size={14} /> Resolver
+                        </button>
+                      )}
+                      {(reporte.estado === 'resuelto' || reporte.estado === 'descartado') && (
+                        <span style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', justifyContent: 'center' }}>
+                          <CheckCircle size={14} /> Completado
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </>
       )}
 
       <AgregarItemModal 
