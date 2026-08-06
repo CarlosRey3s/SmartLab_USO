@@ -7,6 +7,7 @@ import { FormularioReserva } from './ModalActividades/FormularioReserva'; // For
 import { SelectorInventario } from './ModalActividades/SelectorInventario';
 import { useActividadForm, type FormData, getDiaSemana } from '../../hooks/useActividadForm';
 import { canCreateClassesOrMaintenance, isLimitedToOwnLaboratories } from '../../utils/roleGuard';
+import { customToast } from '../custom-toast/CustomToast';
 
 const getRecurrenciaClase = (diaNombre: string) => [
   "No se repite",
@@ -103,6 +104,22 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
   };
 
   const handleGuardarWrapper = (data: any) => {
+    // 1. Un pequeño mapa para traducir el número del día de JavaScript a las letras de RRule
+    const mapaDiasRRule = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+
+    if (form.fecha && form.recurrencia === 'Personalizado...' && form.customFrequency === 'WEEKLY') {
+      // 2. Extraemos qué día de la semana es la fecha que eligió el usuario en el input de inicio
+      const fechaInicioJS = new Date(form.fecha + "T12:00:00");
+      const diaInicioLetras = mapaDiasRRule[fechaInicioJS.getDay()]; // Ej: Si es Jueves, devuelve 'TH'
+      
+      // 3. LA VALIDACIÓN ESTRELLA
+      if (form.customByDay && !form.customByDay.includes(diaInicioLetras)) {
+        // Lanzamos la alerta y detenemos el guardado
+        customToast.error("Error: El día de la Fecha de Inicio no coincide con los días de repetición elegidos. Por favor, inclúyelo o cambia la fecha de inicio.");
+        return; // Detenemos la ejecución (no hace el POST al backend)
+      }
+    }
+
     //transformamos el texto plano del select de recurrencia en el objeto estruturado seguro
     const recurrenciaEstructurada = mapearRecurrenciaAObjeto(data.recurrencia || form.recurrencia);
     onGuardar({
@@ -239,40 +256,33 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
           {currentStepKey === "laboratorio" && tipo && (
             <div className="na-fields">
               <div className="na-field-group">
-                <label className="na-field-label">LABORATORIO</label>
+                <label className="na-field-label">ESPACIO</label>
                 <select
                   className="na-select"
                   value={form.laboratorio || ""}
                   onChange={(e) => { set("laboratorio", e.target.value); set("estaciones" as keyof FormData, [] as any); }}
                   disabled={cargandoLabs}
                 >
-                  <option value="">{cargandoLabs ? "Cargando laboratorios..." : "Selecciona un laboratorio"}</option>
+                  <option value="">{cargandoLabs ? "Cargando espacios..." : "Selecciona un espacio"}</option>
                   {laboratoriosAMostrar.map((lab) => (
                     <option key={lab.id} value={lab.id}>{lab.nombre}</option>
                   ))}
                 </select>
               </div>
 
-              {tipo === "clase" && (
-                <div className="na-field-group">
-                  <label className="na-field-label">N° DE ESTUDIANTES</label>
-                  <div className="na-num-row">
-                    <button className="na-num-btn" onClick={() => set("numPersonas", Math.max(1, (form.numPersonas || 1) - 1))}>−</button>
-                    <span className="na-num-val">{form.numPersonas}</span>
-                    <button className="na-num-btn" onClick={() => set("numPersonas", (form.numPersonas || 0) + 1)}>+</button>
-                  </div>
-                </div>
-              )}
-
               {tipo === "reserva" && form.laboratorio && (
                 <>
                   <div className="na-field-group">
                     <label className="na-field-label">N° DE PERSONAS</label>
-                    <div className="na-num-row">
-                      <button className="na-num-btn" onClick={() => set("numPersonas", Math.max(1, (form.numPersonas || 1) - 1))}>−</button>
-                      <span className="na-num-val">{form.numPersonas}</span>
-                      <button className="na-num-btn" onClick={() => set("numPersonas", (form.numPersonas || 0) + 1)}>+</button>
-                    </div>
+                    <input
+                      className="na-input"
+                      type="number"
+                      min={1}
+                      value={form.numPersonas || ""}
+                      onChange={(e) => set("numPersonas", Math.max(1, parseInt(e.target.value) || 1))}
+                      placeholder="Ej: 10"
+                      style={{ width: '120px' }}
+                    />
                   </div>
 
                   {modoReserva === "por_estacion" ? (
@@ -354,7 +364,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
                       <Building2 size={26} />
                       <div className="na-full-lab-title">Espacio completo</div>
                       <div className="na-full-lab-desc">
-                        Este laboratorio se reserva entero, sin estaciones individuales
+                        Este Espacio se reserva entero, sin estaciones individuales
                         {laboratorioSeleccionado?.capacidad_maxima ? ` · capacidad ${laboratorioSeleccionado.capacidad_maxima} personas` : ""}
                       </div>
                     </div>
@@ -363,7 +373,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
               )}
 
               {tipo === "mantenimiento" && (
-                <div className="na-hint">Este tipo de actividad bloquea el laboratorio completo, no requiere seleccionar estación.</div>
+                <div className="na-hint">Este tipo de actividad bloquea el espacio completo, no requiere seleccionar estación.</div>
               )}
             </div>
           )}

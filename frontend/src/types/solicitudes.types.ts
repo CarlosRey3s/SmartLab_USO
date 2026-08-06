@@ -29,4 +29,13 @@ export interface SolicitudPendiente {
     aula: string;
     estaciones: EstacionSolicitud[];
     inventario: InventarioSolicitud[];
+    es_propia: boolean;
+}
+
+export interface SolicitudesResponse {
+    solicitudes: SolicitudPendiente[];
+    total: number;
+    page: number;
+    totalPages: number;
+    contadores: Record<string, number>;
 }

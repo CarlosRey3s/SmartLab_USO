@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import {  Search, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, Printer, X, User, Wrench, FileText,  Edit2, Trash2, Filter} from 'lucide-react';
+import { Search, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, Printer, X, User, Users, Wrench, FileText, Edit2, Trash2, Filter, Info } from 'lucide-react';
 import { Calendar, dateFnsLocalizer, type ToolbarProps, type View } from 'react-big-calendar';
 import { es } from 'date-fns/locale/es';
 import { PanelSolicitudes } from './PanelSolicitudes.tsx';
@@ -18,7 +18,7 @@ const locales = { 'es': es };
 const localizer = dateFnsLocalizer({
   format,
   parse,
-  startOfWeek, 
+  startOfWeek,
   getDay,
   locales,
 });
@@ -49,6 +49,9 @@ export interface EventoLaboratorio {
   reserva_nota?: string;
   estado_reserva?: string;
   usuario_id?: number;
+  reserva_solicitante_nombre?: string;
+  reserva_solicitante_apellido?: string;
+  reserva_solicitante_expediente?: string;
   estaciones?: number[];
   equipos?: Array<{ id: number; nombre: string; cantidad: number }>;
 }
@@ -74,12 +77,22 @@ const CustomDateHeader = ({ label, date, isOffRange }: any) => (
   </div>
 );
 
-const CustomEvent = ({ event }: any) => (
-  <div className='custom-event-content'>
-    <span className="event-title">{event.title}</span>
-    <span className="event-time">{`${format(event.start, 'h:mm')} - ${format(event.end, 'h:mm')}`}</span>
-  </div>
-);
+const CustomEvent = ({ event }: any) => {
+  const diffMs = event.end.getTime() - event.start.getTime();
+  const diffMins = Math.round(diffMs / 60000);
+  const hours = Math.floor(diffMins / 60);
+  const mins = diffMins % 60;
+  const durationStr = hours > 0 ? (mins > 0 ? `${hours}h ${mins}m` : `${hours}h`) : `${mins}m`;
+
+  return (
+    <div className='custom-event-content'>
+      <span className="event-title">{event.title}</span>
+      <span className="event-time">
+        {`${format(event.start, 'h:mm')} - ${format(event.end, 'h:mm')} • ${durationStr}`}
+      </span>
+    </div>
+  );
+};
 
 const eventStyleGetter = (event: EventoLaboratorio) => {
   let className = 'evento-base';
@@ -96,6 +109,7 @@ interface CustomToolbarProps extends ToolbarProps<EventoLaboratorio> {
   filtros: any;
   setFiltros: any;
   laboratoriosUnicos: string[];
+  abrirEventoDelBuscador: (evento: EventoLaboratorio) => void;
 }
 
 const CustomToolbar = (toolbar: CustomToolbarProps) => {
@@ -105,25 +119,55 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
   const [mostrarResultados, setMostrarResultados] = useState(false);
   const { irAFecha } = useContext(NavegacionContext);
 
+  // Estado local para los filtros antes de aplicarlos
+  const [filtrosLocales, setFiltrosLocales] = useState(toolbar.filtros);
+
+  useEffect(() => {
+    if (MenuFiltroAbierto) {
+      setFiltrosLocales(toolbar.filtros);
+    }
+  }, [MenuFiltroAbierto, toolbar.filtros]);
+
   const cambiarVista = (nuevaVista: View) => { toolbar.onView(nuevaVista); setMenuVistaAbierto(false); };
 
   const resultadosBusqueda = terminoBusqueda.trim() === ''
     ? []
-    : toolbar.eventos.filter(e => (e.title || 'Sin título').toLowerCase().includes(terminoBusqueda.toLowerCase()));
+    : toolbar.eventos.filter(e => {
+      const t = terminoBusqueda.toLowerCase();
+      return (
+        (e.title || '').toLowerCase().includes(t) ||
+        (e.docente_nombre || '').toLowerCase().includes(t) ||
+        (e.materia || '').toLowerCase().includes(t) ||
+        (e.tecnico_nombre || '').toLowerCase().includes(t) ||
+        (e.reserva_titulo || '').toLowerCase().includes(t)
+      );
+    });
 
-  const toggleFiltroActividad = (tipo: 'clases' | 'mantenimientos' | 'reservas') => {
-    toolbar.setFiltros((prev: any) => ({ ...prev, [tipo]: !prev[tipo] }));
+  const toggleFiltroActividadLocal = (tipo: 'clases' | 'mantenimientos' | 'reservas') => {
+    setFiltrosLocales((prev: any) => ({ ...prev, [tipo]: !prev[tipo] }));
   };
 
-  const limpiarFiltros = () => {
-    toolbar.setFiltros({
-      clases: true,
-      mantenimientos: true,
-      reservas: true,
-      laboratorio: 'Todos',
-      tipoEspacio: 'Todos'
+  const toggleLaboratorioLocal = (lab: string) => {
+    setFiltrosLocales((prev: any) => {
+      const labs = prev.laboratorios || [];
+      if (labs.includes(lab)) {
+        return { ...prev, laboratorios: labs.filter((l: string) => l !== lab) };
+      } else {
+        return { ...prev, laboratorios: [...labs, lab] };
+      }
     });
   };
+
+  const aplicarFiltros = () => {
+    toolbar.setFiltros(filtrosLocales);
+    setMenuFiltroAbierto(false);
+  };
+
+  // Obtener conteo de eventos por laboratorio para el menú
+  const conteoLaboratorios = toolbar.laboratoriosUnicos.reduce((acc: any, lab) => {
+    acc[lab] = toolbar.eventos.filter(e => e.laboratorio_nombre === lab).length;
+    return acc;
+  }, {});
 
   return (
     <div className="calendar-toolbar-custom">
@@ -140,7 +184,7 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
         <div className="search-container">
           <Search size={18} className="search-icon" />
           <input
-            type="text" className="search-input" placeholder="Buscar actividad..."
+            type="text" className="search-input" placeholder="Buscar actividad, docente, materia..."
             value={terminoBusqueda}
             onChange={(e) => { setTerminoBusqueda(e.target.value); setMostrarResultados(true); }}
             onFocus={() => setMostrarResultados(true)}
@@ -150,8 +194,17 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
             <div className="search-results-dropdown">
               {resultadosBusqueda.length > 0 ? (
                 resultadosBusqueda.map((evento) => (
-                  <div key={evento.id} className="search-result-item" onClick={() => { irAFecha(evento.start); setTerminoBusqueda(''); setMostrarResultados(false); }}>
+                  <div key={evento.id} className="search-result-item" onClick={() => {
+                    irAFecha(evento.start);
+                    toolbar.abrirEventoDelBuscador(evento);
+                    setTerminoBusqueda('');
+                    setMostrarResultados(false);
+                  }}>
                     <div className="result-title">{evento.title}</div>
+                    <div className="result-info">
+                      {evento.docente_nombre && <span className="info-badge doc">{evento.docente_nombre}</span>}
+                      {evento.tecnico_nombre && <span className="info-badge tec">{evento.tecnico_nombre}</span>}
+                    </div>
                     <div className="result-date">{format(evento.start, "d 'de' MMM, h:mm a", { locale: es })}</div>
                   </div>
                 ))
@@ -166,59 +219,54 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
               <Filter size={16} /> Filtro
             </button>
             {MenuFiltroAbierto && (
-              <div className="filter-dropdown-menu">
-                <div className="filter-header">
-                  <span className="filter-title">Filtros</span>
-                  <button className="btn-limpiar" onClick={limpiarFiltros}>Limpiar</button>
-                </div>
+              <div className="filter-dropdown-menu dark-filter">
 
                 <div className="filter-section">
-                  <span className="filter-subtitle">Por Tipo de Actividad</span>
-                  <div className="filter-pills">
+                  <span className="filter-subtitle dark">TIPO DE ACTIVIDAD</span>
+                  <div className="filter-pills-dark">
                     <button
-                      className={`filter-pill ${toolbar.filtros.clases ? 'active-clases' : 'inactive-clases'}`}
-                      onClick={() => toggleFiltroActividad('clases')}
+                      className={`dark-pill pill-clases ${filtrosLocales.clases ? 'active' : ''}`}
+                      onClick={() => toggleFiltroActividadLocal('clases')}
                     >
-                      <span className="pill-dot dot-clases"></span> Clases
+                      <span className="pill-dot dot-clases-dark"></span> Clases
                     </button>
                     <button
-                      className={`filter-pill ${toolbar.filtros.mantenimientos ? 'active-mantenimientos' : 'inactive-mantenimientos'}`}
-                      onClick={() => toggleFiltroActividad('mantenimientos')}
+                      className={`dark-pill pill-reservas ${filtrosLocales.reservas ? 'active' : ''}`}
+                      onClick={() => toggleFiltroActividadLocal('reservas')}
                     >
-                      <span className="pill-dot dot-mantenimientos"></span> Mantenimientos
+                      <span className="pill-dot dot-reservas-dark"></span> Reservas
                     </button>
                     <button
-                      className={`filter-pill ${toolbar.filtros.reservas ? 'active-reservas' : 'inactive-reservas'}`}
-                      onClick={() => toggleFiltroActividad('reservas')}
+                      className={`dark-pill pill-mantenimientos ${filtrosLocales.mantenimientos ? 'active' : ''}`}
+                      onClick={() => toggleFiltroActividadLocal('mantenimientos')}
                     >
-                      <span className="pill-dot dot-reservas"></span> Reservas
+                      <span className="pill-dot dot-mantenimientos-dark"></span> Mantenimientos
                     </button>
                   </div>
                 </div>
 
                 <div className="filter-section">
-                  <span className="filter-subtitle">Por Laboratorio</span>
-                  <select
-                    className="filter-select"
-                    value={toolbar.filtros.laboratorio}
-                    onChange={(e) => toolbar.setFiltros({ ...toolbar.filtros, laboratorio: e.target.value })}
-                  >
-                    <option value="Todos">Todos</option>
-                    {toolbar.laboratoriosUnicos.map((lab, i) => (
-                      <option key={i} value={lab}>{lab}</option>
-                    ))}
-                  </select>
+                  <span className="filter-subtitle dark">LABORATORIOS</span>
+                  <div className="dark-checkbox-list">
+                    {toolbar.laboratoriosUnicos.map((lab, i) => {
+                      const isActive = (filtrosLocales.laboratorios || []).includes(lab);
+                      return (
+                        <div key={i} className={`dark-checkbox-item ${isActive ? 'selected' : ''}`} onClick={() => toggleLaboratorioLocal(lab)}>
+                          <div className="checkbox-box">
+                            {isActive && <div className="checkbox-check">✓</div>}
+                          </div>
+                          <span className="checkbox-label">{lab}</span>
+                          <span className="checkbox-badge">{conteoLaboratorios[lab] || 0}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                <div className="filter-section">
-                  <span className="filter-subtitle">Por Tipo de Espacio</span>
-                  <select
-                    className="filter-select"
-                    value={toolbar.filtros.tipoEspacio}
-                    onChange={(e) => toolbar.setFiltros({ ...toolbar.filtros, tipoEspacio: e.target.value })}
-                  >
-                    <option value="Todos">Todos</option>
-                  </select>
+                <div className="filter-actions">
+                  <button className="btn-aplicar-filtros" onClick={aplicarFiltros}>
+                    Aplicar filtros ↗
+                  </button>
                 </div>
               </div>
             )}
@@ -246,7 +294,7 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
 // ── 5. COMPONENTE PRINCIPAL (VISTA) ──
 export const CalendarioView = () => {
   const { user } = useAuth();
-  
+
   // Evaluar si el usuario es autoridad
   const esAutoridad = user?.rol === 'administrador' || user?.rol === 'coordinador';
 
@@ -268,8 +316,7 @@ export const CalendarioView = () => {
     clases: true,
     mantenimientos: true,
     reservas: true,
-    laboratorio: 'Todos',
-    tipoEspacio: 'Todos'
+    laboratorios: [] as string[]
   });
 
   const cargarDatos = async () => {
@@ -281,30 +328,30 @@ export const CalendarioView = () => {
       const data = await obtenerActividades(fechaInicio, fechaFin);
       const arregloEventos = Array.isArray(data) ? data : (data?.data || []);
       const eventosMapeados = arregloEventos.map((act: any) => {
-      const rawStart = act.start || act.fecha_hora_inicio;
-      const rawEnd = act.end || act.fecha_hora_fin;
+        const rawStart = act.start || act.fecha_hora_inicio;
+        const rawEnd = act.end || act.fecha_hora_fin;
 
-            return {
-        ...act,
-        id: act.id_instancia || act.id,
-        idOriginal: act.id,
-        title: act.title || (act.tipo === 'clase' ? act.materia : act.tipo === 'mantenimiento' ? 'Mantenimiento' : act.titulo),
-        start: parseISO(rawStart),
-        end: parseISO(rawEnd),
-        tipo: act.tipo,
-        laboratorio_id: act.laboratorio_id,
-        laboratorio_nombre: act.laboratorio_nombre || 'Laboratorio',
-      };
-});
+        return {
+          ...act,
+          id: act.id_instancia || act.id,
+          idOriginal: act.id,
+          title: act.title || (act.tipo === 'clase' ? act.materia : act.tipo === 'mantenimiento' ? 'Mantenimiento' : act.titulo),
+          start: parseISO(rawStart),
+          end: parseISO(rawEnd),
+          tipo: act.tipo,
+          laboratorio_id: act.laboratorio_id,
+          laboratorio_nombre: act.laboratorio_nombre || 'Laboratorio',
+        };
+      });
 
-        console.log("🚀 Eventos mapeados con éxito para React:", eventosMapeados);
-        setEventos(eventosMapeados);
+      console.log("🚀 Eventos mapeados con éxito para React:", eventosMapeados);
+      setEventos(eventosMapeados);
     } catch (error) {
-        console.error('Error al cargar eventos en el componente:', error);
+      console.error('Error al cargar eventos en el componente:', error);
     } finally {
-        setCargando(false);
+      setCargando(false);
     }
-};
+  };
   useEffect(() => {
     cargarDatos();
   }, [fechaActual]);
@@ -322,6 +369,14 @@ export const CalendarioView = () => {
     else x = x + 20;
     if (y + popoverHeight > window.innerHeight) y = y - popoverHeight;
 
+    setPopoverPos({ x, y });
+    setEventoSeleccionado(evento);
+  };
+
+  const abrirEventoDelBuscador = (evento: EventoLaboratorio) => {
+    // Abrimos el popover centrado o en una posición fija si viene del buscador
+    const x = Math.max((window.innerWidth / 2) - 160, 20);
+    const y = Math.max((window.innerHeight / 2) - 100, 20);
     setPopoverPos({ x, y });
     setEventoSeleccionado(evento);
   };
@@ -380,11 +435,116 @@ export const CalendarioView = () => {
     if (evento.tipo === 'clase' && !filtros.clases) return false;
     if (evento.tipo === 'mantenimiento' && !filtros.mantenimientos) return false;
     if (evento.tipo === 'reserva' && !filtros.reservas) return false;
+
+    if (filtros.laboratorios && filtros.laboratorios.length > 0) {
+      if (!filtros.laboratorios.includes(evento.laboratorio_nombre)) return false;
+    }
+
     return true;
   });
 
   const laboratoriosUnicos = Array.from(new Set(eventos.map(e => e.laboratorio_nombre))).filter(Boolean);
 
+
+  // Función para exportar ÚNICAMENTE el Horario Académico de Clases (Materia + Docente por celda)
+  const exportarACSV = () => {
+    if (!eventos || eventos.length === 0) {
+      alert('No hay actividades en la vista actual para exportar.');
+      return;
+    }
+
+    // 1. 🚨 FILTRO PRINCIPAL: Filtrar únicamente los eventos de tipo 'clase'
+    const clases = eventos.filter(evento => evento.tipo === 'clase');
+
+    if (clases.length === 0) {
+      alert('No hay clases académicas programadas en la vista actual para exportar.');
+      return;
+    }
+
+    // 2. Encabezados de las columnas del Horario Institucional
+    const cabeceras = ['HORA', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+
+    // 3. Franjas horarias académicas de 07:00 a 21:00
+    const franjasHorarias = [
+      { horaInicio: 7, horaFin: 8, label: '07:00 - 08:00' },
+      { horaInicio: 8, horaFin: 9, label: '08:00 - 09:00' },
+      { horaInicio: 9, horaFin: 10, label: '09:00 - 10:00' },
+      { horaInicio: 10, horaFin: 11, label: '10:00 - 11:00' },
+      { horaInicio: 11, horaFin: 12, label: '11:00 - 12:00' },
+      { horaInicio: 12, horaFin: 13, label: '12:00 - 13:00' },
+      { horaInicio: 13, horaFin: 14, label: '13:00 - 14:00' },
+      { horaInicio: 14, horaFin: 15, label: '14:00 - 15:00' },
+      { horaInicio: 15, horaFin: 16, label: '15:00 - 16:00' },
+      { horaInicio: 16, horaFin: 17, label: '16:00 - 17:00' },
+      { horaInicio: 17, horaFin: 18, label: '17:00 - 18:00' },
+      { horaInicio: 18, horaFin: 19, label: '18:00 - 19:00' },
+      { horaInicio: 19, horaFin: 20, label: '19:00 - 20:00' },
+      { horaInicio: 20, horaFin: 21, label: '20:00 - 21:00' }
+    ];
+
+    const diasSemanaMap = [1, 2, 3, 4, 5, 6]; // 1 = Lunes ... 6 = Sábado
+
+    // 4. Construir la matriz horaria
+    const filasMatriz = franjasHorarias.map(franja => {
+      const celdas = [franja.label];
+
+      diasSemanaMap.forEach(diaNum => {
+        // Filtrar solo las CLASES que caen en este día y franja horaria
+        const clasesEnBloque = clases.filter(evento => {
+          const fInicio = new Date(evento.start);
+          const fFin = new Date(evento.end);
+
+          if (fInicio.getDay() !== diaNum) return false;
+
+          const horaInicioEvento = fInicio.getHours() + fInicio.getMinutes() / 60;
+          const horaFinEvento = fFin.getHours() + fFin.getMinutes() / 60;
+
+          return (horaInicioEvento < franja.horaFin && horaFinEvento > franja.horaInicio);
+        });
+
+        if (clasesEnBloque.length > 0) {
+          // Formatear Materia y Docente en renglones separados dentro de la misma celda
+          const representaciones = clasesEnBloque.map(c => {
+            const materia = c.materia || c.title || 'Clase';
+            const docente = c.docente_nombre ? `Docente: ${c.docente_nombre}` : 'Sin docente asignado';
+            const lab = c.laboratorio_nombre ? ` [${c.laboratorio_nombre}]` : '';
+
+            // Inyectamos el salto de línea (\n) entre la materia y el docente
+            return `${materia}${lab}\n${docente}`;
+          });
+
+          // Deduplicar instancias repetidas
+          const clasesUnicas = Array.from(new Set(representaciones));
+
+          // Escapar comillas dobles y concatenar
+          const contenidoCelda = clasesUnicas.join('\n---\n').replace(/"/g, '""');
+
+          celdas.push(`"${contenidoCelda}"`);
+        } else {
+          celdas.push('""'); // Espacio libre
+        }
+      });
+
+      return celdas.join(';');
+    });
+
+    // 5. Encabezado institucional + tabla
+    const csvContent = [cabeceras.join(';'), ...filasMatriz].join('\n');
+
+    // 6. Generar y descargar el archivo
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Horario_Academico_Clases_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+
+
+  // ANTES DEL RETURN
   return (
     <NavegacionContext.Provider value={{ irAFecha: (fecha) => setFechaActual(fecha) }}>
       <div className="calendar-page-wrapper" onClick={() => eventoSeleccionado && setEventoSeleccionado(null)}>
@@ -438,6 +598,9 @@ export const CalendarioView = () => {
                 <>
                   <div className="popover-row"><FileText size={16} className="popover-icon" /> <span>Materia: {eventoSeleccionado.materia}</span></div>
                   <div className="popover-row"><User size={16} className="popover-icon" /> <span>Docente: {eventoSeleccionado.docente_nombre || 'No asignado'}</span></div>
+                  {eventoSeleccionado.clase_estudiantes != null && (
+                    <div className="popover-row"><Users size={16} className="popover-icon" /> <span>Estudiantes: {eventoSeleccionado.clase_estudiantes}</span></div>
+                  )}
                 </>
               )}
 
@@ -450,12 +613,42 @@ export const CalendarioView = () => {
 
               {eventoSeleccionado.tipo === 'reserva' && (
                 <>
-                  <div className="popover-row"><User size={16} className="popover-icon" /> <span>Reserva: {eventoSeleccionado.reserva_titulo}</span></div>
-                  <div className="popover-row"><FileText size={16} className="popover-icon" /> <span className="text-sm">Nota: {eventoSeleccionado.reserva_nota}</span></div>
+                  {eventoSeleccionado.reserva_solicitante_nombre && (
+                    <div className="popover-row">
+                      <User size={16} className="popover-icon" />
+                      <span>Reservado por: {eventoSeleccionado.reserva_solicitante_nombre} {eventoSeleccionado.reserva_solicitante_apellido} ({eventoSeleccionado.reserva_solicitante_expediente})</span>
+                    </div>
+                  )}
+                  {eventoSeleccionado.reserva_nota && (
+                    <div className="popover-row"><FileText size={16} className="popover-icon" /> <span className="text-sm">Nota: {eventoSeleccionado.reserva_nota}</span></div>
+                  )}
+                  {eventoSeleccionado.estado_reserva && (
+                    <div className="popover-row">
+                      <Info size={16} className="popover-icon" />
+                      <span>
+                        Estado:{' '}
+                        <span className={`estado-badge estado-${eventoSeleccionado.estado_reserva.toLowerCase()}`}>
+                          {eventoSeleccionado.estado_reserva.toUpperCase()}
+                        </span>
+                      </span>
+                    </div>
+                  )}
 
                   {eventoSeleccionado.estaciones && eventoSeleccionado.estaciones.length > 0 && (
-                    <div className="popover-row">
-                      <span className="text-sm text-gray-700">🖥️ Estaciones: {eventoSeleccionado.estaciones.join(', ')}</span>
+                    <div className="popover-section">
+                      <div className="flex justify-between items-center mb-1">
+                        <p className="popover-section-title mb-0">
+                          🖥️ ESTACIONES RESERVADAS:
+                        </p>
+                        <span className="text-xs font-bold text-gray-500">Total: {eventoSeleccionado.estaciones.length}</span>
+                      </div>
+                      <div className="estaciones-grid mt-1">
+                        {eventoSeleccionado.estaciones.map((est: number) => (
+                          <div key={est} className="estacion-badge">
+                            {est}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -499,24 +692,24 @@ export const CalendarioView = () => {
             eventPropGetter={eventStyleGetter}
             onSelectEvent={handleSelectEvent}
             components={{
-              toolbar: (props) => <CustomToolbar {...props} eventos={eventos} filtros={filtros} setFiltros={setFiltros} laboratoriosUnicos={laboratoriosUnicos} />,
+              toolbar: (props) => <CustomToolbar {...props} eventos={eventos} filtros={filtros} setFiltros={setFiltros} laboratoriosUnicos={laboratoriosUnicos} abrirEventoDelBuscador={abrirEventoDelBuscador} />,
               week: { header: CustomHeader }, day: { header: CustomHeader },
               month: { header: CustomMonthHeader, dateHeader: CustomDateHeader }, event: CustomEvent
             }}
             style={{ height: '100%' }}
           />
         </div>
-
         <div className="calendar-sidebar-right">
           {(!user || !isReadOnlyView(user.rol as any)) && (
             <button className="btn-crear" onClick={() => setModalAbierto(true)}>
               <Plus size={20} /> Crear
             </button>
           )}
-          {esAutoridad && <PanelSolicitudes />}
+          <PanelSolicitudes />
           {esAutoridad && (
-            <button className="btn-exportar">
-              <Printer size={20} /> Exportar
+            <button className="btn-exportar"
+              onClick={exportarACSV} title="Exportar actividades a Excel">
+              <Printer size={20} /> Exportar Horarios
             </button>
           )}
         </div>

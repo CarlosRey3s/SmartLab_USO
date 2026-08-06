@@ -216,6 +216,7 @@ const programarActividad = async (datosModal, usuarioLogueado) => {
     const inicioDatetime = dayjs.tz(`${fecha} ${desde}`, ZONA_HORARIA).toDate();
     const finDatetime = dayjs.tz(`${fecha} ${hasta}`, ZONA_HORARIA).toDate();
 
+
     // Procesas dinamicamente el objeto JSON de recurrencia
     const reglaRecurrenciaPlana = formatearRecurrencia(recurrencia);
 
@@ -267,7 +268,7 @@ const programarActividad = async (datosModal, usuarioLogueado) => {
         } else if (tipo === 'reserva') {
 
             // LÓGICA DE ROLES: Dependiendo del rol, pasa a pendiente o aprobada automáticamente
-            const estadoInicial = (rolUsuario === 'administrador') ? 'aprobada' : 'pendiente';
+            const estadoInicial = (rolUsuario === 'administrador' || rolUsuario === 'coordinador') ? 'aprobada' : 'pendiente';
 
             const queryHija = `INSERT INTO reservas_estudiantes (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva) VALUES ($1, $2, $3, $4, $5)`;
             await client.query(queryHija, [idGenerado, idUsuario, datosModal.titulo, datosModal.nota_adicional || null, estadoInicial]);
@@ -447,6 +448,8 @@ const obtenerDisponibilidad = async (laboratorioId, fechaInicio, fechaFin, exclu
     // =========================================================================
     console.log('DEBUG disponibilidad:', { laboratorioId, fechaInicio, fechaFin, excludeId });
 
+    console.log('DEBUG disponibilidad:', { laboratorioId, fechaInicio, fechaFin, excludeId });
+
     if (!laboratorioId || !fechaInicio || !fechaFin) {
         throw new Error(`Parámetros inválidos: ${JSON.stringify({ laboratorioId, fechaInicio, fechaFin })}`);
     }
@@ -513,6 +516,7 @@ const obtenerDisponibilidad = async (laboratorioId, fechaInicio, fechaFin, exclu
     }
     queryItems += ` GROUP BY ri.item_id`;
 
+
     const resultItems = await db.query(queryItems, paramsItems);
 
     // Transformamos el resultado en un objeto clave-valor { id_item: cantidad_ocupada }
@@ -533,24 +537,25 @@ const obtenerDisponibilidad = async (laboratorioId, fechaInicio, fechaFin, exclu
  * Extrae las actividades con toda su infraestructura agrupada (PCs, Inventario, Nombres)
  * y expande dinámicamente las instancias recurrentes (RRULE) dentro del rango de la vista del calendario.
  */
-const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista) => {
+const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usuarioId, rol) => {
     const client = await db.connect();
 
     try {
-        // 1. Convertir los strings de fecha que envía el frontend a objetos Date de JavaScript
         const startVista = new Date(fechaInicioVista);
         const endVista = new Date(fechaFinVista);
 
-        // 2. CONSULTA FUSIONADA: Estructura masiva + Filtro temporal inteligente
         const query = `
             SELECT 
                 a.id, 
+                
+                -- Asignación limpia de títulos
                 CASE 
                     WHEN a.tipo = 'clase' THEN ca.materia
+                    WHEN a.tipo = 'mantenimiento' THEN 'Laboratorio en Mantenimiento'
                     WHEN a.tipo = 'reserva' THEN re.titulo
-                    WHEN a.tipo = 'mantenimiento' THEN 'Mantenimiento Preventivo'
                     ELSE 'Actividad'
                 END AS title, 
+                
                 a.fecha_hora_inicio AS start, 
                 a.fecha_hora_fin AS end, 
                 a.tipo,
@@ -577,15 +582,18 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista) => 
                 re.nota_adicional AS reserva_nota,
                 re.estado_reserva,
                 re.usuario_id AS reserva_usuario_id,
+                u_reserva.nombre AS reserva_solicitante_nombre,
+                u_reserva.apellido AS reserva_solicitante_apellido,
+                u_reserva.expediente AS reserva_solicitante_expediente,
                 
-                -- Subconsulta para empaquetar estaciones en un Array []
+                -- Subconsulta para estaciones
                 (
                     SELECT COALESCE(array_agg(estacion_id), '{}') 
                     FROM reserva_estaciones 
                     WHERE actividad_id = a.id
                 ) AS estaciones,
                  
-                -- Subconsulta para empaquetar equipos en un Array de Objetos JSON [{}]
+                -- Subconsulta para equipos
                 (
                     SELECT COALESCE(
                         json_agg(
@@ -603,62 +611,72 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista) => 
 
             FROM actividades a
             
-            -- Uniones estratégicas para traer la metadata correspondiente
             LEFT JOIN laboratorios l ON a.laboratorio_id = l.id
             LEFT JOIN clases_academicas ca ON a.id = ca.actividad_id
             LEFT JOIN usuarios u_docente ON ca.docente_id = u_docente.id
             LEFT JOIN mantenimientos m ON a.id = m.actividad_id
             LEFT JOIN usuarios u_tecnico ON m.tecnico_id = u_tecnico.id
             LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id
+            LEFT JOIN usuarios u_reserva ON re.usuario_id = u_reserva.id
 
             WHERE (
                 (a.recurrencia IS NULL AND a.fecha_hora_inicio <= $2 AND a.fecha_hora_fin >= $1)
                 OR (a.recurrencia IS NOT NULL AND a.fecha_hora_inicio <= $2)
             )
-            AND (a.tipo != 'reserva' OR re.estado_reserva = 'aprobada'); `;
+            -- 🚀 MATRIZ DE CONTROL DE ACCESO (RBAC + DOMINIO)
+            AND (
+                -- 1. administrador: Ve absolutamente todo el campus
+                $4 = 'administrador'
+                
+                -- 2. coordinador / docente: Solo ve laboratorios a su cargo o sus propias clases
+                OR (
+                    $4 = 'coordinador' AND (
+                        l.coordinador_id = $3 
+                        OR ca.docente_id = $3
+                    )
+                )
+                
+                -- 3. estudiante: Ve sus clases, mantenimientos y únicamente sus reservas
+                OR (
+                    $4 = 'estudiante' AND (
+                        a.tipo = 'clase'
+                        OR a.tipo = 'mantenimiento'
+                        OR (a.tipo = 'reserva' AND re.usuario_id = $3 AND re.estado_reserva = 'aprobada')
+                    )
+                )
+            );
+        `;
 
-        const { rows } = await client.query(query, [startVista, endVista]);
+        const { rows } = await client.query(query, [startVista, endVista, usuarioId, rol]);
         const eventosListosParaReact = [];
 
-        // 3. El Motor de Expansión Procesando Objetos Complejos
+        // Motor de expansión RRule (sin cambios)
         for (const fila of rows) {
             if (!fila.recurrencia) {
-                // CASO A: Evento Único (No se repite)
-                // Conserva toda la estructura intacta y asignamos id_instancia estándar
                 fila.id_instancia = fila.id.toString();
                 eventosListosParaReact.push(fila);
             } else {
-                // CASO B: Evento Recurrente (Multiplicación por RRule)
                 const fechaInicioOriginal = new Date(fila.start);
                 const fechaFinOriginal = new Date(fila.end);
-
-                // Calculamos la duración exacta (ej: 2 horas de clase) en milisegundos
                 const duracionMilisegundos = fechaFinOriginal.getTime() - fechaInicioOriginal.getTime();
 
-                // Inicializamos la regla matemática con el string de la BD
                 try {
                     const regla = rrulestr(fila.recurrencia, {
                         dtstart: fechaInicioOriginal
                     });
 
-                    // Extraemos todas las fechas clonadas que caen en la vista actual (ej: todos los miércoles del mes)
                     const fechasClonadas = regla.between(startVista, endVista, true);
 
                     for (const fechaClon of fechasClonadas) {
-                        // Clonamos el objeto de la fila con TODO su contenido (estaciones, equipos, nombres)
                         const eventoClonado = { ...fila };
-
-                        // Modificamos únicamente las propiedades de tiempo para esta instancia específica
                         eventoClonado.start = fechaClon;
                         eventoClonado.end = new Date(fechaClon.getTime() + duracionMilisegundos);
-
-                        // Llave única compuesta para evitar duplicidad de keys en React Big Calendar
                         eventoClonado.id_instancia = `${fila.id}-${fechaClon.getTime()}`;
 
                         eventosListosParaReact.push(eventoClonado);
                     }
                 } catch (rruleError) {
-                    console.warn(`[Advertencia] Error al procesar regla de recurrencia para la actividad ID ${fila.id}. Regla: ${fila.recurrencia}`, rruleError.message);
+                    console.warn(`[Advertencia] Error RRule ID ${fila.id}:`, rruleError.message);
                 }
             }
         }
@@ -674,42 +692,58 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista) => 
 };
 
 // ==========================================
-// 1. OBTENER SOLICITUDES PENDIENTES (GET)
+// OBTENER TODAS LAS SOLICITUDES — Paginado + RBAC + Contadores
 // ==========================================
-const obtenerSolicitudesPendientes = async () => {
-    // Usamos json_agg para agrupar las tablas hijas como arrays dentro del JSON de respuesta
-    const query = `
-        SELECT 
-            r.actividad_id,
-            r.titulo,
-            r.nota_adicional,
-            r.estado_reserva,
-            a.fecha_hora_inicio,
-            a.fecha_hora_fin,
-            a.fecha_creacion,
-            u.nombre AS solicitante_nombre,
-            u.apellido AS solicitante_apellido,
-            u.correo AS solicitante_correo,
-            u.expediente AS solicitante_expediente,
-            l.nombre AS laboratorio_nombre,
-            l.edificio,
-            l.aula,
-            (
-                SELECT COALESCE(json_agg(json_build_object('id', e.id, 'nombre', e.nombre)), '[]')
-                FROM reserva_estaciones re 
-                JOIN estaciones_trabajo e ON re.estacion_id = e.id 
-                WHERE re.actividad_id = r.actividad_id
-            ) AS estaciones,
-            (
-                SELECT COALESCE(json_agg(json_build_object('id', i.id, 'nombre', i.nombre, 'cantidad', ri.cantidad_solicitada)), '[]')
-                FROM reserva_items ri 
-                JOIN item_inventario i ON ri.item_id = i.id 
-                WHERE ri.actividad_id = r.actividad_id
-            ) AS inventario
+const obtenerTodasSolicitudes = async (usuarioId, rol, estado = null, page = 1, limit = 10) => {
+
+    // Fragmentos compartidos entre las queries
+    const baseFrom = `
         FROM reservas_estudiantes r
         JOIN actividades a ON r.actividad_id = a.id
         JOIN usuarios u ON r.usuario_id = u.id
         JOIN laboratorios l ON a.laboratorio_id = l.id
+    `;
+
+    const rbacWhere = `
+        WHERE (
+            LOWER($2) = 'administrador'
+            OR (LOWER($2) = 'coordinador' AND l.coordinador_id = $1)
+            OR r.usuario_id = $1
+        )
+    `;
+
+    const baseParams = [usuarioId, rol];
+
+    // 1. Contadores por estado (para los badges de las tabs)
+    const contadoresQuery = `
+        SELECT r.estado_reserva, COUNT(*) as cantidad
+        ${baseFrom}
+        ${rbacWhere}
+        GROUP BY r.estado_reserva
+    `;
+    const contadoresResult = await db.query(contadoresQuery, baseParams);
+    const contadores = {};
+    contadoresResult.rows.forEach(row => {
+        contadores[row.estado_reserva] = parseInt(row.cantidad, 10);
+    });
+
+    // 2. Construir parámetros dinámicos para la query paginada
+    const dataParams = [...baseParams];
+    let paramIndex = 3;
+    let estadoFilter = '';
+
+    if (estado) {
+        estadoFilter = ` AND r.estado_reserva = $${paramIndex}`;
+        dataParams.push(estado);
+        paramIndex++;
+    }
+
+    const limitParam = `$${paramIndex}`;
+    const offsetParam = `$${paramIndex + 1}`;
+    dataParams.push(limit, (page - 1) * limit);
+
+    // 3. Query principal con paginación
+    const dataQuery = `
         WHERE r.estado_reserva = 'pendiente'
         ORDER BY a.fecha_creacion ASC;`;
     const { rows } = await db.query(query);
@@ -751,6 +785,7 @@ const obtenerTodasSolicitudes = async () => {
             l.nombre AS laboratorio_nombre,
             l.edificio,
             l.aula,
+            (r.usuario_id = $1) AS es_propia,
             (
                 SELECT COALESCE(json_agg(json_build_object('id', e.id, 'nombre', e.nombre)), '[]')
                 FROM reserva_estaciones re 
@@ -763,14 +798,32 @@ const obtenerTodasSolicitudes = async () => {
                 JOIN item_inventario i ON ri.item_id = i.id 
                 WHERE ri.actividad_id = r.actividad_id
             ) AS inventario
-        FROM reservas_estudiantes r
-        JOIN actividades a ON r.actividad_id = a.id
-        JOIN usuarios u ON r.usuario_id = u.id
-        JOIN laboratorios l ON a.laboratorio_id = l.id
-        ORDER BY a.fecha_creacion DESC;
+        ${baseFrom}
+        ${rbacWhere}
+        ${estadoFilter}
+        ORDER BY a.fecha_creacion DESC
+        LIMIT ${limitParam} OFFSET ${offsetParam}
     `;
-    const { rows } = await db.query(query);
-    return rows;
+
+    const { rows } = await db.query(dataQuery, dataParams);
+
+    // 4. Calcular total para la paginación
+    let total;
+    if (estado && contadores[estado] !== undefined) {
+        total = contadores[estado];
+    } else if (!estado) {
+        total = Object.values(contadores).reduce((sum, val) => sum + val, 0);
+    } else {
+        total = 0;
+    }
+
+    return {
+        solicitudes: rows,
+        total,
+        page: parseInt(page, 10),
+        totalPages: Math.ceil(total / limit) || 1,
+        contadores
+    };
 };
 
 // ==========================================
@@ -844,6 +897,45 @@ const resolverSolicitud = async (actividadId, accion, resolutorId) => {
     }
 
     throw { status: 400, message: 'Acción no válida. Use "aprobar" o "rechazar".' };
+};
+
+// ==========================================
+// 3. CANCELAR SOLICITUD (PUT - Solo el solicitante)
+// ==========================================
+const cancelarSolicitud = async (actividadId, usuarioId) => {
+    // 1. Verificar que la solicitud existe
+    const estadoQuery = await db.query(
+        `SELECT r.estado_reserva, r.usuario_id
+         FROM reservas_estudiantes r
+         WHERE r.actividad_id = $1`,
+        [actividadId]
+    );
+
+    if (estadoQuery.rows.length === 0) {
+        throw { status: 404, message: 'La solicitud no existe.' };
+    }
+
+    const reserva = estadoQuery.rows[0];
+
+    // 2. Solo el dueño puede cancelar su propia solicitud
+    if (reserva.usuario_id !== usuarioId) {
+        throw { status: 403, message: 'No tienes permiso para cancelar esta solicitud.' };
+    }
+
+    // 3. Solo se puede cancelar si está pendiente
+    if (reserva.estado_reserva !== 'pendiente') {
+        throw { status: 400, message: `No se puede cancelar una solicitud con estado: ${reserva.estado_reserva}` };
+    }
+
+    // 4. Actualizar estado a cancelada
+    await db.query(
+        `UPDATE reservas_estudiantes 
+         SET estado_reserva = 'cancelada'
+         WHERE actividad_id = $1`,
+        [actividadId]
+    );
+
+    return { message: 'Solicitud cancelada correctamente.' };
 };
 
 // ==========================================
@@ -994,9 +1086,7 @@ module.exports = {
     eliminarActividad,
     obtenerDisponibilidad,
     obtenerActividadesExpandidas,
-    obtenerSolicitudesPendientes,
     obtenerTodasSolicitudes,
     resolverSolicitud,
-    registrarEntregaEquipos,
-    registrarDevolucionEquipos
+    cancelarSolicitud
 };

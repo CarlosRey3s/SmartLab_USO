@@ -6,7 +6,7 @@ const actividadesController = require('../controllers/actividades.controller.js'
 
 // 2. Importamos el middleware 
 const { validarActividades } = require('../middlewares/validarActividades.js');
-const { verificarToken } = require('../middlewares/auth.middleware');
+const { verificarToken, verificarRol } = require('../middlewares/auth.middleware');
 
 /**
  * @route POST /api/actividades
@@ -15,10 +15,9 @@ const { verificarToken } = require('../middlewares/auth.middleware');
  */
 
 // 4. NUESTRA RUTA GET UNIFICADA (Para leer el calendario)
-router.get('/', actividadesController.obtenerActividades);
+router.get('/', verificarToken, actividadesController.obtenerActividades);
 
 //Rutas específicas PRIMERO
-router.get('/solicitudes/pendientes', verificarToken, actividadesController.obtenerPendientes);
 router.get('/solicitudes/todas', verificarToken, actividadesController.obtenerTodas);
 
 // Motor de decisión: Aprobar o Rechazar
@@ -31,9 +30,11 @@ router.put('/solicitudes/:id/entregar', verificarToken, actividadesController.en
 router.put('/solicitudes/:id/devolver', verificarToken, actividadesController.devolverEquipos);
 
 router.get('/disponibilidad', verificarToken, actividadesController.consultarDisponibilidad); // ← AQUÍ
+//router.get('/', verificarToken, actividadesController.obtenerTodas);
 
 // RUTAS PROTEGIDAS: Ahora usan verificarToken para leer el token de Postman/Frontend
-router.put('/solicitudes/:id/resolver', verificarToken, actividadesController.resolverReserva);
+router.put('/solicitudes/:id/resolver', verificarToken, verificarRol(['administrador', 'coordinador']), actividadesController.resolverReserva);
+router.put('/solicitudes/:id/cancelar', verificarToken, actividadesController.cancelarReserva);
 router.post('/', verificarToken, validarActividades, actividadesController.crearActividad);
 router.put('/:id', verificarToken, validarActividades, actividadesController.actualizarActividad);
 router.delete('/:id', verificarToken, actividadesController.eliminarActividad);
