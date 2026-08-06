@@ -283,13 +283,13 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({ isOpen, onCl
                 </select>
               </div>
               <div className="form-group">
-                <label>LABORATORIO</label>
+                <label>ESPACIO</label>
                 <select 
                   className="form-input select-input"
                   value={laboratorioId}
                   onChange={(e) => setLaboratorioId(e.target.value)}
                 >
-                  <option value="">Seleccione laboratorio</option>
+                  <option value="">Seleccione espacio</option>
                   {laboratorios.map((lab) => (
                     <option key={lab.id} value={lab.id}>{lab.nombre}</option>
                   ))}

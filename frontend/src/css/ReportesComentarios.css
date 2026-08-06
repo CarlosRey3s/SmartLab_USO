@@ -51,6 +51,39 @@
   border-radius: 2px;
 }
 
+/* SUB-TABS DENTRO DE REPORTES */
+.sub-tabs-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.sub-tab-btn {
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1.5px solid transparent;
+  background-color: #f3f4f6;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.sub-tab-btn:hover:not(.active) {
+  background-color: #e5e7eb;
+  color: #1f2937;
+}
+
+.sub-tab-btn.active {
+  background-color: #22806B;
+  border-color: #22806B;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(34, 128, 107, 0.25);
+}
+
 /* CARDS */
 .card {
   background: #ffffff;

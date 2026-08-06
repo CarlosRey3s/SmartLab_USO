@@ -695,6 +695,19 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usu
 // OBTENER TODAS LAS SOLICITUDES — Paginado + RBAC + Contadores
 // ==========================================
 const obtenerTodasSolicitudes = async (usuarioId, rol, estado = null, page = 1, limit = 10) => {
+    try {
+        await db.query(`ALTER TYPE estado_reserva_enum ADD VALUE IF NOT EXISTS 'incompleto'`);
+        await db.query(`
+            UPDATE reservas_estudiantes r
+            SET estado_reserva = 'incompleto'
+            FROM actividades a
+            WHERE r.actividad_id = a.id
+              AND r.estado_reserva = 'aprobada'
+              AND a.fecha_hora_fin < NOW()
+        `);
+    } catch (e) {
+        console.warn('Advertencia al actualizar reservas incompletas:', e.message);
+    }
 
     // Fragmentos compartidos entre las queries
     const baseFrom = `
@@ -744,31 +757,6 @@ const obtenerTodasSolicitudes = async (usuarioId, rol, estado = null, page = 1, 
 
     // 3. Query principal con paginación
     const dataQuery = `
-        WHERE r.estado_reserva = 'pendiente'
-        ORDER BY a.fecha_creacion ASC;`;
-    const { rows } = await db.query(query);
-    return rows;
-};
-
-// ==========================================
-// OBTENER TODAS LAS SOLICITUDES (pendientes, aprobadas, rechazadas)
-// ==========================================
-const obtenerTodasSolicitudes = async () => {
-    try {
-        await db.query(`ALTER TYPE estado_reserva_enum ADD VALUE IF NOT EXISTS 'incompleto'`);
-        await db.query(`
-            UPDATE reservas_estudiantes r
-            SET estado_reserva = 'incompleto'
-            FROM actividades a
-            WHERE r.actividad_id = a.id
-              AND r.estado_reserva = 'aprobada'
-              AND a.fecha_hora_fin < NOW()
-        `);
-    } catch (e) {
-        console.warn('Advertencia al actualizar reservas incompletas:', e.message);
-    }
-
-    const query = `
         SELECT 
             r.actividad_id,
             r.titulo,
@@ -1088,5 +1076,7 @@ module.exports = {
     obtenerActividadesExpandidas,
     obtenerTodasSolicitudes,
     resolverSolicitud,
-    cancelarSolicitud
+    cancelarSolicitud,
+    registrarEntregaEquipos,
+    registrarDevolucionEquipos
 };

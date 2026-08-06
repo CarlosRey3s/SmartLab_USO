@@ -58,6 +58,96 @@ const getUsoLaboratorios = async (startDate, endDate) => {
     }
 };
 
+const getReporteReservas = async (startDate, endDate, rol = 'todos', laboratorioId = null) => {
+    const client = await db.connect();
+    try {
+        const params = [startDate, endDate];
+        let paramIndex = 3;
+
+        let whereClause = `WHERE a.fecha_hora_inicio >= $1::timestamp AND a.fecha_hora_inicio <= ($2::date + interval '1 day' - interval '1 second')`;
+
+        if (rol && rol !== 'todos') {
+            whereClause += ` AND LOWER(COALESCE(u_reserva.rol::text, u_docente.rol::text, u_tecnico.rol::text, '')) = LOWER($${paramIndex})`;
+            params.push(rol);
+            paramIndex++;
+        }
+
+        if (laboratorioId && laboratorioId !== 'todos' && laboratorioId !== '') {
+            whereClause += ` AND l.id = $${paramIndex}`;
+            params.push(parseInt(laboratorioId, 10));
+            paramIndex++;
+        }
+
+        const query = `
+            SELECT 
+                a.id AS actividad_id,
+                COALESCE(r.titulo, ca.materia, m.descripcion_ti, 'Actividad General') AS titulo,
+                r.nota_adicional,
+                COALESCE(r.estado_reserva, 'aprobada') AS estado_reserva,
+                a.fecha_hora_inicio,
+                a.fecha_hora_fin,
+                a.fecha_creacion,
+                COALESCE(u_reserva.id, u_docente.id, u_tecnico.id) AS usuario_id,
+                COALESCE(u_reserva.nombre, u_docente.nombre, u_tecnico.nombre, 'N/A') AS solicitante_nombre,
+                COALESCE(u_reserva.apellido, u_docente.apellido, u_tecnico.apellido, '') AS solicitante_apellido,
+                COALESCE(u_reserva.correo, u_docente.correo, u_tecnico.correo, 'N/A') AS solicitante_correo,
+                COALESCE(u_reserva.expediente, u_docente.expediente, u_tecnico.expediente, 'N/A') AS solicitante_expediente,
+                LOWER(COALESCE(u_reserva.rol::text, u_docente.rol::text, u_tecnico.rol::text, 'estudiante')) AS solicitante_rol,
+                l.id AS laboratorio_id,
+                l.nombre AS laboratorio_nombre,
+                l.edificio,
+                l.aula,
+                ROUND(EXTRACT(EPOCH FROM (a.fecha_hora_fin - a.fecha_hora_inicio))/3600::numeric, 2)::FLOAT AS horas_duracion,
+                (
+                    SELECT COALESCE(json_agg(json_build_object('id', e.id, 'nombre', e.nombre)), '[]')
+                    FROM reserva_estaciones re 
+                    JOIN estaciones_trabajo e ON re.estacion_id = e.id 
+                    WHERE re.actividad_id = a.id
+                ) AS estaciones,
+                (
+                    SELECT COALESCE(json_agg(json_build_object('id', i.id, 'nombre', i.nombre, 'cantidad', ri.cantidad_solicitada)), '[]')
+                    FROM reserva_items ri 
+                    JOIN item_inventario i ON ri.item_id = i.id 
+                    WHERE ri.actividad_id = a.id
+                ) AS inventario
+            FROM actividades a
+            JOIN laboratorios l ON a.laboratorio_id = l.id
+            LEFT JOIN reservas_estudiantes r ON a.id = r.actividad_id
+            LEFT JOIN usuarios u_reserva ON r.usuario_id = u_reserva.id
+            LEFT JOIN clases_academicas ca ON a.id = ca.actividad_id
+            LEFT JOIN usuarios u_docente ON ca.docente_id = u_docente.id
+            LEFT JOIN mantenimientos m ON a.id = m.actividad_id
+            LEFT JOIN usuarios u_tecnico ON m.tecnico_id = u_tecnico.id
+            ${whereClause}
+            ORDER BY a.fecha_hora_inicio DESC;
+        `;
+
+        const result = await client.query(query, params);
+        const reservas = result.rows;
+
+        const totalReservas = reservas.length;
+        const reservasAprobadas = reservas.filter(r => ['aprobada', 'entregado', 'completada'].includes(r.estado_reserva)).length;
+        const horasReservadas = Math.round(reservas.reduce((acc, r) => acc + (parseFloat(r.horas_duracion) || 0), 0) * 10) / 10;
+        const usuariosUnicos = new Set(reservas.map(r => r.usuario_id)).size;
+
+        return {
+            reservas,
+            stats: {
+                totalReservas,
+                reservasAprobadas,
+                horasReservadas,
+                usuariosUnicos
+            }
+        };
+    } catch (error) {
+        console.error('Error al obtener reporte de reservas:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
 module.exports = {
-    getUsoLaboratorios
+    getUsoLaboratorios,
+    getReporteReservas
 };

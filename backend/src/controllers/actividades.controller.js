@@ -235,11 +235,16 @@ const cancelarReserva = async (req, res) => {
     }
 };
 
-// Exórtala al final:
+// Exportar controladores:
 module.exports = {
-    crearActividad, actualizarActividad,
-    eliminarActividad, obtenerActividades, consultarDisponibilidad,
-    obtenerTodas, resolverReserva, cancelarReserva
-    obtenerPendientes, obtenerTodas, resolverSolicitud,
-    entregarEquipos, devolverEquipos
+    crearActividad,
+    actualizarActividad,
+    eliminarActividad,
+    obtenerActividades,
+    consultarDisponibilidad,
+    obtenerTodas,
+    resolverSolicitud,
+    cancelarReserva,
+    entregarEquipos,
+    devolverEquipos
 };

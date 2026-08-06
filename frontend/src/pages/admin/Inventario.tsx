@@ -103,7 +103,8 @@ export const InventarioView: React.FC = () => {
 
   const cargarReservas = async () => {
     try {
-      const data = await actividadesService.obtenerTodasSolicitudes();
+      const response = await actividadesService.obtenerTodasSolicitudes();
+      const data = Array.isArray(response) ? response : (response?.solicitudes || response?.data || []);
 
       const ahora = new Date();
 
@@ -517,7 +518,7 @@ export const InventarioView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Por Laboratorio</label>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Por Espacio</label>
                   <select value={filterLab} onChange={(e) => setFilterLab(e.target.value)} style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', outline: 'none' }}>
                     <option value="">Todos</option>
                     {uniqueLabs.map(lab => (
@@ -645,7 +646,7 @@ export const InventarioView: React.FC = () => {
                 <th>nombre</th>
                 <th>codigo</th>
                 <th>categoria</th>
-                <th>laboratorio</th>
+                <th>espacio</th>
                 <th>Stock</th>
                 <th>Ubicacion</th>
                 <th>Estado</th>
@@ -804,7 +805,7 @@ export const InventarioView: React.FC = () => {
                   </div>
 
                   <div>
-                    <span>Laboratorio</span>
+                    <span>Espacio</span>
                     <strong>{item.laboratorio_nombre || `Lab ${item.laboratorio_id}`}</strong>
                   </div>
 
