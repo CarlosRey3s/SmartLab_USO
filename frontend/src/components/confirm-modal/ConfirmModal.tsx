@@ -9,8 +9,9 @@ interface ConfirmModalProps {
   confirmText?: string;
   cancelText?: string;
   type?: 'danger' | 'warning' | 'info';
-  onConfirm: () => void;
-  onCancel: () => void;
+  onConfirm: () => void | Promise<void>;
+  onCancel?: () => void;
+  onClose?: () => void;
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -21,18 +22,23 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   cancelText = 'Cancelar',
   type = 'danger',
   onConfirm,
-  onCancel
+  onCancel,
+  onClose
 }) => {
+  const handleCancel = () => {
+    if (onCancel) onCancel();
+    else if (onClose) onClose();
+  };
   // Cerrar con tecla Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
-        onCancel();
+        handleCancel();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onCancel]);
+  }, [isOpen, handleCancel]);
 
   if (!isOpen) return null;
 
@@ -49,7 +55,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   };
 
   return (
-    <div className="confirm-modal-overlay" onClick={onCancel}>
+    <div className="confirm-modal-overlay" onClick={handleCancel}>
       <div 
         className="confirm-modal-content"
         onClick={(e) => e.stopPropagation()} // Evitar que el click cierre el modal
@@ -64,14 +70,14 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         <p className="confirm-modal-message">{message}</p>
         
         <div className="confirm-modal-actions">
-          <button className="confirm-btn confirm-btn-cancel" onClick={onCancel}>
+          <button className="confirm-btn confirm-btn-cancel" onClick={handleCancel}>
             {cancelText}
           </button>
           <button 
             className={`confirm-btn confirm-btn-${type}`} 
             onClick={() => {
               onConfirm();
-              onCancel();
+              handleCancel();
             }}
           >
             {confirmText}

@@ -51,7 +51,6 @@ export const AppRouter = () => {
 
             {/* ================= ADMIN, COORD, SUPERVISOR ================= */}
             <Route element={<ProtectedRoute allowedRoles={['administrador', 'coordinador', 'supervisor']} />}>
-              <Route path="admin/dashboard" element={<DashboardAdmin />} />
               <Route path="inventario" element={<InventarioView />} />
               <Route path="espacio" element={<EspacioView />} />
               <Route path="reportes" element={<ReportesView />} />
@@ -59,6 +58,7 @@ export const AppRouter = () => {
 
             {/* ================= ADMIN EXCLUSIVO ================= */}
             <Route element={<ProtectedRoute allowedRoles={['administrador']} />}>
+              <Route path="admin/dashboard" element={<DashboardAdmin />} />
               <Route path="admin/usuarios" element={<Usuarios />} />
             </Route>
 

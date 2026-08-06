@@ -115,3 +115,42 @@ export const obtenerInventarioDisponible = async (
         throw error;
     }
 };
+
+export const obtenerTodasSolicitudes = async () => {
+    try {
+        const respuesta = await axios.get(`${API_URL}/solicitudes/todas`, {
+            headers: getAuthHeaders()
+        });
+        return respuesta.data;
+    } catch (error) {
+        console.error("Error al obtener todas las solicitudes:", error);
+        return [];
+    }
+};
+
+export const entregarEquipos = async (idActividad: string | number) => {
+    try {
+        const respuesta = await axios.put(`${API_URL}/solicitudes/${idActividad}/entregar`, {}, {
+            headers: getAuthHeaders()
+        });
+        return respuesta.data;
+    } catch (error: any) {
+        console.error("Error al entregar equipos:", error);
+        if (error.response && error.response.data) throw error.response.data;
+        throw error;
+    }
+};
+
+export const devolverEquipos = async (idActividad: string | number, reporteDano?: any) => {
+    try {
+        const payload = reporteDano ? { reporteDano } : {};
+        const respuesta = await axios.put(`${API_URL}/solicitudes/${idActividad}/devolver`, payload, {
+            headers: getAuthHeaders()
+        });
+        return respuesta.data;
+    } catch (error: any) {
+        console.error("Error al devolver equipos:", error);
+        if (error.response && error.response.data) throw error.response.data;
+        throw error;
+    }
+};

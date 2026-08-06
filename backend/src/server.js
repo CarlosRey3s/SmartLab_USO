@@ -34,7 +34,7 @@ const reportesRoutes = require('./routes/reportes.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const estudianteDashboardRoutes = require("./routes/estudianteDashboard.routes");
 const docenteDashboardRoutes = require("./routes/docenteDashboard.routes");
-
+const alertasRoutes = require('./routes/alertas.routes'); // 5. Montamos las alertas
 
 // Montar rutas
 app.use('/api/auth', authRoutes);
@@ -48,6 +48,7 @@ app.use('/api/reportes', reportesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/estudiante/dashboard',estudianteDashboardRoutes); // 3. Montamos las rutas del dashboard del estudiante
 app.use('/api/docente/dashboard',docenteDashboardRoutes); // 4. Montamos las rutas del dashboard del docente
+app.use('/api/alertas', alertasRoutes); // Rutas para incidencias y alertas
 
 app.get('/api/health', async (req, res) => {
   try {

@@ -162,22 +162,47 @@ const obtenerTodas = async (req, res) => {
 };
 
 // Controlador para Aprobar o Rechazar
-const resolverReserva = async (req, res) => {
+const resolverSolicitud = async (req, res) => {
     try {
-        const { id } = req.params; // ID de la actividad
+        const { id } = req.params;
         const { accion } = req.body; // 'aprobar' o 'rechazar'
-        const resolutorId = req.usuario.id; // Viene del auth.middleware
+        const resolutorId = req.usuario.id; 
+
+        if (!accion || !['aprobar', 'rechazar'].includes(accion)) {
+            return res.status(400).json({ success: false, message: 'Debe especificar una accion válida (aprobar o rechazar)' });
+        }
 
         const resultado = await actividadesService.resolverSolicitud(id, accion, resolutorId);
-        res.status(200).json(resultado);
-
+        res.status(200).json({ success: true, message: resultado.message });
     } catch (error) {
         console.error('Error al resolver la solicitud:', error);
-        // Manejo de errores controlados (400, 404, 409)
-        if (error.status) {
-            return res.status(error.status).json({ message: error.message });
-        }
-        res.status(500).json({ message: 'Error interno del servidor al procesar la resolución' });
+        res.status(error.status || 500).json({ success: false, message: error.message || 'Error interno del servidor' });
+    }
+};
+
+const entregarEquipos = async (req, res) => {
+    try {
+        const { id } = req.params; // actividad_id
+        const usuarioId = req.usuario.id;
+        const resultado = await actividadesService.registrarEntregaEquipos(id, usuarioId);
+        res.status(200).json({ success: true, message: resultado.mensaje });
+    } catch (error) {
+        console.error('Error al entregar equipos:', error);
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+const devolverEquipos = async (req, res) => {
+    try {
+        const { id } = req.params; // actividad_id
+        const { reporteDano } = req.body; 
+        const resolutorId = req.usuario.id; 
+
+        const resultado = await actividadesService.registrarDevolucionEquipos(id, reporteDano, resolutorId);
+        res.status(200).json({ success: true, message: resultado.mensaje });
+    } catch (error) {
+        console.error('Error al devolver equipos:', error);
+        res.status(400).json({ success: false, message: error.message });
     }
 };
 
@@ -185,5 +210,6 @@ const resolverReserva = async (req, res) => {
 module.exports = {
     crearActividad, actualizarActividad,
     eliminarActividad, obtenerActividades, consultarDisponibilidad,
-    obtenerPendientes, obtenerTodas, resolverReserva
+    obtenerPendientes, obtenerTodas, resolverSolicitud,
+    entregarEquipos, devolverEquipos
 };

@@ -8,7 +8,8 @@ import {
   RefreshCw,
   Shield,
   Edit2,
-  X
+  X,
+  Filter
 } from 'lucide-react';
 import '../../css/Usuarios.css';
 import { usuariosService } from '../../services/usuarios.service';
@@ -23,7 +24,11 @@ export default function Usuarios() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
-  const [activeTab, setActiveTab] = useState('Todos');
+  const [activeTab, setActiveTab] = useState('Todos'); // This will now represent the selected role in the dropdown
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterRef = React.useRef<HTMLDivElement>(null);
+
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [selectedNewRole, setSelectedNewRole] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -40,6 +45,24 @@ export default function Usuarios() {
     rol: '',
     estado: 'activo'
   });
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    }
+    
+    if (isFilterOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isFilterOpen]);
 
   useEffect(() => {
     cargarUsuarios();
@@ -156,6 +179,17 @@ export default function Usuarios() {
     }
   };
 
+  const filteredUsers = users.filter(user => {
+    const nombreCompleto = `${user.nombre || ''} ${user.apellido || ''}`.toLowerCase();
+    const correo = (user.correo || '').toLowerCase();
+    const searchLower = searchTerm.toLowerCase();
+    
+    const matchesSearch = nombreCompleto.includes(searchLower) || correo.includes(searchLower);
+    
+    if (activeTab === 'Todos') return matchesSearch;
+    return matchesSearch && (user.rol || '').toLowerCase() === activeTab.toLowerCase();
+  });
+
   return (
     <div className="usuarios-container">
       <div className="top-cards-wrapper">
@@ -184,22 +218,62 @@ export default function Usuarios() {
         </button>
       </div>
 
-      <div className="filters-section">
-        <div className="tabs-container">
-          {['Todos', 'Administradores', 'coordinador'].map(tab => (
-            <button
-              key={tab}
-              className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab}
-            </button>
-          ))}
+      <div className="filters-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ position: 'relative' }} ref={filterRef}>
+          <button 
+            className="btn-filter" 
+            style={{ borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', border: '1px solid #e2e8f0', backgroundColor: 'white', cursor: 'pointer' }}
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+          >
+            <Filter size={16} />
+            <span>Filtros</span>
+          </button>
+
+          {isFilterOpen && (
+            <div className="filter-dropdown-menu" style={{ position: 'absolute', top: '100%', left: 0, marginTop: '8px', width: '250px', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', zIndex: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ fontWeight: '600', fontSize: '14px', color: '#334155' }}>Filtros</span>
+                <button 
+                  onClick={() => { setActiveTab('Todos'); setIsFilterOpen(false); }}
+                  style={{ fontSize: '12px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                  Limpiar
+                </button>
+              </div>
+              
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>Por Rol de Usuario</label>
+                <select
+                  value={activeTab}
+                  onChange={(e) => setActiveTab(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '6px',
+                    border: '1px solid #e2e8f0',
+                    fontSize: '14px'
+                  }}
+                >
+                  <option value="Todos">Todos</option>
+                  <option value="administrador">Administrador</option>
+                  <option value="coordinador">Coordinador</option>
+                  <option value="docente">Docente</option>
+                  <option value="estudiante">Estudiante</option>
+                  <option value="supervisor">Supervisor</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="search-container-users">
           <Search size={16} color="#6b7280" />
-          <input type="text" placeholder="Buscar usuarios" />
+          <input 
+            type="text" 
+            placeholder="Buscar usuarios..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </div>
 
@@ -316,7 +390,8 @@ export default function Usuarios() {
         )}
       </div>
 
-      <div className="table-container">
+      {/* Vista Desktop: Tabla */}
+      <div className="table-container desktop-only">
         <table className="users-table">
           <thead>
             <tr>
@@ -338,10 +413,10 @@ export default function Usuarios() {
           <tbody>
             {loading ? (
               <tr><td colSpan={7} style={{ textAlign: 'center', padding: '20px' }}>Cargando usuarios...</td></tr>
-            ) : users.length === 0 ? (
-              <tr><td colSpan={7} style={{ textAlign: 'center', padding: '20px' }}>No hay usuarios registrados</td></tr>
+            ) : filteredUsers.length === 0 ? (
+              <tr><td colSpan={7} style={{ textAlign: 'center', padding: '20px' }}>No hay usuarios que coincidan con la búsqueda</td></tr>
             ) : (
-              users.map(user => (
+              filteredUsers.map(user => (
               <tr key={user.id}>
                 <td data-label="Seleccionar">
                   <input
@@ -381,6 +456,62 @@ export default function Usuarios() {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Vista Móvil: Tarjetas Nativas */}
+      <div className="mobile-users-cards mobile-only">
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>Cargando usuarios...</div>
+        ) : filteredUsers.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>No hay usuarios que coincidan con la búsqueda</div>
+        ) : (
+          filteredUsers.map(user => (
+            <div key={user.id} className="user-card-mobile">
+              <div className="user-card-header">
+                <div className="user-card-info">
+                  <div className="avatar-circle">
+                    {`${(user.nombre || '').charAt(0).toUpperCase()}${(user.apellido || '').charAt(0).toUpperCase()}`}
+                  </div>
+                  <div>
+                    <div className="user-card-name">{user.nombre} {user.apellido}</div>
+                    <div className="user-card-email">{user.correo}</div>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={selectedUsers.includes(user.id)}
+                  onChange={() => toggleUser(user.id)}
+                />
+              </div>
+
+              <div className="user-card-body">
+                <div className="user-card-row">
+                  <span className="user-card-label">Rol:</span>
+                  <span className="user-card-val">{user.rol}</span>
+                </div>
+                <div className="user-card-row">
+                  <span className="user-card-label">Estado:</span>
+                  <span className="status-badge">{user.estado}</span>
+                </div>
+                <div className="user-card-row">
+                  <span className="user-card-label">Último Acceso:</span>
+                  <span className="user-card-val">{user.fecha_creacion ? new Date(user.fecha_creacion).toLocaleDateString() : 'N/A'}</span>
+                </div>
+              </div>
+
+              {!readOnly && (
+                <div className="user-card-actions">
+                  <button className="action-icon-btn edit" onClick={() => handleAbrirEdicion(user)}>
+                    <Edit2 size={16} /> Editar
+                  </button>
+                  <button className="action-icon-btn delete" onClick={() => handleEliminar(user.id)}>
+                    <Trash2 size={16} /> Eliminar
+                  </button>
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
 
       {/* Modal Agregar Usuario */}
