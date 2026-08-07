@@ -32,3 +32,5 @@ lerna-debug.log*
 #testing
 .agents/
 testsprite_tests/
+.testsprite/
+
