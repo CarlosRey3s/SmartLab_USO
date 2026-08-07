@@ -692,20 +692,19 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usu
 // OBTENER TODAS LAS SOLICITUDES — Paginado + RBAC + Contadores
 // ==========================================
 const obtenerTodasSolicitudes = async (usuarioId, rol, estado = null, page = 1, limit = 10) => {
-    // Se deshabilita la actualización automática a 'incompleto' por problemas de zona horaria y desaparición de solicitudes.
-    // try {
-    //     await db.query(`ALTER TYPE estado_reserva_enum ADD VALUE IF NOT EXISTS 'incompleto'`);
-    //     await db.query(`
-    //         UPDATE reservas_estudiantes r
-    //         SET estado_reserva = 'incompleto'
-    //         FROM actividades a
-    //         WHERE r.actividad_id = a.id
-    //           AND r.estado_reserva = 'pendiente'
-    //           AND a.fecha_hora_fin < NOW()
-    //     `);
-    // } catch (e) {
-    //     console.warn('Advertencia al actualizar reservas incompletas:', e.message);
-    // }
+    try {
+        await db.query(`ALTER TYPE estado_reserva_enum ADD VALUE IF NOT EXISTS 'incompleto'`);
+        await db.query(`
+            UPDATE reservas_estudiantes r
+            SET estado_reserva = 'incompleto'
+            FROM actividades a
+            WHERE r.actividad_id = a.id
+              AND r.estado_reserva = 'pendiente'
+              AND a.fecha_hora_fin < NOW()
+        `);
+    } catch (e) {
+        console.warn('Advertencia al actualizar reservas incompletas:', e.message);
+    }
 
     // Fragmentos compartidos entre las queries
     const baseFrom = `
