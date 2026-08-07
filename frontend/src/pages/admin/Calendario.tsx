@@ -688,7 +688,7 @@ export const CalendarioView = () => {
             view={vistaActual} onView={setVistaActual}
             min={minTime} /* [CORREGIDO] Variables externas */
             max={maxTime} /* [CORREGIDO] Variables externas */
-            formats={{ timeGutterFormat: 'h a' }} culture="es"
+            formats={{ timeGutterFormat: 'h a', eventTimeRangeFormat: () => '' }} culture="es"
             eventPropGetter={eventStyleGetter}
             onSelectEvent={handleSelectEvent}
             components={{
