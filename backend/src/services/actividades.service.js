@@ -26,9 +26,6 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
     if (estadoActualLab === 'clausurado') {
         throw new Error('No se puede programar ninguna actividad porque el laboratorio está CLAUSURADO.');
     }
-    if (estadoActualLab === 'en_mantenimiento' && tipoNuevaActividad !== 'mantenimiento') {
-        throw new Error('El laboratorio está bajo mantenimiento físico. No se permiten clases ni reservas.');
-    }
     // 1.5 [MODIFICADO] Soporte para múltiples estaciones
     let estacionesNuevas = [];
     if (Array.isArray(datosModal.estaciones) && datosModal.estaciones.length > 0) {
@@ -702,7 +699,7 @@ const obtenerTodasSolicitudes = async (usuarioId, rol, estado = null, page = 1, 
             SET estado_reserva = 'incompleto'
             FROM actividades a
             WHERE r.actividad_id = a.id
-              AND r.estado_reserva = 'aprobada'
+              AND r.estado_reserva = 'pendiente'
               AND a.fecha_hora_fin < NOW()
         `);
     } catch (e) {
