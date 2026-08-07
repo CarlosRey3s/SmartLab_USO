@@ -35,3 +35,22 @@ export const cancelarSolicitud = async (actividadId: number) => {
     const response = await axios.put(`${API_URL}/${actividadId}/cancelar`, {}, getConfig());
     return response.data;
 };
+
+export const reprogramarSolicitud = async (
+    actividadId: number,
+    fecha: string,
+    hora_inicio: string,
+    hora_fin: string
+) => {
+    const response = await axios.put(
+        `${API_URL}/${actividadId}/reprogramar`,
+        { fecha, hora_inicio, hora_fin },
+        getConfig()
+    );
+    return response.data;
+};
+
+export const marcarAusente = async (actividadId: number) => {
+    const response = await axios.put(`${API_URL}/${actividadId}/ausente`, {}, getConfig());
+    return response.data;
+};

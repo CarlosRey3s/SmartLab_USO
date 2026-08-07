@@ -703,6 +703,7 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usu
 const obtenerTodasSolicitudes = async (usuarioId, rol, estado = null, page = 1, limit = 10) => {
     try {
         await db.query(`ALTER TYPE estado_reserva_enum ADD VALUE IF NOT EXISTS 'incompleto'`);
+        // Autocompletado: pendientes vencidas -> incompleto
         await db.query(`
             UPDATE reservas_estudiantes r
             SET estado_reserva = 'incompleto'
@@ -711,8 +712,28 @@ const obtenerTodasSolicitudes = async (usuarioId, rol, estado = null, page = 1, 
               AND r.estado_reserva = 'pendiente'
               AND a.fecha_hora_fin < NOW()
         `);
+        // Autocompletado: aprobadas sin entregar vencidas -> ausente
+        await db.query(`
+            UPDATE reservas_estudiantes r
+            SET estado_reserva = 'ausente'
+            FROM actividades a
+            WHERE r.actividad_id = a.id
+              AND r.estado_reserva = 'aprobada'
+              AND a.fecha_hora_fin < NOW()
+        `);
+        // Limpieza automática: eliminar solicitudes incompletas o ausentes con más de 30 días
+        await db.query(`
+            DELETE FROM actividades
+            WHERE id IN (
+                SELECT r.actividad_id
+                FROM reservas_estudiantes r
+                JOIN actividades a ON r.actividad_id = a.id
+                WHERE r.estado_reserva IN ('incompleto', 'ausente')
+                  AND a.fecha_hora_fin < NOW() - INTERVAL '30 days'
+            )
+        `);
     } catch (e) {
-        console.warn('Advertencia al actualizar reservas incompletas:', e.message);
+        console.warn('Advertencia al actualizar/limpiar reservas incompletas:', e.message);
     }
 
     // Fragmentos compartidos entre las queries
@@ -1075,6 +1096,134 @@ const registrarDevolucionEquipos = async (actividadId, reporteDano = null, resol
     }
 };
 
+// ==========================================
+// REPROGRAMAR SOLICITUD INCOMPLETA
+// ==========================================
+const reprogramarSolicitud = async (actividadId, nuevaFecha, nuevaHoraInicio, nuevaHoraFin) => {
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Verificar que la solicitud existe y está en estado 'incompleto'
+        const original = await client.query(`
+            SELECT r.actividad_id, r.usuario_id, r.titulo, r.nota_adicional,
+                   r.estado_reserva, a.laboratorio_id, a.tipo
+            FROM reservas_estudiantes r
+            JOIN actividades a ON r.actividad_id = a.id
+            WHERE r.actividad_id = $1
+        `, [actividadId]);
+
+        if (original.rows.length === 0) {
+            throw { status: 404, message: 'La solicitud no existe.' };
+        }
+
+        const reserva = original.rows[0];
+
+        if (reserva.estado_reserva !== 'incompleto') {
+            throw { status: 400, message: `Solo se pueden reprogramar solicitudes incompletas. Estado actual: ${reserva.estado_reserva}` };
+        }
+
+        // 2. Construir nuevas fechas
+        const inicioDatetime = dayjs.tz(`${nuevaFecha} ${nuevaHoraInicio}`, ZONA_HORARIA).toDate();
+        const finDatetime = dayjs.tz(`${nuevaFecha} ${nuevaHoraFin}`, ZONA_HORARIA).toDate();
+
+        if (finDatetime <= inicioDatetime) {
+            throw { status: 400, message: 'La hora de fin debe ser posterior a la hora de inicio.' };
+        }
+
+        if (inicioDatetime <= new Date()) {
+            throw { status: 400, message: 'No se puede reprogramar a una fecha/hora que ya pasó.' };
+        }
+
+        // 3. Verificar disponibilidad de horario
+        const datosModal = {};
+        // Obtener estaciones originales para verificar choques
+        const estacionesOrig = await client.query(
+            `SELECT estacion_id FROM reserva_estaciones WHERE actividad_id = $1`, [actividadId]
+        );
+        if (estacionesOrig.rows.length > 0) {
+            datosModal.estaciones = estacionesOrig.rows.map(e => e.estacion_id);
+        }
+
+        await verificarChoqueHorario(client, reserva.laboratorio_id, inicioDatetime, finDatetime, 'reserva', datosModal);
+
+        // 4. Verificar disponibilidad de inventario
+        const itemsOrig = await client.query(
+            `SELECT item_id as id, cantidad_solicitada as cantidad FROM reserva_items WHERE actividad_id = $1`, [actividadId]
+        );
+        if (itemsOrig.rows.length > 0) {
+            await verificarDisponibilidadItems(client, inicioDatetime, finDatetime, itemsOrig.rows);
+        }
+
+        // 5. Crear nueva actividad
+        const nuevaAct = await client.query(
+            `INSERT INTO actividades (laboratorio_id, tipo, fecha_hora_inicio, fecha_hora_fin)
+             VALUES ($1, $2, $3, $4) RETURNING id`,
+            [reserva.laboratorio_id, 'reserva', inicioDatetime, finDatetime]
+        );
+        const nuevoId = nuevaAct.rows[0].id;
+
+        // 6. Crear nueva reserva en estado 'pendiente'
+        await client.query(
+            `INSERT INTO reservas_estudiantes (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva)
+             VALUES ($1, $2, $3, $4, 'pendiente')`,
+            [nuevoId, reserva.usuario_id, reserva.titulo, reserva.nota_adicional]
+        );
+
+        // 7. Copiar estaciones
+        if (estacionesOrig.rows.length > 0) {
+            for (const est of estacionesOrig.rows) {
+                await client.query(
+                    `INSERT INTO reserva_estaciones (actividad_id, estacion_id) VALUES ($1, $2)`,
+                    [nuevoId, est.estacion_id]
+                );
+            }
+        }
+
+        // 8. Copiar items de inventario
+        if (itemsOrig.rows.length > 0) {
+            for (const item of itemsOrig.rows) {
+                await client.query(
+                    `INSERT INTO reserva_items (actividad_id, item_id, cantidad_solicitada) VALUES ($1, $2, $3)`,
+                    [nuevoId, item.id, item.cantidad]
+                );
+            }
+        }
+
+        // 9. Eliminar la solicitud incompleta original
+        await client.query(`DELETE FROM actividades WHERE id = $1`, [actividadId]);
+
+        await client.query('COMMIT');
+        return { message: 'Solicitud reprogramada exitosamente. La nueva solicitud queda pendiente de aprobación.', nuevoId };
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+const marcarAusente = async (actividadId, resolutorId) => {
+    // Verificar que la solicitud existe y está aprobada
+    const { rows } = await db.query(
+        `SELECT estado_reserva FROM reservas_estudiantes WHERE actividad_id = $1`,
+        [actividadId]
+    );
+
+    if (rows.length === 0) throw { status: 404, message: 'Solicitud no encontrada.' };
+    if (rows[0].estado_reserva !== 'aprobada') throw { status: 400, message: 'Solo las solicitudes aprobadas pueden marcarse como ausente.' };
+
+    await db.query(
+        `UPDATE reservas_estudiantes 
+         SET estado_reserva = 'ausente', 
+             motivo_resolucion = 'Estudiante no se presentó'
+         WHERE actividad_id = $1`,
+        [actividadId]
+    );
+
+    return { mensaje: 'La solicitud se marcó como inasistencia y el equipo fue liberado.' };
+};
+
 module.exports = {
     programarActividad,
     actualizarActividad,
@@ -1085,5 +1234,7 @@ module.exports = {
     resolverSolicitud,
     cancelarSolicitud,
     registrarEntregaEquipos,
-    registrarDevolucionEquipos
+    registrarDevolucionEquipos,
+    reprogramarSolicitud,
+    marcarAusente
 };
