@@ -780,6 +780,7 @@ const obtenerTodasSolicitudes = async (usuarioId, rol, estado = null, page = 1, 
             l.edificio,
             l.aula,
             (r.usuario_id = $1) AS es_propia,
+            r.motivo_resolucion,
             (
                 SELECT COALESCE(json_agg(json_build_object('id', e.id, 'nombre', e.nombre)), '[]')
                 FROM reserva_estaciones re 
@@ -823,7 +824,7 @@ const obtenerTodasSolicitudes = async (usuarioId, rol, estado = null, page = 1, 
 // ==========================================
 // 2. RESOLVER SOLICITUD (PUT - APROBAR/RECHAZAR)
 // ==========================================
-const resolverSolicitud = async (actividadId, accion, resolutorId) => {
+const resolverSolicitud = async (actividadId, accion, resolutorId, motivoResolucion = null) => {
     // 1. Verificar el estado actual de la solicitud
     const estadoQuery = await db.query(
         `SELECT r.estado_reserva, a.laboratorio_id, a.fecha_hora_inicio, a.fecha_hora_fin 
@@ -848,9 +849,9 @@ const resolverSolicitud = async (actividadId, accion, resolutorId) => {
     if (accion === 'rechazar') {
         await db.query(
             `UPDATE reservas_estudiantes 
-             SET estado_reserva = 'rechazada', resuelto_por = $1, fecha_resolucion = CURRENT_TIMESTAMP 
+             SET estado_reserva = 'rechazada', resuelto_por = $1, fecha_resolucion = CURRENT_TIMESTAMP, motivo_resolucion = $3 
              WHERE actividad_id = $2`,
-            [resolutorId, actividadId]
+            [resolutorId, actividadId, motivoResolucion]
         );
         return { message: 'Solicitud rechazada correctamente.' };
     }

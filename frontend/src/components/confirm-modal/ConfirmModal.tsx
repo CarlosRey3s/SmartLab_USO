@@ -12,6 +12,7 @@ interface ConfirmModalProps {
   onConfirm: () => void | Promise<void>;
   onCancel?: () => void;
   onClose?: () => void;
+  children?: React.ReactNode;
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -23,7 +24,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   type = 'danger',
   onConfirm,
   onCancel,
-  onClose
+  onClose,
+  children
 }) => {
   const handleCancel = () => {
     if (onCancel) onCancel();
@@ -68,6 +70,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         </div>
         
         <p className="confirm-modal-message">{message}</p>
+        
+        {children && <div className="confirm-modal-children">{children}</div>}
         
         <div className="confirm-modal-actions">
           <button className="confirm-btn confirm-btn-cancel" onClick={handleCancel}>

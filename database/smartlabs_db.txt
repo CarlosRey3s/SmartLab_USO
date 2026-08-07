@@ -93,7 +93,8 @@ CREATE TABLE reservas_estudiantes (
     nota_adicional TEXT,
     estado_reserva estado_reserva_enum NOT NULL DEFAULT 'pendiente',
     resuelto_por INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
-    fecha_resolucion TIMESTAMP WITH TIME ZONE DEFAULT NULL
+    fecha_resolucion TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    motivo_resolucion TEXT DEFAULT NULL 
 );
 -- [TABLA HIJA 3]: mantenimientos
 CREATE TABLE mantenimientos (

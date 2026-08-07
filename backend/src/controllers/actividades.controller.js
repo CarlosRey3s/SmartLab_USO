@@ -177,14 +177,14 @@ const obtenerTodas = async (req, res) => {
 const resolverSolicitud = async (req, res) => {
     try {
         const { id } = req.params;
-        const { accion } = req.body; // 'aprobar' o 'rechazar'
+        const { accion, motivo_resolucion } = req.body; // 'aprobar' o 'rechazar'
         const resolutorId = req.usuario.id;
 
         if (!accion || !['aprobar', 'rechazar'].includes(accion)) {
             return res.status(400).json({ success: false, message: 'Debe especificar una accion válida (aprobar o rechazar)' });
         }
 
-        const resultado = await actividadesService.resolverSolicitud(id, accion, resolutorId);
+        const resultado = await actividadesService.resolverSolicitud(id, accion, resolutorId, motivo_resolucion);
         res.status(200).json({ success: true, message: resultado.message });
     } catch (error) {
         console.error('Error al resolver la solicitud:', error);

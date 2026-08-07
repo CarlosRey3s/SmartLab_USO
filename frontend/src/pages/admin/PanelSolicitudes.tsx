@@ -31,6 +31,7 @@ const PanelSolicitudes: React.FC = () => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [confirmData, setConfirmData] = useState<{ id: number; accion: 'aprobar' | 'rechazar' | 'cancelar' } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [motivoRechazo, setMotivoRechazo] = useState('');
 
   // ── Cargar solicitudes paginadas desde el backend ──
   const cargarSolicitudes = useCallback(async (estado?: string, page?: number) => {
@@ -69,7 +70,7 @@ const PanelSolicitudes: React.FC = () => {
         await cancelarSolicitud(id);
         customToast.success('Solicitud cancelada exitosamente.');
       } else {
-        await resolverSolicitud(id, accion);
+        await resolverSolicitud(id, accion, accion === 'rechazar' ? motivoRechazo : undefined);
         customToast.success(`Solicitud ${accion === 'aprobar' ? 'aprobada' : 'rechazada'} exitosamente.`);
       }
       cargarSolicitudes(tabActiva, paginaActual);
@@ -80,6 +81,7 @@ const PanelSolicitudes: React.FC = () => {
     } finally {
       setIsConfirmOpen(false);
       setConfirmData(null);
+      setMotivoRechazo('');
       setIsProcessing(false);
     }
   };
@@ -269,6 +271,11 @@ const PanelSolicitudes: React.FC = () => {
                         <strong>Nota:</strong> {solicitud.nota_adicional}
                       </div>
                     )}
+                    {solicitud.estado_reserva === 'rechazada' && solicitud.motivo_resolucion && (
+                      <div className="detalle-nota" style={{ marginTop: '8px', borderLeftColor: '#ef4444' }}>
+                        <strong style={{ color: '#ef4444' }}>Motivo de rechazo:</strong> {solicitud.motivo_resolucion}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -369,9 +376,33 @@ const PanelSolicitudes: React.FC = () => {
           if (!isProcessing) {
             setIsConfirmOpen(false);
             setConfirmData(null);
+            setMotivoRechazo('');
           }
         }}
-      />
+      >
+        {confirmData?.accion === 'rechazar' && (
+          <div style={{ marginTop: '15px' }}>
+            <label style={{ fontSize: '14px', fontWeight: 500, color: '#374151', display: 'block', marginBottom: '8px' }}>
+              Motivo del rechazo (opcional)
+            </label>
+            <textarea
+              value={motivoRechazo}
+              onChange={(e) => setMotivoRechazo(e.target.value)}
+              placeholder="Explica brevemente por qué se rechaza la solicitud..."
+              rows={3}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '8px',
+                border: '1px solid #d1d5db',
+                resize: 'none',
+                fontSize: '14px',
+                fontFamily: 'inherit'
+              }}
+            />
+          </div>
+        )}
+      </ConfirmModal>
     </div>
   );
 };

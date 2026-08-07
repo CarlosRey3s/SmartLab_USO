@@ -25,8 +25,8 @@ export const obtenerTodasSolicitudes = async (
     return response.data;
 };
 
-export const resolverSolicitud = async (actividadId: number, accion: 'aprobar' | 'rechazar') => {
-    const response = await axios.put(`${API_URL}/${actividadId}/resolver`, { accion }, getConfig());
+export const resolverSolicitud = async (actividadId: number, accion: 'aprobar' | 'rechazar', motivo_resolucion?: string) => {
+    const response = await axios.put(`${API_URL}/${actividadId}/resolver`, { accion, motivo_resolucion }, getConfig());
     return response.data;
 };
 
