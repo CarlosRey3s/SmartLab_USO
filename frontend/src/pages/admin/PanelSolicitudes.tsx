@@ -63,7 +63,7 @@ const PanelSolicitudes: React.FC = () => {
   }, [tabActiva, paginaActual]);
 
   // ── Motor de decisión: Aprobar / Rechazar / Cancelar ──
-  const solicitarResolucion = (actividadId: number, accion: 'aprobar' | 'rechazar' | 'cancelar') => {
+  const solicitarResolucion = (actividadId: number, accion: 'aprobar' | 'rechazar' | 'cancelar' | 'ausente') => {
     setConfirmData({ id: actividadId, accion });
     setIsConfirmOpen(true);
   };
