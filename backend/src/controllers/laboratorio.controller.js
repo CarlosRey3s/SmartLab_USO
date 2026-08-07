@@ -6,14 +6,32 @@ const getAllLaboratorios = async (req, res) => {
         const result = await pool.query(`
             SELECT 
                 l.id, l.nombre, l.descripcion, l.edificio, l.piso, l.aula, l.estado, 
-                l.modo_reserva, l.capacidad_maxima, l.coordinador_id,
+                l.modo_reserva, l.capacidad_maxima, l.coordinador_id, l.roles_permitidos,
                 u.nombre as coordinador_nombre,
                 EXISTS (
                     SELECT 1 FROM actividades a 
                     WHERE a.laboratorio_id = l.id 
                     AND a.fecha_hora_inicio <= NOW() 
                     AND a.fecha_hora_fin >= NOW()
-                ) as ocupado
+                ) as ocupado,
+                (
+                    SELECT COUNT(*) 
+                    FROM estaciones_trabajo e 
+                    WHERE e.laboratorio_id = l.id 
+                    AND e.estado = 'disponible'
+                    AND NOT EXISTS (
+                        SELECT 1 
+                        FROM actividades a 
+                        LEFT JOIN reserva_estaciones re_est ON a.id = re_est.actividad_id
+                        WHERE a.laboratorio_id = l.id 
+                          AND a.fecha_hora_inicio <= NOW() 
+                          AND a.fecha_hora_fin >= NOW()
+                          AND (
+                             a.tipo IN ('clase', 'mantenimiento') OR 
+                             (a.tipo = 'reserva' AND (re_est.estacion_id IS NULL OR re_est.estacion_id = e.id))
+                          )
+                    )
+                ) as estaciones_disponibles
             FROM laboratorios l
             LEFT JOIN usuarios u ON l.coordinador_id = u.id
             ORDER BY l.nombre ASC
@@ -29,7 +47,7 @@ const getAllLaboratorios = async (req, res) => {
 const createLaboratorio = async (req, res) => {
     const { 
         nombre, descripcion, edificio, piso, aula, estado, 
-        modo_reserva, capacidad_maxima, coordinador_id, estaciones 
+        modo_reserva, capacidad_maxima, coordinador_id, estaciones, roles_permitidos 
     } = req.body;
 
     const client = await pool.connect();
@@ -45,8 +63,8 @@ const createLaboratorio = async (req, res) => {
         // Insertar laboratorio principal
         const insertLabQuery = `
             INSERT INTO laboratorios 
-            (nombre, descripcion, edificio, piso, aula, estado, modo_reserva, capacidad_maxima, coordinador_id)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            (nombre, descripcion, edificio, piso, aula, estado, modo_reserva, capacidad_maxima, coordinador_id, roles_permitidos)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             RETURNING id
         `;
         const labValues = [
@@ -58,7 +76,8 @@ const createLaboratorio = async (req, res) => {
             estado || 'disponible', 
             modo_reserva, 
             capacidad_maxima || 0,
-            coordinador_id || null
+            coordinador_id || null,
+            JSON.stringify(roles_permitidos || ['Todos'])
         ];
         
         const labResult = await client.query(insertLabQuery, labValues);
@@ -187,15 +206,18 @@ const deleteEstacion = async (req, res) => {
 // Actualizar estado de una estacion
 const updateEstacion = async (req, res) => {
     const { id } = req.params;
-    const { estado } = req.body;
+    const { estado, nombre, capacidad } = req.body;
     try {
         const updateQuery = `
             UPDATE estaciones_trabajo 
-            SET estado = $1
-            WHERE id = $2
+            SET 
+                estado = COALESCE($1, estado),
+                nombre = COALESCE($2, nombre),
+                capacidad = COALESCE($3, capacidad)
+            WHERE id = $4
             RETURNING *
         `;
-        const result = await pool.query(updateQuery, [estado, id]);
+        const result = await pool.query(updateQuery, [estado, nombre, capacidad, id]);
         if (result.rowCount === 0) {
             return res.status(404).json({ status: 'error', message: 'Estación no encontrada' });
         }
@@ -210,15 +232,16 @@ const updateEstacion = async (req, res) => {
 const updateLaboratorio = async (req, res) => {
     const { id } = req.params;
     const { 
-        nombre, descripcion, edificio, piso, aula, estado, capacidad_maxima, coordinador_id
+        nombre, descripcion, edificio, piso, aula, estado, capacidad_maxima, coordinador_id, roles_permitidos, modo_reserva
     } = req.body;
 
     try {
         const updateQuery = `
             UPDATE laboratorios 
             SET nombre = $1, descripcion = $2, edificio = $3, piso = $4, 
-                aula = $5, estado = $6, capacidad_maxima = $7, coordinador_id = $8
-            WHERE id = $9
+                aula = $5, estado = $6, capacidad_maxima = $7, coordinador_id = $8,
+                roles_permitidos = $9, modo_reserva = COALESCE($10, modo_reserva)
+            WHERE id = $11
             RETURNING *
         `;
         const values = [
@@ -230,6 +253,8 @@ const updateLaboratorio = async (req, res) => {
             estado || 'disponible', 
             capacidad_maxima || 0,
             coordinador_id || null,
+            JSON.stringify(roles_permitidos || ['Todos']),
+            modo_reserva || null,
             id
         ];
 

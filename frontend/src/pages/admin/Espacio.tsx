@@ -23,6 +23,8 @@ interface EspacioItem {
   descripcion?: string;
   ocupado?: boolean;
   coordinador_id?: string;
+  roles_permitidos?: string[];
+  estaciones_disponibles?: string | number;
 }
 
 export const EspacioView: React.FC = () => {
@@ -134,6 +136,9 @@ export const EspacioView: React.FC = () => {
   const disponibles = espaciosDelUsuario.filter(e => e.estado === 'disponible' && !e.ocupado).length;
   const enMantenimiento = espaciosDelUsuario.filter(e => e.estado === 'mantenimiento' || e.estado === 'en_mantenimiento').length;
   const clausurados = espaciosDelUsuario.filter(e => e.estado === 'clausurado').length;
+  
+  // Sumar todas las estaciones disponibles
+  const totalEstacionesDisponibles = espaciosDelUsuario.reduce((acc, curr) => acc + (parseInt(curr.estaciones_disponibles as string) || 0), 0);
 
   const filteredEspacios = espaciosDelUsuario.filter(item => {
     const matchSearch = item.nombre.toLowerCase().includes(searchTerm.toLowerCase());
@@ -179,11 +184,11 @@ export const EspacioView: React.FC = () => {
 
             <div className="metric-item">
               <div className="metric-icon-wrapper">
-                <Users size={32} color="#2D9CDB" />
+                <Monitor size={32} color="#9b59b6" />
               </div>
               <div className="metric-info">
-                <span className="metric-label">Ocupados</span>
-                <span className="metric-value">{ocupados}</span>
+                <span className="metric-label">Estaciones Disp.</span>
+                <span className="metric-value">{totalEstacionesDisponibles}</span>
               </div>
             </div>
 
@@ -277,7 +282,7 @@ export const EspacioView: React.FC = () => {
             <table className="users-table">
               <thead>
                 <tr>
-                  <th>Laboratorio</th>
+                  <th>Espacio</th>
                   <th>Tipo</th>
                   <th>Ubicación</th>
                   <th>Capacidad</th>

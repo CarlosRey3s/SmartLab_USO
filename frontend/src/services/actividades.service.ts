@@ -81,7 +81,7 @@ export const eliminarActividad = async (idActividad: number | string): Promise<a
 // Añade esta función en tu servicio del frontend
 export const chequearDisponibilidad = async (laboratorio_id: number, fecha: string, hora_inicio: string, hora_fin: string, exclude_id?: number) => {
     try {
-        let url = `${import.meta.env.VITE_API_URL}/api/actividades/disponibilidad?laboratorio_id=${laboratorio_id}&fecha=${fecha}&hora_inicio=${hora_inicio}&hora_fin=${hora_fin}`;
+        let url = `${BASE_URL}/api/actividades/disponibilidad?laboratorio_id=${laboratorio_id}&fecha=${fecha}&hora_inicio=${hora_inicio}&hora_fin=${hora_fin}`;
         if (exclude_id) url += `&exclude_id=${exclude_id}`;
 
         const response = await axios.get(url, { headers: getAuthHeaders() });
@@ -101,7 +101,7 @@ export const obtenerInventarioDisponible = async (
     excludeActividadId?: string | number
 ) => {
     try {
-        let url = `${import.meta.env.VITE_API_URL}/api/inventario/disponibilidad?laboratorio_id=${laboratorioId}&fecha=${fecha}&hora_inicio=${horaInicio}&hora_fin=${horaFin}`;
+        let url = `${BASE_URL}/api/inventario/disponibilidad?laboratorio_id=${laboratorioId}&fecha=${fecha}&hora_inicio=${horaInicio}&hora_fin=${horaFin}`;
 
         // Si estamos editando una actividad, pasamos su ID para no restarnos nuestro propio stock
         if (excludeActividadId) {
@@ -112,6 +112,45 @@ export const obtenerInventarioDisponible = async (
         return response.data;
     } catch (error) {
         console.error("Error al obtener el inventario disponible:", error);
+        throw error;
+    }
+};
+
+export const obtenerTodasSolicitudes = async () => {
+    try {
+        const respuesta = await axios.get(`${API_URL}/solicitudes/todas?limit=1000`, {
+            headers: getAuthHeaders()
+        });
+        return respuesta.data;
+    } catch (error) {
+        console.error("Error al obtener todas las solicitudes:", error);
+        return [];
+    }
+};
+
+export const entregarEquipos = async (idActividad: string | number) => {
+    try {
+        const respuesta = await axios.put(`${API_URL}/solicitudes/${idActividad}/entregar`, {}, {
+            headers: getAuthHeaders()
+        });
+        return respuesta.data;
+    } catch (error: any) {
+        console.error("Error al entregar equipos:", error);
+        if (error.response && error.response.data) throw error.response.data;
+        throw error;
+    }
+};
+
+export const devolverEquipos = async (idActividad: string | number, reporteDano?: any) => {
+    try {
+        const payload = reporteDano ? { reporteDano } : {};
+        const respuesta = await axios.put(`${API_URL}/solicitudes/${idActividad}/devolver`, payload, {
+            headers: getAuthHeaders()
+        });
+        return respuesta.data;
+    } catch (error: any) {
+        console.error("Error al devolver equipos:", error);
+        if (error.response && error.response.data) throw error.response.data;
         throw error;
     }
 };

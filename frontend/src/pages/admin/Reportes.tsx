@@ -86,6 +86,16 @@ export const ReportesView: React.FC = () => {
     return years;
   }, [currentYear]);
 
+  const [subTab, setSubTab] = useState<"uso" | "reservas">("uso");
+  const [filtroRolReservas, setFiltroRolReservas] = useState<string>("todos");
+  const [reporteReservasData, setReporteReservasData] = useState<{
+    reservas: any[];
+    stats: { totalReservas: number; reservasAprobadas: number; horasReservadas: number; usuariosUnicos: number; };
+  }>({
+    reservas: [],
+    stats: { totalReservas: 0, reservasAprobadas: 0, horasReservadas: 0, usuariosUnicos: 0 }
+  });
+
   const [laboratorios, setLaboratorios] = useState<LaboratorioDB[]>([]);
   const [globalStats, setGlobalStats] = useState({ estudiantesActivos: 0, instrumentosPrestados: 0 });
 
@@ -93,17 +103,19 @@ export const ReportesView: React.FC = () => {
     if (activeTab === "bandeja") {
       fetchSugerencias();
     } else if (activeTab === "uso") {
-      fetchLaboratorios();
+      if (subTab === "uso") {
+        fetchLaboratorios();
+      } else if (subTab === "reservas") {
+        fetchReporteReservas();
+      }
     }
-  }, [activeTab, mesInicio, mesFin, anio]);
+  }, [activeTab, subTab, mesInicio, mesFin, anio, filtroRolReservas]);
 
   const fetchLaboratorios = async () => {
     try {
       const startDate = `${anio}-${mesInicio}-01`;
-      
-      const nextMonth = parseInt(mesFin) === 12 ? 1 : parseInt(mesFin) + 1;
-      const nextYear = parseInt(mesFin) === 12 ? parseInt(anio) + 1 : parseInt(anio);
-      const endDate = new Date(new Date(`${nextYear}-${String(nextMonth).padStart(2, '0')}-01T00:00:00`).getTime() - 1).toISOString().split('T')[0];
+      const lastDayObj = new Date(parseInt(anio), parseInt(mesFin), 0);
+      const endDate = `${anio}-${mesFin}-${String(lastDayObj.getDate()).padStart(2, '0')}`;
 
       const response = await fetch(`${BASE_URL}/api/reportes/uso-laboratorios?startDate=${startDate}&endDate=${endDate}`);
       const result = await response.json();
@@ -120,6 +132,28 @@ export const ReportesView: React.FC = () => {
       }
     } catch (error) {
       console.error('Error al cargar laboratorios:', error);
+    }
+  };
+
+  const fetchReporteReservas = async () => {
+    try {
+      const startDate = `${anio}-${mesInicio}-01`;
+      const lastDayObj = new Date(parseInt(anio), parseInt(mesFin), 0);
+      const endDate = `${anio}-${mesFin}-${String(lastDayObj.getDate()).padStart(2, '0')}`;
+
+      const params = new URLSearchParams();
+      params.append('startDate', startDate);
+      params.append('endDate', endDate);
+      if (filtroRolReservas) params.append('rol', filtroRolReservas);
+
+      const response = await fetch(`${BASE_URL}/api/reportes/reservas?${params.toString()}`);
+      const result = await response.json();
+
+      if (result.status === 'success' && result.data) {
+        setReporteReservasData(result.data);
+      }
+    } catch (error) {
+      console.error('Error al cargar reporte de reservas:', error);
     }
   };
 
@@ -191,7 +225,7 @@ export const ReportesView: React.FC = () => {
 
   const nombresMisLabs = React.useMemo(() => espaciosPermitidos.map(l => l.nombre), [espaciosPermitidos]);
 
-  const horasReservadas = labsFiltrados.reduce((acc, lab) => acc + (lab.horas_uso || 0), 0);
+  const horasReservadas = Math.round(labsFiltrados.reduce((acc, lab) => acc + (lab.horas_uso || 0), 0));
   const labFrecuente = labsFiltrados.length > 0 
     ? labsFiltrados.reduce((prev, curr) => (curr.total_reservas || 0) > (prev.total_reservas || 0) ? curr : prev).nombre 
     : 'N/A';
@@ -216,22 +250,71 @@ export const ReportesView: React.FC = () => {
 
   // Autoseleccionar mensaje o limpiar si no aplica (solo en desktop)
   useEffect(() => {
-    if (activeTab === "bandeja" && window.innerWidth > 1024) {
-      if (filteredSugerencias.length > 0) {
-        // Si no hay seleccionado, o el que está ya no figura en la lista, agarra el primero
-        const currentIsValid = selectedMessage && filteredSugerencias.some(s => s.id === selectedMessage.id);
-        if (!currentIsValid) {
-          setSelectedMessage(filteredSugerencias[0]);
+    if (activeTab === "bandeja") {
+      if (window.innerWidth > 1024) {
+        if (filteredSugerencias.length > 0) {
+          // Si no hay seleccionado, o el que está ya no figura en la lista, agarra el primero
+          const currentIsValid = selectedMessage && filteredSugerencias.some(s => s.id === selectedMessage.id);
+          if (!currentIsValid) {
+            setSelectedMessage(filteredSugerencias[0]);
+          }
+        } else {
+          setSelectedMessage(null);
         }
       } else {
-        setSelectedMessage(null);
+        // En móviles, si la selección actual no está en la lista filtrada, limpiar
+        if (selectedMessage && !filteredSugerencias.some(s => s.id === selectedMessage.id)) {
+          setSelectedMessage(null);
+        }
       }
     }
   }, [filteredSugerencias, activeTab]); // No poner selectedMessage aquí para no loopear
 
+  const reservasFiltradas = React.useMemo(() => {
+    return (reporteReservasData.reservas || []).filter(reserva => {
+      if (user?.rol === 'coordinador' && nombresMisLabs.length > 0) {
+        if (!nombresMisLabs.includes(reserva.laboratorio_nombre)) return false;
+      }
+      if (filtroEspacio.length > 0) {
+        return filtroEspacio.includes(String(reserva.laboratorio_id));
+      }
+      return true;
+    });
+  }, [reporteReservasData.reservas, user, nombresMisLabs, filtroEspacio]);
+
+  const statsReservas = React.useMemo(() => {
+    const totalReservas = reservasFiltradas.length;
+    const reservasAprobadas = reservasFiltradas.filter(r => ['aprobada', 'entregado', 'completada'].includes(r.estado_reserva)).length;
+    const horasReservadas = Math.round(reservasFiltradas.reduce((acc, r) => acc + (parseFloat(r.horas_duracion) || 0), 0) * 10) / 10;
+    const usuariosUnicos = new Set(reservasFiltradas.map(r => r.usuario_id)).size;
+    return { totalReservas, reservasAprobadas, horasReservadas, usuariosUnicos };
+  }, [reservasFiltradas]);
+
   const formatearFecha = (fechaStr: string) => {
     const f = new Date(fechaStr);
     return f.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
+  };
+
+  const formatearFechaHora = (fechaStr: string) => {
+    if (!fechaStr) return 'N/A';
+    const f = new Date(fechaStr);
+    return f.toLocaleString("es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  };
+
+  const handleExportReservasExcel = () => {
+    const dataFormatted = reservasFiltradas.map(r => ({
+      Solicitante: `${r.solicitante_nombre} ${r.solicitante_apellido}`,
+      Rol: r.solicitante_rol ? r.solicitante_rol.charAt(0).toUpperCase() + r.solicitante_rol.slice(1) : 'N/A',
+      Expediente: r.solicitante_expediente || 'N/A',
+      Correo: r.solicitante_correo || 'N/A',
+      Laboratorio: r.laboratorio_nombre || 'N/A',
+      'Título / Motivo': r.titulo || 'Sin título',
+      'Fecha Inicio': formatearFechaHora(r.fecha_hora_inicio),
+      'Fecha Fin': formatearFechaHora(r.fecha_hora_fin),
+      'Horas Duración': `${r.horas_duracion || 0} h`,
+      Estado: r.estado_reserva
+    }));
+    exportToExcel(dataFormatted, 'Reporte_Reservas');
   };
 
   const getInitials = (nombre: string, apellido: string) => {
@@ -248,7 +331,7 @@ export const ReportesView: React.FC = () => {
             className={`tab ${activeTab === "uso" ? "active" : ""}`}
             onClick={() => setActiveTab("uso")}
           >
-            Uso de laboratorio
+            Reportes
           </button>
           <button 
             className={`tab ${activeTab === "bandeja" ? "active" : ""}`}
@@ -408,158 +491,360 @@ export const ReportesView: React.FC = () => {
       )}
 
       {activeTab === "uso" && (
-        <div className="stats-container card">
-          {/* ESTADÍSTICAS TARJETAS */}
-          <div className="stats-row">
-            <div className="stat-box">
-              <div className="stat-icon circle-blue">🕒</div>
-              <div className="stat-text">
-                <span>Horas Reservadas (Mes)</span>
-                <h3>{horasReservadas} h</h3>
-              </div>
-            </div>
-
-            <div className="stat-box">
-              <div className="stat-icon circle-green">🧪</div>
-              <div className="stat-text">
-                <span>Lab. Más Frecuente</span>
-                <h3>{labFrecuente}</h3>
-              </div>
-            </div>
-
-            <div className="stat-box">
-              <div className="stat-icon circle-orange">👥</div>
-              <div className="stat-text">
-                <span>Estudiantes Activos</span>
-                <h3>{globalStats.estudiantesActivos}</h3>
-              </div>
-            </div>
-
-            <div className="stat-box">
-              <div className="stat-icon circle-purple">📅</div>
-              <div className="stat-text">
-                <span>Instrumentos Prestados</span>
-                <h3>{globalStats.instrumentosPrestados}</h3>
-              </div>
-            </div>
+        <div>
+          {/* SUB-NAVEGACIÓN DENTRO DE REPORTES */}
+          <div className="sub-tabs-container">
+            <button 
+              className={`sub-tab-btn ${subTab === "uso" ? "active" : ""}`}
+              onClick={() => setSubTab("uso")}
+            >
+              Reporte de Uso de Laboratorio
+            </button>
+            <button 
+              className={`sub-tab-btn ${subTab === "reservas" ? "active" : ""}`}
+              onClick={() => setSubTab("reservas")}
+            >
+              Reporte de Reservas
+            </button>
           </div>
 
-          {/* TABLA DE DESGLOSE */}
-          <div className="table-section">
-            <div className="table-header">
-              <h3>Desglose por Espacio</h3>
-
-              <div className="table-actions">
-                <select className="select-custom" value={mesInicio} onChange={e => setMesInicio(e.target.value)}>
-                  <option value="01">Enero</option>
-                  <option value="02">Febrero</option>
-                  <option value="03">Marzo</option>
-                  <option value="04">Abril</option>
-                  <option value="05">Mayo</option>
-                  <option value="06">Junio</option>
-                  <option value="07">Julio</option>
-                  <option value="08">Agosto</option>
-                  <option value="09">Septiembre</option>
-                  <option value="10">Octubre</option>
-                  <option value="11">Noviembre</option>
-                  <option value="12">Diciembre</option>
-                </select>
-                <span className="separator">-</span>
-                <select className="select-custom" value={mesFin} onChange={e => setMesFin(e.target.value)}>
-                  <option value="01">Enero</option>
-                  <option value="02">Febrero</option>
-                  <option value="03">Marzo</option>
-                  <option value="04">Abril</option>
-                  <option value="05">Mayo</option>
-                  <option value="06">Junio</option>
-                  <option value="07">Julio</option>
-                  <option value="08">Agosto</option>
-                  <option value="09">Septiembre</option>
-                  <option value="10">Octubre</option>
-                  <option value="11">Noviembre</option>
-                  <option value="12">Diciembre</option>
-                </select>
-                <select className="select-custom year-select" value={anio} onChange={e => setAnio(e.target.value)}>
-                  {availableYears.map(year => (
-                    <option key={year} value={String(year)}>{year}</option>
-                  ))}
-                </select>
-
-                <div style={{ position: 'relative' }} ref={espacioFilterRef}>
-                  <button 
-                    className="select-custom multi-select-btn" 
-                    onClick={() => setIsEspacioFilterOpen(!isEspacioFilterOpen)}
-                  >
-                    {filtroEspacio.length === 0 
-                      ? "Todos los espacios" 
-                      : `${filtroEspacio.length} espacios seleccionados`}
-                  </button>
-
-                  {isEspacioFilterOpen && (
-                    <div className="multi-select-dropdown">
-                      <div className="multi-select-header">
-                        <span>Selecciona Espacios</span>
-                        <button className="btn-clear" onClick={() => setFiltroEspacio([])}>Limpiar</button>
-                      </div>
-                      <div className="multi-select-options">
-                        {espaciosPermitidos.map(esp => (
-                          <label key={esp.id} className="multi-select-option">
-                            <input 
-                              type="checkbox" 
-                              checked={filtroEspacio.includes(String(esp.id))}
-                              onChange={() => toggleEspacio(String(esp.id))}
-                            />
-                            {esp.nombre}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+          {subTab === "uso" ? (
+            <div className="stats-container card">
+              {/* ESTADÍSTICAS TARJETAS */}
+              <div className="stats-row">
+                <div className="stat-box">
+                  <div className="stat-icon circle-blue">🕒</div>
+                  <div className="stat-text">
+                    <span>Horas Reservadas (Mes)</span>
+                    <h3>{horasReservadas} h</h3>
+                  </div>
                 </div>
 
-                <button className="export" onClick={() => exportToExcel(labsFiltrados, 'Reporte_Uso_Espacios')}>
-                  Exportar Excel
-                </button>
+                <div className="stat-box">
+                  <div className="stat-icon circle-green">🧪</div>
+                  <div className="stat-text">
+                    <span>Lab. Más Frecuente</span>
+                    <h3>{labFrecuente}</h3>
+                  </div>
+                </div>
+
+                <div className="stat-box">
+                  <div className="stat-icon circle-orange">👥</div>
+                  <div className="stat-text">
+                    <span>Usuarios Activos</span>
+                    <h3>{globalStats.estudiantesActivos}</h3>
+                  </div>
+                </div>
+
+                <div className="stat-box">
+                  <div className="stat-icon circle-purple">📅</div>
+                  <div className="stat-text">
+                    <span>Instrumentos Prestados</span>
+                    <h3>{globalStats.instrumentosPrestados}</h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* TABLA DE DESGLOSE */}
+              <div className="table-section">
+                <div className="table-header">
+                  <h3>Desglose por Espacio</h3>
+
+                  <div className="table-actions">
+                    <select className="select-custom" value={mesInicio} onChange={e => setMesInicio(e.target.value)}>
+                      <option value="01">Enero</option>
+                      <option value="02">Febrero</option>
+                      <option value="03">Marzo</option>
+                      <option value="04">Abril</option>
+                      <option value="05">Mayo</option>
+                      <option value="06">Junio</option>
+                      <option value="07">Julio</option>
+                      <option value="08">Agosto</option>
+                      <option value="09">Septiembre</option>
+                      <option value="10">Octubre</option>
+                      <option value="11">Noviembre</option>
+                      <option value="12">Diciembre</option>
+                    </select>
+                    <span className="separator">-</span>
+                    <select className="select-custom" value={mesFin} onChange={e => setMesFin(e.target.value)}>
+                      <option value="01">Enero</option>
+                      <option value="02">Febrero</option>
+                      <option value="03">Marzo</option>
+                      <option value="04">Abril</option>
+                      <option value="05">Mayo</option>
+                      <option value="06">Junio</option>
+                      <option value="07">Julio</option>
+                      <option value="08">Agosto</option>
+                      <option value="09">Septiembre</option>
+                      <option value="10">Octubre</option>
+                      <option value="11">Noviembre</option>
+                      <option value="12">Diciembre</option>
+                    </select>
+                    <select className="select-custom year-select" value={anio} onChange={e => setAnio(e.target.value)}>
+                      {availableYears.map(year => (
+                        <option key={year} value={String(year)}>{year}</option>
+                      ))}
+                    </select>
+
+                    <div style={{ position: 'relative' }} ref={espacioFilterRef}>
+                      <button 
+                        className="select-custom multi-select-btn" 
+                        onClick={() => setIsEspacioFilterOpen(!isEspacioFilterOpen)}
+                      >
+                        {filtroEspacio.length === 0 
+                          ? "Todos los espacios" 
+                          : `${filtroEspacio.length} espacios seleccionados`}
+                      </button>
+
+                      {isEspacioFilterOpen && (
+                        <div className="multi-select-dropdown">
+                          <div className="multi-select-header">
+                            <span>Selecciona Espacios</span>
+                            <button className="btn-clear" onClick={() => setFiltroEspacio([])}>Limpiar</button>
+                          </div>
+                          <div className="multi-select-options">
+                            {espaciosPermitidos.map(esp => (
+                              <label key={esp.id} className="multi-select-option">
+                                <input 
+                                  type="checkbox" 
+                                  checked={filtroEspacio.includes(String(esp.id))}
+                                  onChange={() => toggleEspacio(String(esp.id))}
+                                />
+                                {esp.nombre}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <button className="export" onClick={() => exportToExcel(labsFiltrados, 'Reporte_Uso_Espacios')}>
+                      Exportar Excel
+                    </button>
+                  </div>
+                </div>
+
+                <div className="table-responsive">
+                  <table className="custom-table">
+                    <thead>
+                      <tr>
+                        <th>Espacio</th>
+                        <th>Total Reservas</th>
+                        <th>Horas Uso</th>
+                        <th>Estado Actual</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {labsFiltrados.map(lab => (
+                          <tr key={lab.id}>
+                            <td>{lab.nombre}</td>
+                            <td>{lab.total_reservas || 0}</td>
+                            <td>{lab.horas_uso || 0} h</td>
+                            <td className="status-cell">
+                              <span className={
+                                lab.estado_actual === 'Mantenimiento' ? 'status-warn' :
+                                lab.estado_actual === 'Ocupado' ? 'status-busy' : 'status-ok'
+                              }>
+                                {lab.estado_actual || 'Operativo'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      }
+                      {labsFiltrados.length === 0 && (
+                        <tr>
+                          <td colSpan={4} style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
+                            No hay espacios asignados a tu cuenta
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
+          ) : (
+            <div className="stats-container card">
+              {/* ESTADÍSTICAS TARJETAS PARA RESERVAS */}
+              <div className="stats-row">
+                <div className="stat-box">
+                  <div className="stat-icon circle-blue">📅</div>
+                  <div className="stat-text">
+                    <span>Total Reservas</span>
+                    <h3>{statsReservas.totalReservas}</h3>
+                  </div>
+                </div>
 
-            <table className="custom-table">
-              <thead>
-                <tr>
-                  <th>Espacio</th>
-                  <th>Total Reservas</th>
-                  <th>Horas Uso</th>
-                  <th>Estado Actual</th>
-                </tr>
-              </thead>
+                <div className="stat-box">
+                  <div className="stat-icon circle-green">✓</div>
+                  <div className="stat-text">
+                    <span>Reservas Aprobadas</span>
+                    <h3>{statsReservas.reservasAprobadas}</h3>
+                  </div>
+                </div>
 
-              <tbody>
-                {labsFiltrados.map(lab => (
-                    <tr key={lab.id}>
-                      <td>{lab.nombre}</td>
-                      <td>{lab.total_reservas || 0}</td>
-                      <td>{lab.horas_uso || 0} h</td>
-                      <td className="status-cell">
-                        <span className={
-                          lab.estado_actual === 'Mantenimiento' ? 'status-warn' :
-                          lab.estado_actual === 'Ocupado' ? 'status-busy' : 'status-ok'
-                        }>
-                          {lab.estado_actual || 'Operativo'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                }
-                {labsFiltrados.length === 0 && (
-                  <tr>
-                    <td colSpan={4} style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
-                      No hay espacios asignados a tu cuenta
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                <div className="stat-box">
+                  <div className="stat-icon circle-orange">🕒</div>
+                  <div className="stat-text">
+                    <span>Horas Reservadas</span>
+                    <h3>{statsReservas.horasReservadas} h</h3>
+                  </div>
+                </div>
+
+                <div className="stat-box">
+                  <div className="stat-icon circle-purple">👥</div>
+                  <div className="stat-text">
+                    <span>Solicitantes Únicos</span>
+                    <h3>{statsReservas.usuariosUnicos}</h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* TABLA Y FILTROS DE RESERVAS */}
+              <div className="table-section">
+                <div className="table-header">
+                  <h3>Reporte de Reservas</h3>
+
+                  <div className="table-actions">
+                    <select 
+                      className="select-custom"
+                      value={filtroRolReservas}
+                      onChange={e => setFiltroRolReservas(e.target.value)}
+                    >
+                      <option value="todos">Todos los roles</option>
+                      <option value="estudiante">Estudiante</option>
+                      <option value="docente">Docente</option>
+                      <option value="coordinador">Coordinador</option>
+                    </select>
+
+                    <select className="select-custom" value={mesInicio} onChange={e => setMesInicio(e.target.value)}>
+                      <option value="01">Enero</option>
+                      <option value="02">Febrero</option>
+                      <option value="03">Marzo</option>
+                      <option value="04">Abril</option>
+                      <option value="05">Mayo</option>
+                      <option value="06">Junio</option>
+                      <option value="07">Julio</option>
+                      <option value="08">Agosto</option>
+                      <option value="09">Septiembre</option>
+                      <option value="10">Octubre</option>
+                      <option value="11">Noviembre</option>
+                      <option value="12">Diciembre</option>
+                    </select>
+                    <span className="separator">-</span>
+                    <select className="select-custom" value={mesFin} onChange={e => setMesFin(e.target.value)}>
+                      <option value="01">Enero</option>
+                      <option value="02">Febrero</option>
+                      <option value="03">Marzo</option>
+                      <option value="04">Abril</option>
+                      <option value="05">Mayo</option>
+                      <option value="06">Junio</option>
+                      <option value="07">Julio</option>
+                      <option value="08">Agosto</option>
+                      <option value="09">Septiembre</option>
+                      <option value="10">Octubre</option>
+                      <option value="11">Noviembre</option>
+                      <option value="12">Diciembre</option>
+                    </select>
+                    <select className="select-custom year-select" value={anio} onChange={e => setAnio(e.target.value)}>
+                      {availableYears.map(year => (
+                        <option key={year} value={String(year)}>{year}</option>
+                      ))}
+                    </select>
+
+                    <div style={{ position: 'relative' }} ref={espacioFilterRef}>
+                      <button 
+                        className="select-custom multi-select-btn" 
+                        onClick={() => setIsEspacioFilterOpen(!isEspacioFilterOpen)}
+                      >
+                        {filtroEspacio.length === 0 
+                          ? "Todos los espacios" 
+                          : `${filtroEspacio.length} espacios seleccionados`}
+                      </button>
+
+                      {isEspacioFilterOpen && (
+                        <div className="multi-select-dropdown">
+                          <div className="multi-select-header">
+                            <span>Selecciona Espacios</span>
+                            <button className="btn-clear" onClick={() => setFiltroEspacio([])}>Limpiar</button>
+                          </div>
+                          <div className="multi-select-options">
+                            {espaciosPermitidos.map(esp => (
+                              <label key={esp.id} className="multi-select-option">
+                                <input 
+                                  type="checkbox" 
+                                  checked={filtroEspacio.includes(String(esp.id))}
+                                  onChange={() => toggleEspacio(String(esp.id))}
+                                />
+                                {esp.nombre}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <button className="export" onClick={handleExportReservasExcel}>
+                      Exportar Excel
+                    </button>
+                  </div>
+                </div>
+
+                <div className="table-responsive">
+                  <table className="custom-table">
+                    <thead>
+                      <tr>
+                        <th>Solicitante</th>
+                        <th>Rol</th>
+                        <th>Espacio</th>
+                        <th>Título / Actividad</th>
+                        <th>Inicio</th>
+                        <th>Fin</th>
+                        <th>Horas</th>
+                        <th>Estado</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {reservasFiltradas.map((r: any) => (
+                        <tr key={r.actividad_id}>
+                          <td>
+                            <strong>{r.solicitante_nombre} {r.solicitante_apellido}</strong>
+                            <br />
+                            <small style={{ color: '#64748b' }}>{r.solicitante_expediente || r.solicitante_correo}</small>
+                          </td>
+                          <td>
+                            <span style={{ textTransform: 'capitalize' }}>{r.solicitante_rol}</span>
+                          </td>
+                          <td>{r.laboratorio_nombre}</td>
+                          <td>{r.titulo || 'Sin título'}</td>
+                          <td>{formatearFechaHora(r.fecha_hora_inicio)}</td>
+                          <td>{formatearFechaHora(r.fecha_hora_fin)}</td>
+                          <td>{r.horas_duracion} h</td>
+                          <td className="status-cell">
+                            <span className={
+                              r.estado_reserva === 'rechazada' || r.estado_reserva === 'cancelada' ? 'status-warn' :
+                              r.estado_reserva === 'pendiente' ? 'status-busy' : 'status-ok'
+                            }>
+                              {r.estado_reserva}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      {reservasFiltradas.length === 0 && (
+                        <tr>
+                          <td colSpan={8} style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
+                            No hay reservas registradas para los filtros seleccionados
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

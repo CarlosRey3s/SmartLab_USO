@@ -4,7 +4,7 @@ export const msalConfig: Configuration = {
   auth: {
     clientId: "9df8da80-7254-4065-9cc7-81e6aa8859ae",
     authority: "https://login.microsoftonline.com/058cc003-e5de-4ecb-a024-99bd0d50bbdd",
-    redirectUri: "https://gleaming-wholeness-production-fd5f.up.railway.app/login",
+    redirectUri: window.location.origin + "/login",
   },
   cache: {
     cacheLocation: "sessionStorage"

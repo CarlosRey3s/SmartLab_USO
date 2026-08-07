@@ -1,10 +1,21 @@
+/* =========================================================
+   CALENDARIO - CONTENEDOR PRINCIPAL
+   Todas las reglas están aisladas para no afectar otros módulos
+========================================================= */
+
 .calendar-page-wrapper {
   display: flex;
   height: 100%;
   gap: 1.5rem;
+  position: relative;
 }
 
-.calendar-main-container {
+
+/* =========================================================
+   CONTENEDOR PRINCIPAL DEL CALENDARIO
+========================================================= */
+
+.calendar-page-wrapper .calendar-main-container {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -12,46 +23,56 @@
   border-radius: 8px;
   border: 1px solid #e5e7eb;
   padding: 1.5rem;
+  min-width: 0;
 }
 
-/* Toolbar Personalizada */
-.calendar-toolbar-custom {
+
+/* =========================================================
+   TOOLBAR
+========================================================= */
+
+.calendar-page-wrapper .calendar-toolbar-custom {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
 }
 
-.toolbar-left,
-.toolbar-right {
+
+.calendar-page-wrapper .toolbar-left,
+.calendar-page-wrapper .toolbar-right {
   display: flex;
   align-items: center;
   gap: 1rem;
 }
 
-.nav-arrows {
+
+.calendar-page-wrapper .nav-arrows {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 0.25rem;
+  gap: .25rem;
 }
 
-.btn-hoy {
+
+.calendar-page-wrapper .btn-hoy {
   background-color: #0f766e;
   color: white;
-  padding: 0.5rem 1.25rem;
+  padding: .5rem 1.25rem;
   border-radius: 9999px;
   border: none;
   cursor: pointer;
   font-weight: 500;
 }
 
-.btn-hoy:hover {
+
+.calendar-page-wrapper .btn-hoy:hover {
   background-color: #fcd34d;
   color: #060606;
 }
 
-.btn-icon {
+
+.calendar-page-wrapper .calendar-toolbar-custom .btn-icon {
   background: none;
   border: none;
   cursor: pointer;
@@ -60,7 +81,8 @@
   align-items: center;
 }
 
-.toolbar-label {
+
+.calendar-page-wrapper .toolbar-label {
   font-size: 1.5rem;
   font-weight: 300;
   color: #0f766e;
@@ -68,35 +90,62 @@
   text-transform: capitalize;
 }
 
-/* Botones de Vista (Semana/Mes) */
-.btn-view,
-.btn-view-icon {
+
+/* =========================================================
+   BOTONES DE VISTA
+========================================================= */
+
+
+.calendar-page-wrapper .btn-view,
+.calendar-page-wrapper .btn-view-icon {
+
   border: none;
   background-color: #f3f4f6;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: .2s ease;
+
 }
 
-.btn-view {
-  padding: 0.5rem 1.25rem;
+
+.calendar-page-wrapper .btn-view {
+
+  padding: .5rem 1.25rem;
   border-radius: 9999px;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+
 }
 
-.btn-view-icon {
-  padding: 0.6rem;
+
+.calendar-page-wrapper .btn-view-icon {
+
+  padding: .6rem;
   border-radius: 50%;
   display: flex;
+  align-items: center;
+
 }
 
-.btn-view.active,
-.btn-view-icon.active {
+
+.calendar-page-wrapper .btn-view.active,
+.calendar-page-wrapper .btn-view-icon.active {
+
   background-color: #fcd34d;
   color: #111827;
+
 }
 
-/* MENU DERECHO DEL CALENDARIO */
-.calendar-sidebar-right {
+
+
+/* =========================================================
+   SIDEBAR DERECHO
+========================================================= */
+
+
+.calendar-page-wrapper .calendar-sidebar-right {
+
   width: 256px;
   height: 100%;
   display: flex;
@@ -104,693 +153,1412 @@
   gap: 1rem;
   overflow: hidden;
   flex-shrink: 0;
+
 }
 
-.btn-crear {
+
+
+/* =========================================================
+   BOTÓN CREAR
+========================================================= */
+
+
+.calendar-page-wrapper .btn-crear {
+
   position: relative;
   width: 70%;
   background-color: #fcd34d;
-  /* Tu amarillo base */
   color: #111827;
-  /* Texto oscuro para contraste */
-  padding: 0.97rem;
-  /* Ponemos un borde transparente fijo para que el botón no "salte" al hacer hover */
+  padding: .97rem;
   border: 1.5px solid transparent;
   border-radius: 12px;
   font-weight: 600;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
 
-  /* Sombra sutil cuando está amarillo */
-  box-shadow: 0 4px 6px -1px rgba(250, 203, 75, 0.3),
-    0 2px 4px -1px rgba(250, 203, 75, 0.2);
+  gap: .5rem;
+
+  cursor: pointer;
+
+  transition: .3s ease;
+
+  box-shadow:
+    0 4px 6px -1px rgba(250, 203, 75, .3),
+    0 2px 4px -1px rgba(250, 203, 75, .2);
+
 }
 
-.btn-crear:hover {
-  background-color: #ffffff;
-  /* Pasa a ser como una tarjeta blanca */
-  color: var(--c-verde);
-  /* Tu texto verde */
+
+
+.calendar-page-wrapper .btn-crear:hover {
+
+  background: white;
+  color: #0f766e;
+
   border: 1.5px solid #e5e7eb;
-  /* Borde gris clarito como en la imagen 2 */
 
-  /* EL TRUCO ESTRELLA: 
-     1. Un inset shadow para la barra amarilla gruesa a la izquierda
-     2. Un shadow normal muy suave para que el botón flote un poco */
-  box-shadow: inset 6px 0 0 0 #fcd34d,
-    0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    inset 6px 0 0 0 #fcd34d,
+    0 4px 6px -1px rgba(0, 0, 0, .05);
 
 }
 
-.mini-calendar-placeholder {
-  background-color: #1f2937;
-  color: white;
-  height: 160px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
-.mis-laboratorios-card {
-  background-color: #0f766e;
-  color: white;
-  border-radius: 6px;
-  overflow: hidden;
-}
 
-.card-header {
-  padding: 0.75rem;
+/* =========================================================
+   TARJETAS SIDEBAR
+   Antes era .card-header global
+========================================================= */
+
+
+.calendar-page-wrapper .calendar-card-header {
+
+  padding: .75rem;
+
   border-bottom: 1px solid #0d9488;
+
   display: flex;
+
   align-items: center;
-  gap: 0.5rem;
+
+  gap: .5rem;
+
   font-weight: 500;
+
 }
 
-.card-body {
-  padding: 0.75rem;
+
+
+.calendar-page-wrapper .calendar-card-header.clickable {
+
+  cursor: pointer;
+
+  justify-content: space-between;
+
+}
+
+
+
+.calendar-page-wrapper .calendar-card-header-title {
+
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  font-size: 0.875rem;
+
+  align-items: center;
+
+  gap: .5rem;
+
 }
 
-.btn-exportar {
-  width: 100%;
-  background-color: #AD868A;
+
+
+
+.calendar-page-wrapper .mini-calendar-placeholder {
+
+  background-color: #1f2937;
+
   color: white;
-  padding: 0.75rem;
-  border: none;
+
+  height: 160px;
+
   border-radius: 6px;
-  font-weight: 600;
+
   display: flex;
+
   align-items: center;
+
   justify-content: center;
-  gap: 0.5rem;
+
+}
+
+
+
+.calendar-page-wrapper .mis-laboratorios-card {
+
+  background-color: #0f766e;
+
+  color: white;
+
+  border-radius: 6px;
+
+  overflow: hidden;
+
+}
+
+
+
+.calendar-page-wrapper .card-body {
+
+  padding: .75rem;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: .5rem;
+
+  font-size: .875rem;
+
+}
+
+
+
+
+.calendar-page-wrapper .btn-exportar {
+
+  width: 100%;
+
+  background-color: #AD868A;
+
+  color: white;
+
+  padding: .75rem;
+
+  border: none;
+
+  border-radius: 6px;
+
+  font-weight: 600;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: .5rem;
+
   margin-top: auto;
+
   cursor: pointer;
+
 }
 
-/* ── Estilos para el Dropdown de Vistas ── */
-.dropdown-container {
-  /* Esto es el "ancla". Le dice al menú que flote en base a este botón */
+
+
+
+/* =========================================================
+   DROPDOWN VISTA
+   Antes afectaba todos los dropdowns
+========================================================= */
+
+
+.calendar-page-wrapper .dropdown-container {
+
   position: relative;
+
   display: inline-block;
+
 }
 
-.dropdown-menu {
-  /* ¡LA MAGIA DE FLOTAR! position: absolute lo saca del flujo normal para que no empuje nada */
+
+
+.calendar-page-wrapper .dropdown-menu {
+
+
   position: absolute;
+
   top: calc(100% + 8px);
-  /* Se coloca justo 8px debajo del botón */
+
   right: 0;
-  /* Se alinea a la derecha del botón */
-  background-color: #ffffff;
-  /* FONDO SÓLIDO BLANCO OBLIGATORIO */
+
+  background: white;
+
   border: 1px solid #e5e7eb;
+
   border-radius: 8px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
-  /* Sombra elegante */
+
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, .15);
+
   display: flex;
+
   flex-direction: column;
+
   width: 140px;
-  z-index: 9999;
+
+  z-index: 99999;
+
+
 }
 
-.dropdown-item {
+
+
+.calendar-page-wrapper .dropdown-item {
+
+
   width: 100%;
-  display: block;
-  padding: 0.75rem 1.25rem;
+
+  padding: .75rem 1.25rem;
+
   border: none;
-  background-color: transparent;
+
+  background: transparent;
+
   text-align: left;
+
   cursor: pointer;
+
   color: #374151;
+
   font-weight: 500;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
+
+  font-size: .95rem;
+
+  transition: .2s ease;
+
 }
 
-/* Redondear las esquinas solo en el primero y el último */
-.dropdown-item:first-child {
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
+
+
+.calendar-page-wrapper .dropdown-item:hover {
+
+  background: #f3f4f6;
+
 }
 
-.dropdown-item:last-child {
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
-}
 
-.dropdown-item:hover {
-  background-color: #f3f4f6;
-}
 
-.dropdown-item.active {
-  background-color: #fcd34d;
+.calendar-page-wrapper .dropdown-item.active {
+
+  background: #fcd34d;
+
   color: #112718;
+
 }
 
-/* ── 1. LA CABECERA (DÍAS Y NÚMEROS) ── */
-.rbc-header {
+/* =========================================================
+   REACT BIG CALENDAR
+========================================================= */
+
+
+/* Cabecera días */
+
+.calendar-page-wrapper .rbc-header {
+
   border: none !important;
-  border-bottom: none !important;
+
   padding: 8px 0 !important;
+
   height: auto !important;
+
   min-height: 60px;
+
   overflow: visible !important;
+
 }
 
-.rbc-time-header,
-.rbc-time-header-content,
-.rbc-row {
+
+
+.calendar-page-wrapper .rbc-time-header,
+.calendar-page-wrapper .rbc-time-header-content,
+.calendar-page-wrapper .rbc-row {
+
   overflow: visible !important;
+
 }
 
-.rbc-time-header {
+
+
+.calendar-page-wrapper .rbc-time-header {
+
   border-bottom: 1px solid #e5e7eb !important;
+
 }
 
-/* ── 1.5 ELIMINAR LA FILA DE "TODO EL DÍA" ── */
-/* Ocultamos la celda blanca gigante */
-.rbc-allday-cell {
+
+
+/* Ocultar todo el día */
+
+.calendar-page-wrapper .rbc-allday-cell {
+
   display: none !important;
+
 }
 
-.rbc-time-header>.rbc-row:nth-child(2) {
+
+
+.calendar-page-wrapper .rbc-time-header>.rbc-row:nth-child(2) {
+
   display: none !important;
+
 }
 
-.custom-header-cell {
+
+
+/* Header personalizado */
+
+.calendar-page-wrapper .custom-header-cell {
+
   display: flex;
+
   flex-direction: column;
+
   align-items: center;
+
   gap: 2px;
+
 }
 
-.custom-header-cell .dia-texto {
-  font-size: 0.65rem;
+
+
+.calendar-page-wrapper .custom-header-cell .dia-texto {
+
+  font-size: .65rem;
+
   font-weight: 500;
+
   color: #70757a;
-  letter-spacing: 0.5px;
+
+  letter-spacing: .5px;
+
 }
 
-.custom-header-cell .dia-numero {
+
+
+.calendar-page-wrapper .custom-header-cell .dia-numero {
+
   font-size: 1.25rem;
+
   font-weight: 400;
+
   color: #3c4043;
+
   width: 36px;
+
   height: 36px;
+
   display: flex;
+
   align-items: center;
+
   justify-content: center;
+
   border-radius: 50%;
+
 }
 
-.custom-header-cell.hoy .dia-texto {
-  color: #AD868A;
-}
 
-.custom-header-cell.hoy .dia-numero {
-  background-color: #AD868A;
+
+.calendar-page-wrapper .custom-header-cell.hoy .dia-numero {
+
+  background: #AD868A;
+
   color: white;
+
 }
 
-/* ── 2. LA COLUMNA DE LAS HORAS ── */
-/* Quitamos los bordes de la caja contenedora de las horas */
-.rbc-time-gutter .rbc-timeslot-group {
+
+
+
+/* =========================================================
+   COLUMNA HORAS
+========================================================= */
+
+
+.calendar-page-wrapper .rbc-time-gutter .rbc-timeslot-group {
+
   border: none !important;
+
 }
 
-.rbc-time-content>*+*>* {
+
+
+.calendar-page-wrapper .rbc-time-content>*+*>* {
+
   border-left: 1px solid #e5e7eb !important;
+
 }
 
-.rbc-time-gutter {
+
+
+.calendar-page-wrapper .rbc-time-gutter {
+
   border-right: none !important;
+
 }
 
-.rbc-label {
-  font-size: 0.75rem;
+
+
+.calendar-page-wrapper .rbc-label {
+
+  font-size: .75rem;
+
   color: #70757a;
-  padding: 0 8px 0 0;
+
+  padding-right: 8px;
+
 }
 
-.rbc-time-gutter .rbc-label {
+
+
+.calendar-page-wrapper .rbc-time-gutter .rbc-label {
+
   position: relative;
+
   top: -10px;
-  background-color: white;
+
+  background: white;
+
 }
 
-/* Quitamos la primera hora de la lista para que no choque con la esquina del calendario (opcional, pero se ve más limpio) */
-.rbc-time-gutter .rbc-timeslot-group:first-child .rbc-label {
+
+
+.calendar-page-wrapper .rbc-time-gutter .rbc-timeslot-group:first-child .rbc-label {
+
   display: none;
+
 }
 
-/*Vista del mes */
-.rbc-month-view {
+
+
+/* =========================================================
+   VISTA MES
+========================================================= */
+
+
+.calendar-page-wrapper .rbc-month-view {
+
   border: none !important;
+
   border-top: 1px solid #e5e7eb !important;
+
 }
 
-/* Líneas horizontales finas */
-.rbc-month-row {
+
+
+.calendar-page-wrapper .rbc-month-row {
+
   border-bottom: 1px solid #e5e7eb !important;
-  border-top: none !important;
+
 }
 
-/* Líneas verticales finas (excepto la primera para que no choque con el borde izquierdo) */
-.rbc-day-bg {
+
+
+.calendar-page-wrapper .rbc-day-bg {
+
   border-left: 1px solid #e5e7eb !important;
+
 }
 
-.rbc-day-bg:first-child {
+
+
+.calendar-page-wrapper .rbc-day-bg:first-child {
+
   border-left: none !important;
+
 }
 
-/* Centramos el contenedor original del número y le damos aire arriba */
-.rbc-date-cell {
+
+
+.calendar-page-wrapper .rbc-date-cell {
+
   text-align: center !important;
-  padding: 8px 0 2px 0 !important;
+
+  padding: 8px 0 2px !important;
+
 }
 
-/* ── Estilos de nuestro nuevo número (CustomDateHeader) ── */
-.custom-date-header {
+
+
+
+/* Fecha personalizada */
+
+.calendar-page-wrapper .custom-date-header {
+
   display: flex;
+
   justify-content: center;
+
   align-items: center;
-  font-size: 0.75rem;
-  /* Número pequeño y elegante */
+
+  font-size: .75rem;
+
   font-weight: 500;
+
   color: #3c4043;
-  /* Gris oscuro Google */
+
 }
 
-/* La cajita invisible alrededor del número que se volverá círculo si es hoy */
-.custom-date-header span {
+
+
+.calendar-page-wrapper .custom-date-header span {
+
   display: flex;
+
   justify-content: center;
+
   align-items: center;
+
   width: 24px;
+
   height: 24px;
+
   border-radius: 50%;
+
 }
 
-/* Día de hoy: Círculo Azul */
-.custom-date-header.hoy span {
-  background-color: #AD868A;
-  ;
+
+
+.calendar-page-wrapper .custom-date-header.hoy span {
+
+  background: #AD868A;
+
   color: white;
+
 }
 
-/* Días de otros meses (Ej. 30 y 31 del mes pasado) se ponen gris claro */
-.custom-date-header.off-range {
+
+
+.calendar-page-wrapper .custom-date-header.off-range {
+
   color: #70757a;
-  opacity: 0.5;
+
+  opacity: .5;
+
 }
 
-/* Fondo ligeramente gris para los días que no son de este mes (Opcional, muy al estilo Google) */
-.rbc-off-range-bg {
-  background-color: #f8f9fa !important;
+
+
+.calendar-page-wrapper .rbc-off-range-bg {
+
+  background: #f8f9fa !important;
+
 }
 
-/*ESTILOS DE LOS EVENTOS DEL CALENDARIO*/
-/* QUITAMOS LOS ESTILOS DE BLOQUE SOLIDO QUE TRAE LA LIBRERIA*/
-.rbc-event {
+
+
+
+/* =========================================================
+   EVENTOS
+========================================================= */
+
+
+.calendar-page-wrapper .rbc-event {
+
+
   padding: 0 !important;
+
   background: none;
+
   border: none;
+
   border-radius: 4px !important;
+
   box-shadow: none;
+
 }
 
-/* Evitamos que el evento se ponga azul por defecto al hacer clic */
-.rbc-event:focus,
-.rbc-event.rbc-selected {
+
+
+.calendar-page-wrapper .rbc-event:focus,
+.calendar-page-wrapper .rbc-event.rbc-selected {
+
+
   outline: none !important;
-  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.3) !important;
-  /* Tu verde #0f766e con transparencia */
+
+  box-shadow:
+    0 0 0 2px rgba(15, 118, 110, .3) !important;
+
+
 }
 
-/*estilos internos del componente CustomEvent*/
-.custom-event-content {
+
+
+
+/* Contenido evento */
+
+.calendar-page-wrapper .custom-event-content {
+
+
   display: flex;
+
   flex-direction: column;
+
   align-items: flex-start;
+
   justify-content: flex-start;
-  padding: 4px 8px;
-  /* Le damos el "aire" necesario al texto */
+
+  padding: 4px 6px;
+
   width: 100%;
+
   height: 100%;
+
   box-sizing: border-box;
+
   overflow: hidden;
-}
 
-.event-time {
-  font-size: 0.7rem;
-  font-weight: 500;
-  color: #4b5563;
-  margin-top: 2px;
-}
-
-.event-title {
-  font-size: 0.8rem;
-  font-weight: 600;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  /* Agrega "..." si no cabe */
-  width: 100%;
-}
-
-/* Oculta la hora doble por defecto de la librería */
-.rbc-event-label {
-  display: none !important;
-}
-
-/* ── EL TRUCO PARA LA VISTA DE MES (Imagen 1) ── */
-/* En el mes las cajas son bajitas, así que pasamos a formato de fila (Row) */
-.rbc-month-view .custom-event-content {
-  flex-direction: row;
-  align-items: center;
-  padding: 2px 6px;
-  gap: 6px;
-}
-
-.rbc-month-view .event-title {
-  font-size: 0.75rem;
-}
-
-.rbc-month-view .event-time {
-  font-size: 0.65rem;
-  margin-top: 0;
-  font-weight: 600;
-  flex-shrink: 0;
-  /* Asegura que la hora nunca se aplaste aunque el título sea largo */
-}
-
-
-/* =======================================================
-   ESTILOS DEL MINI CALENDARIO (Panel Derecho)
-   ======================================================= */
-.mini-calendario-container {
-  background-color: #ffffff;
-  padding: 0.5rem;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-}
-
-.mini-calendario-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.25rem 0.5rem 0.5rem 0.5rem;
-}
-
-.mini-calendario-title {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #3c4043;
-}
-
-.mini-calendario-nav {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.btn-icon-mini {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 50%;
-  color: #5f6368;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s;
-}
-
-.btn-icon-mini:hover {
-  background-color: #f1f3f4;
-}
-
-/* Letras de la semana (D L M...) */
-.mini-calendario-dias-semana {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  text-align: center;
-  margin-bottom: 0.25rem;
-}
-
-.dia-semana-letra {
-  font-size: 0.65rem;
-  font-weight: 500;
-  color: #70757a;
-}
-
-/* La Cuadrícula */
-.mini-calendario-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  row-gap: 2px;
-}
-
-.mini-dia-btn {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  height: 28px;
-  /* Altura compacta */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  margin: 0 auto;
-  width: 28px;
-  transition: background-color 0.1s;
-}
-
-.mini-dia-btn:hover:not(.dia-seleccionado) {
-  background-color: #f1f3f4;
-}
-
-/* AQUÍ CONTROLAMOS EL TAMAÑO PEQUEÑO DE LOS NÚMEROS */
-.numero-dia {
-  font-size: 0.75rem;
-  /* Números pequeños y legibles */
-  color: #3c4043;
-}
-
-/* Estados de los días */
-.dia-fuera-mes .numero-dia {
-  color: #70757a;
-  opacity: 0.4;
-}
-
-.dia-hoy {
-  background-color: #f1f3f4;
-  /* Fondo gris muy suave para hoy */
-}
-
-.dia-hoy .numero-dia {
-  color: #AD868A;
-  /* Color de tu diseño para hoy */
-  font-weight: 600;
-}
-
-.dia-seleccionado {
-  background-color: #e8eaed;
-  /* Gris oscuro o el color primario que prefieras */
-}
-
-/* Si quieres que el día seleccionado sea un círculo del color de tu diseño (ej. #AD868A o #0f766e) */
-.dia-seleccionado {
-  background-color: #AD868A;
-}
-
-.dia-seleccionado .numero-dia {
-  color: #ffffff;
-  font-weight: 500;
-}
-
-/* =======================================================
-   NUEVAS CLASES TRASLADADAS DESDE EL INLINE CSS
-   ======================================================= */
-
-/* Cabecera exclusiva para la vista de Mes */
-.custom-month-header {
-  padding: 8px 0;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #70757a;
-  letter-spacing: 0.5px;
-}
-
-/* Ajustes adicionales para alinear los botones de vistas con iconos */
-.btn-view {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-/* Modificación de prioridad para asegurar que el dropdown no sea tapado */
-.dropdown-menu {
-  z-index: 99999 !important;
-}
-
-/* Cabecera interactiva de "Mis Laboratorios" */
-.card-header {
-  cursor: pointer;
-  justify-content: space-between;
-}
-
-.card-header-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-/* Etiquetas del Checkbox de laboratorios */
-.lab-checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-
-/* ── ESTILOS DINÁMICOS PARA EVENTOS (Antes en JS, ahora en CSS) ── */
-.evento-base {
-  color: #374151 !important;
-  /* Texto gris oscuro de alta legibilidad */
-  border-radius: 4px;
-  display: block;
-  font-size: 0.75rem;
-  padding: 2px 4px;
-}
-
-.evento-redes {
-  background-color: #eff6ff !important;
-  /* Azul muy claro */
-  border: 1px solid #bfdbfe !important;
-  border-left: 4px solid #3b82f6 !important;
-  /* Margen izquierdo grueso azul */
-}
-
-.evento-computo {
-  background-color: #f0fdf4 !important;
-  /* Verde muy claro */
-  border: 1px solid #bbf7d0 !important;
-  border-left: 4px solid #22c55e !important;
-  /* Margen izquierdo grueso verde */
-}
-
-/* =======================================================
-   ESTILOS PARA EL BUSCADOR (SEARCH BAR)
-   ======================================================= */
-.search-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.search-icon {
-  position: absolute;
-  left: 10px;
-  color: #6b7280;
-  /* Gris sutil */
-  pointer-events: none;
-  /* Evita que el ícono bloquee el clic en el input */
-}
-
-.search-input {
-  width: 320px;
-  padding: 0.5rem 1rem 0.5rem 2.2rem;
-  /* Espacio extra a la izquierda para el ícono */
-  border: 1px solid #e5e7eb;
-  border-radius: 9999px;
-  /* Forma de píldora */
-  background-color: #f9fafb;
-  font-size: 0.875rem;
-  color: #374151;
-  outline: none;
-  transition: all 0.2s ease-in-out;
-}
-
-.search-input::placeholder {
-  color: #9ca3af;
-}
-
-/* Efecto al hacer clic en el buscador (Glow con tu verde temático) */
-.search-input:focus {
-  background-color: #ffffff;
-  border-color: #19760f;
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
-}
-
-/* =======================================================
-   ESTILOS DEL DROPDOWN DE BÚSQUEDA (TIPO AUTOCOMPLETAR)
-   ======================================================= */
-.search-results-dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  /* Justo debajo del input */
-  left: 0;
-  width: 100%;
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  max-height: 300px;
-  overflow-y: auto;
-  z-index: 100000;
-  /* Aseguramos que esté por encima de todo */
-  display: flex;
-  flex-direction: column;
-  padding: 4px 0;
-}
-
-.search-result-item {
-  padding: 10px 16px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
   gap: 2px;
-  transition: background-color 0.2s;
+
 }
 
-.search-result-item:hover {
-  background-color: #f3f4f6;
-  /* Gris muy suave al pasar el mouse */
+
+
+
+.calendar-page-wrapper .event-title {
+
+
+  font-size: .75rem;
+
+  font-weight: 600;
+
+  line-height: 1.2;
+
+  color: #3c4043;
+
+  white-space: normal;
+
+  word-break: break-word;
+
+  display: -webkit-box;
+
+  -webkit-line-clamp: 3;
+
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  width: 100%;
+
+
 }
 
-.result-title {
-  font-size: 0.875rem;
+
+
+.calendar-page-wrapper .event-time {
+
+
+  font-size: .7rem;
+
   font-weight: 500;
-  color: #374151;
+
+  color: #70757a;
+
+  white-space: nowrap;
+
+
 }
 
-.result-date {
-  font-size: 0.75rem;
-  color: #6b7280;
+
+
+
+/* Mes horizontal */
+
+.calendar-page-wrapper .rbc-month-view .custom-event-content {
+
+
+  flex-direction: row;
+
+  align-items: center;
+
+  padding: 2px 6px;
+
+  gap: 4px;
+
+
 }
 
-.search-result-empty {
+
+
+.calendar-page-wrapper .rbc-month-view .event-title {
+
+
+  font-size: .75rem;
+
+  white-space: nowrap;
+
+  display: block;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+
+}
+
+
+
+.calendar-page-wrapper .rbc-month-view .event-time {
+
+
+  font-size: .65rem;
+
+  font-weight: 600;
+
+  order: -1;
+
+  flex-shrink: 0;
+
+
+}
+
+
+
+
+/* =========================================================
+   COLORES EVENTOS
+========================================================= */
+
+
+.calendar-page-wrapper .evento-base {
+
+
+  border-radius: 4px;
+
+  display: block;
+
+  font-size: .75rem;
+
+  padding: 0 !important;
+
+  transition: .1s ease;
+
+}
+
+
+
+.calendar-page-wrapper .evento-base:hover {
+
+
+  transform: translateY(-.5px);
+
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, .08);
+
+}
+
+
+
+
+/* Mantenimiento */
+
+.calendar-page-wrapper .evento-mantenimiento {
+
+
+  background: #fee2e2 !important;
+
+  border: 1px solid #fca5a5 !important;
+
+  border-left: 4px solid #ef4444 !important;
+
+}
+
+
+
+.calendar-page-wrapper .evento-mantenimiento .event-title {
+
+  color: #991b1b !important;
+
+}
+
+
+
+
+/* Redes */
+
+.calendar-page-wrapper .evento-sistema-teal {
+
+
+  background: #e6f4f2 !important;
+
+  border: 1px solid #b2dfdb !important;
+
+  border-left: 4px solid #0f766e !important;
+
+
+}
+
+
+
+.calendar-page-wrapper .evento-sistema-teal .event-title {
+
+  color: #0d524d !important;
+
+}
+
+
+
+
+/* Computo */
+
+.calendar-page-wrapper .evento-sistema-amarillo {
+
+
+  background: #fffbeb !important;
+
+  border: 1px solid #fde68a !important;
+
+  border-left: 4px solid #d97706 !important;
+
+
+}
+
+
+
+.calendar-page-wrapper .evento-sistema-amarillo .event-title {
+
+
+  color: #78350f !important;
+
+}
+
+
+
+
+
+/* =========================================================
+   POPOVER EVENTOS
+========================================================= */
+
+
+.calendar-page-wrapper .event-popover-container {
+
+
+  position: fixed;
+
+  background: white;
+
+  width: 320px;
+
+  border-radius: 8px;
+
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, .15);
+
+  z-index: 999999;
+
+  display: flex;
+
+  flex-direction: column;
+
+  overflow: hidden;
+
+  border: 1px solid #e5e7eb;
+
+  animation: calendarPopover .2s ease;
+
+
+}
+
+
+
+@keyframes calendarPopover {
+
+  from {
+
+    opacity: 0;
+
+    transform: scale(.95);
+
+  }
+
+  to {
+
+    opacity: 1;
+
+    transform: scale(1);
+
+  }
+
+}
+
+
+
+.calendar-page-wrapper .popover-header {
+
+
   padding: 12px 16px;
-  font-size: 0.875rem;
-  color: #6b7280;
-  text-align: center;
+
+  border-bottom: 1px solid #f3f4f6;
+
+
 }
 
-/* =======================================================
-   ESTILOS ADAPTATIVOS DE LOS EVENTOS (ESTILO GOOGLE CALENDAR)
-   ======================================================= */
+
+
+.calendar-page-wrapper .popover-title {
+
+
+  margin: 0 0 4px;
+
+  font-size: 1.1rem;
+
+  font-weight: 600;
+
+  color: #1f2937;
+
+}
+
+
+
+.calendar-page-wrapper .popover-time {
+
+
+  font-size: .85rem;
+
+  color: #6b7280;
+
+}
+
+
+
+.calendar-page-wrapper .popover-body {
+
+
+  padding: 16px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 12px;
+
+
+}
+
+
+
+.calendar-page-wrapper .popover-row {
+
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 12px;
+
+  font-size: .875rem;
+
+  color: #374151;
+
+
+}
+
+
+
+.calendar-page-wrapper .popover-icon {
+
+
+  color: #6b7280;
+
+  flex-shrink: 0;
+
+}
+
+
+
+.calendar-page-wrapper .text-red {
+
+  color: #ef4444;
+
+}
+
+/* =========================================================
+   MINI CALENDARIO SIDEBAR
+========================================================= */
+
+.calendar-page-wrapper .mini-calendario-container {
+
+  background: white;
+
+  padding: .5rem;
+
+  border-radius: 8px;
+
+  border: 1px solid #e5e7eb;
+
+}
+
+
+
+.calendar-page-wrapper .mini-calendario-header {
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  padding: .25rem .5rem .5rem;
+
+
+}
+
+
+
+.calendar-page-wrapper .mini-calendario-title {
+
+  font-size: .875rem;
+
+  font-weight: 500;
+
+  color: #3c4043;
+
+}
+
+
+
+.calendar-page-wrapper .mini-calendario-nav {
+
+  display: flex;
+
+  gap: .25rem;
+
+}
+
+
+
+.calendar-page-wrapper .btn-icon-mini {
+
+  background: transparent;
+
+  border: none;
+
+  cursor: pointer;
+
+  padding: 4px;
+
+  border-radius: 50%;
+
+  color: #5f6368;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+}
+
+
+
+.calendar-page-wrapper .btn-icon-mini:hover {
+
+  background: #f1f3f4;
+
+}
+
+
+
+.calendar-page-wrapper .mini-calendario-dias-semana {
+
+  display: grid;
+
+  grid-template-columns: repeat(7, 1fr);
+
+  text-align: center;
+
+  margin-bottom: .25rem;
+
+}
+
+
+
+.calendar-page-wrapper .dia-semana-letra {
+
+  font-size: .65rem;
+
+  font-weight: 500;
+
+  color: #70757a;
+
+}
+
+
+
+.calendar-page-wrapper .mini-calendario-grid {
+
+  display: grid;
+
+  grid-template-columns: repeat(7, 1fr);
+
+  row-gap: 2px;
+
+}
+
+
+
+.calendar-page-wrapper .mini-dia-btn {
+
+
+  background: transparent;
+
+  border: none;
+
+  cursor: pointer;
+
+  height: 28px;
+
+  width: 28px;
+
+  margin: auto;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border-radius: 50%;
+
+}
+
+
+
+.calendar-page-wrapper .mini-dia-btn:hover:not(.dia-seleccionado) {
+
+  background: #f1f3f4;
+
+}
+
+
+
+.calendar-page-wrapper .numero-dia {
+
+  font-size: .75rem;
+
+  color: #3c4043;
+
+}
+
+
+
+.calendar-page-wrapper .dia-fuera-mes .numero-dia {
+
+  color: #70757a;
+
+  opacity: .4;
+
+}
+
+
+
+.calendar-page-wrapper .dia-hoy {
+
+  background: #f1f3f4;
+
+}
+
+
+
+.calendar-page-wrapper .dia-hoy .numero-dia {
+
+
+  color: #AD868A;
+
+  font-weight: 600;
+
+}
+
+
+
+.calendar-page-wrapper .dia-seleccionado {
+
+
+  background: #AD868A;
+
+}
+
+
+
+.calendar-page-wrapper .dia-seleccionado .numero-dia {
+
+
+  color: white;
+
+  font-weight: 500;
+
+}
+
+
+
+/* =========================================================
+   BUSCADOR
+========================================================= */
+
+
+.calendar-page-wrapper .search-container {
+
+  position: relative;
+
+  display: flex;
+
+  align-items: center;
+
+}
+
+
+
+.calendar-page-wrapper .search-icon {
+
+
+  position: absolute;
+
+  left: 10px;
+
+  color: #6b7280;
+
+  pointer-events: none;
+
+}
+
+
+
+.calendar-page-wrapper .search-input {
+
+
+  width: 320px;
+
+  padding: .5rem 1rem .5rem 2.2rem;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 9999px;
+
+  background: #f9fafb;
+
+  font-size: .875rem;
+
+  color: #374151;
+
+  outline: none;
+
+  transition: .2s;
+
+
+}
+
+
+
+.calendar-page-wrapper .search-input::placeholder {
+
+  color: #9ca3af;
+
+}
+
+
+
+.calendar-page-wrapper .search-input:focus {
+
+
+  background: white;
+
+  border-color: #19760f;
+
+  box-shadow:
+    0 0 0 3px rgba(15, 118, 110, .15);
+
+}
+
+
+
+/* =========================================================
+   RESULTADOS BUSQUEDA
+========================================================= */
+
+
+.calendar-page-wrapper .search-results-dropdown {
+
+
+  position: absolute;
+
+  top: calc(100% + 4px);
+
+  left: 0;
+
+  width: 100%;
+
+  background: white;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 8px;
+
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, .1);
+
+  max-height: 300px;
+
+  overflow-y: auto;
+
+  z-index: 100000;
+
+
+}
+
+
+
+.calendar-page-wrapper .search-result-item {
+
+
+  padding: 10px 16px;
+
+  cursor: pointer;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 2px;
+
+
+}
+
+
+
+.calendar-page-wrapper .search-result-item:hover {
+
+
+  background: #f3f4f6;
+
+}
+
+
+
+.calendar-page-wrapper .result-title {
+
+  font-size: .875rem;
+
+  font-weight: 500;
+
+  color: #374151;
+
+}
+
+
+
+.calendar-page-wrapper .result-date {
+
+  font-size: .75rem;
+
+  color: #6b7280;
+
+}
+
+
+
+.calendar-page-wrapper .search-result-empty {
+
+  padding: 12px 16px;
+
+  font-size: .875rem;
+
+  color: #6b7280;
+
+  text-align: center;
+
+}
+
+
+
+
+/* =========================================================
+   MENU FILTROS
+========================================================= */
 
 /* CONTENEDOR EN VISTA SEMANA Y DÍA */
 .custom-event-content {
@@ -1112,7 +1880,8 @@
 .popover-section {
   margin-top: 8px;
   padding-top: 12px;
-  border-top: 2px dashed #d4b8bc; /* Línea separadora rosa */
+  border-top: 2px dashed #d4b8bc;
+  /* Línea separadora rosa */
 }
 
 .popover-section-title {
@@ -1150,441 +1919,407 @@
   /* <-- SOLO AGREGA ESTA LÍNEA */
 }
 
-/* =======================================================
-   ESTILOS DEL INDICADOR DE CARGA (LOADING)
-   ======================================================= */
-.loading-overlay {
+/* =========================================================
+   LOADING
+========================================================= */
+
+
+.calendar-page-wrapper .loading-overlay {
+
+
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 255, 255, 0.75);
-  /* Fondo blanco semitransparente */
+
+  inset: 0;
+
+  background: rgba(255, 255, 255, .75);
+
   backdrop-filter: blur(3px);
-  /* Efecto cristal/desenfoque moderno */
+
   z-index: 1000;
-  /* Por encima del calendario pero debajo de modales */
+
   display: flex;
+
   align-items: center;
+
   justify-content: center;
+
   border-radius: 8px;
 
-  /* Tipografía y color */
   color: #0f766e;
-  /* Verde institucional de la USO */
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
 
-  /* Animación de latido */
-  animation: pulse-text 1.5s infinite ease-in-out;
+  font-size: 1.25rem;
+
+  font-weight: 600;
+
+
 }
 
-/* Animación para que el texto parpadee suavemente */
+
+
 @keyframes pulse-text {
+
+
   0% {
-    opacity: 0.5;
-    transform: scale(0.98);
+
+    opacity: .5;
+
+    transform: scale(.98);
+
   }
+
+
 
   50% {
+
     opacity: 1;
+
     transform: scale(1);
+
   }
+
+
 
   100% {
-    opacity: 0.5;
-    transform: scale(0.98);
+
+    opacity: .5;
+
+    transform: scale(.98);
+
   }
-}
-/* =======================================================
-   ESTILOS DEL MEN� DE FILTROS
-   ======================================================= */
-.toolbar-actions {
-  display: flex;
-  gap: 0.5rem;
+
+
 }
 
-.filter-dropdown-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  background-color: #27272a; /* Dark gray */
-  border: 1px solid #3f3f46;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-  display: flex;
-  flex-direction: column;
-  width: 320px;
-  z-index: 99999;
-  padding: 1.25rem;
-  color: #fff;
-}
 
-.filter-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.25rem;
-}
 
-.filter-title {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #fff;
-}
+.calendar-page-wrapper .loading-overlay {
 
-.btn-limpiar {
-  background: transparent;
-  border: none;
-  color: #fca5a5; /* Red/pink */
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
 
-.btn-limpiar:hover {
-  text-decoration: underline;
-}
+  animation: pulse-text 1.5s infinite ease-in-out;
 
-.filter-section {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 1.25rem;
-}
-
-.filter-section:last-child {
-  margin-bottom: 0;
-}
-
-.filter-subtitle {
-  color: #0d9488; /* Teal */
-  font-size: 0.875rem;
-  font-weight: 500;
-  margin-bottom: 0.75rem;
-}
-
-.filter-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.filter-pill {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.2s;
-}
-
-.pill-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.dot-clases { background-color: #059669; }
-.dot-mantenimientos { background-color: #ea580c; }
-.dot-reservas { background-color: #be123c; }
-
-/* Clases - Activo e Inactivo */
-.active-clases {
-  background-color: #d1fae5;
-  color: #064e3b;
-  border-color: #d1fae5;
-}
-.inactive-clases {
-  background-color: transparent;
-  color: #a1a1aa;
-  border-color: #3f3f46;
-}
-
-/* Mantenimientos - Activo e Inactivo */
-.active-mantenimientos {
-  background-color: #ffedd5;
-  color: #9a3412;
-  border-color: #ffedd5;
-}
-.inactive-mantenimientos {
-  background-color: transparent;
-  color: #a1a1aa;
-  border-color: #3f3f46;
-}
-
-/* Reservas - Activo e Inactivo */
-.active-reservas {
-  background-color: #ffe4e6;
-  color: #881337;
-  border-color: #ffe4e6;
-}
-.inactive-reservas {
-  background-color: transparent;
-  color: #a1a1aa;
-  border-color: #3f3f46;
-}
-
-.filter-select {
-  background-color: #18181b;
-  color: #fff;
-  border: 1px solid #3f3f46;
-  border-radius: 8px;
-  padding: 0.625rem;
-  font-size: 0.875rem;
-  width: 100%;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 1.25rem;
-}
-
-.filter-select:focus {
-  outline: none;
-  border-color: #0d9488;
-}
-
-.filter-select option {
-  background-color: #18181b;
-  color: #fff;
 }
 
 
 
 
-/* =======================================================
-   RESPONSIVE
-======================================================= */
+/* =========================================================
+   RESPONSIVE TABLET
+========================================================= */
 
-/* ---------- TABLETS ---------- */
-@media (max-width: 1024px) {
+
+@media(max-width:1024px) {
+
 
   .calendar-page-wrapper {
+
     flex-direction: column;
+
   }
 
-  .calendar-main-container {
+
+
+  .calendar-page-wrapper .calendar-main-container {
+
     width: 100%;
+
   }
+
+
+
+  .calendar-page-wrapper .calendar-sidebar-right {
+
+    width: 100%;
+
+    flex-direction: row;
+
+    flex-wrap: wrap;
+
+  }
+
+
+
+  .calendar-page-wrapper .btn-crear {
+
+    width: 100%;
+
+  }
+
+
+
+  .calendar-page-wrapper .mini-calendario-container,
+  .calendar-page-wrapper .mis-laboratorios-card,
+  .calendar-page-wrapper .btn-exportar {
+
+    width: calc(50% - .5rem);
+
+  }
+
+
+
+  .calendar-page-wrapper .search-input {
+
+    width: 100%;
+
+    max-width: 320px;
+
+  }
+
+
+}
+
+
+
+/* =========================================================
+   RESPONSIVE MOVIL
+========================================================= */
+
+
+@media(max-width:768px) {
+
+
+  .calendar-page-wrapper .calendar-main-container {
+
+    padding: 1rem;
+
+  }
+
+
+
+  .calendar-page-wrapper .calendar-toolbar-custom {
+
+
+    flex-direction: column;
+
+    align-items: stretch;
+
+    gap: 1rem;
+
+  }
+
+
+
+  .calendar-page-wrapper .toolbar-left,
+  .calendar-page-wrapper .toolbar-right {
+
+
+    width: 100%;
+
+    flex-wrap: wrap;
+
+    justify-content: space-between;
+
+
+  }
+
+
+
+  .calendar-page-wrapper .toolbar-label {
+
+
+    font-size: 1.1rem;
+
+    text-align: center;
+
+    width: 100%;
+
+  }
+
+
+
+  .calendar-page-wrapper .search-container {
+
+    width: 100%;
+
+  }
+
+
+
+  .calendar-page-wrapper .search-input {
+
+
+    width: 100%;
+
+    max-width: none;
+
+
+  }
+
+
+
+  .calendar-page-wrapper .calendar-sidebar-right {
+
+
+    width: 100%;
+
+    flex-direction: column;
+
+
+  }
+
+
+
+  .calendar-page-wrapper .btn-crear,
+  .calendar-page-wrapper .mini-calendario-container,
+  .calendar-page-wrapper .mis-laboratorios-card,
+  .calendar-page-wrapper .btn-exportar {
+
+
+    width: 100%;
+
+  }
+
+
+
+  .calendar-page-wrapper .event-popover-container {
+
+
+    width: 95%;
+
+    left: 2.5% !important;
+
+  }
+
+
+
+}
+
+
+/* =========================================================
+   MOVILES PEQUEÑOS
+========================================================= */
+
+
+@media(max-width:480px) {
+
+
+  .calendar-page-wrapper .calendar-main-container {
+
+    padding: .75rem;
+
+  }
+
+
+
+  .calendar-page-wrapper .btn-hoy,
+  .calendar-page-wrapper .btn-view {
+
+
+    width: 100%;
+
+    justify-content: center;
+
+  }
+
+
+
+  .calendar-page-wrapper .toolbar-right {
+
+
+    flex-direction: column;
+
+    align-items: stretch;
+
+  }
+
+
+
+  .calendar-page-wrapper .filter-dropdown-menu {
+
+
+    width: 100%;
+
+    left: 0;
+
+    right: 0;
+
+  }
+
+
+
+}
+
+@media (max-width:768px) {
 
   .calendar-sidebar-right {
-    width: 100%;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: space-between;
+    height: auto !important;
+    overflow: visible !important;
+    padding-bottom: 1.5rem;
   }
 
-  .btn-crear {
-    width: 100%;
-  }
-
-  .mini-calendario-container,
-  .mis-laboratorios-card,
   .btn-exportar {
-    width: calc(50% - .5rem);
-  }
-
-  .search-input {
-    width: 100%;
-    max-width: 320px;
-  }
-
-  .toolbar-right {
-    flex-wrap: wrap;
-  }
-
-  .event-popover-container {
-    width: min(320px, 90vw);
+    margin-bottom: 2rem !important;
   }
 
 }
 
 
-/* ---------- CELULARES ---------- */
-@media (max-width:768px){
+/* =========================================================
+   FIX PANEL SOLICITUDES SIDEBAR
+   Evita que tabs y tarjetas sean recortadas
+========================================================= */
 
-  .calendar-main-container{
-      padding:1rem;
-  }
-
-  .calendar-page-wrapper{
-      flex-direction:column;
-      gap:1rem;
-  }
-
-  /* Toolbar */
-
-  .calendar-toolbar-custom{
-      flex-direction:column;
-      align-items:stretch;
-      gap:1rem;
-  }
-
-  .toolbar-left,
-  .toolbar-right{
-      width:100%;
-      flex-wrap:wrap;
-      justify-content:space-between;
-      gap:.75rem;
-  }
-
-  .toolbar-label{
-      font-size:1.1rem;
-      text-align:center;
-      width:100%;
-  }
-
-  .nav-arrows{
-      justify-content:center;
-      width:100%;
-  }
-
-  /* Buscador */
-
-  .search-container{
-      width:100%;
-  }
-
-  .search-input{
-      width:100%;
-      max-width:none;
-  }
-
-  /* Sidebar */
-
-  .calendar-sidebar-right{
-      width:100%;
-      flex-direction:column;
-      gap:1rem;
-  }
-
-  .btn-crear,
-  .mini-calendario-container,
-  .mis-laboratorios-card,
-  .btn-exportar{
-      width:100%;
-  }
-
-  /* Separación final del botón exportar */
-  .btn-exportar{
-      margin-top:0;
-      margin-bottom:1rem;
-  }
-
-  /* Dropdowns */
-
-  .dropdown-menu{
-      width:180px;
-      right:0;
-  }
-
-  .filter-dropdown-menu{
-      width:95vw;
-      right:0;
-      left:auto;
-      max-width:360px;
-  }
-
-  .search-results-dropdown{
-      width:100%;
-  }
-
-  /* Popover */
-
-  .event-popover-container{
-      width:95%;
-      left:2.5% !important;
-      right:2.5%;
-  }
-
-  /* Mini calendario */
-
-  .mini-dia-btn{
-      width:24px;
-      height:24px;
-  }
-
-  .numero-dia{
-      font-size:.7rem;
-  }
-
-  /* Cabecera calendario */
-
-  .custom-header-cell .dia-numero{
-      width:30px;
-      height:30px;
-      font-size:1rem;
-  }
-
-  .custom-header-cell .dia-texto{
-      font-size:.55rem;
-  }
-
-  /* Eventos */
-
-  .event-title{
-      font-size:.68rem;
-  }
-
-  .event-time{
-      font-size:.6rem;
-  }
-
+.calendar-page-wrapper .calendar-sidebar-right {
+  overflow: visible !important;
+  min-width: 256px;
 }
 
 
-/* ---------- CELULARES PEQUEÑOS ---------- */
+.calendar-page-wrapper .panel-solicitudes-container {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
 
-@media (max-width:480px){
 
-  .calendar-main-container{
-      padding:.75rem;
+/* Tabs de solicitudes: permiten scroll horizontal */
+.calendar-page-wrapper .ps-tabs {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  padding-bottom: 3px;
+  scrollbar-width: none;
+}
+
+.calendar-page-wrapper .ps-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+
+/* Cada botón mantiene su tamaño */
+.calendar-page-wrapper .ps-tab {
+  flex-shrink: 0;
+}
+
+
+/* Lista interna de solicitudes */
+.calendar-page-wrapper .lista-solicitudes {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+
+
+/* Exportar no queda pegado al borde en móvil */
+@media(max-width:768px) {
+
+  .calendar-page-wrapper .calendar-sidebar-right {
+    padding-bottom: 2rem;
+    overflow: visible !important;
   }
 
-  .btn-hoy,
-  .btn-view{
-      width:100%;
-      justify-content:center;
+
+  .calendar-page-wrapper .btn-exportar {
+    margin-bottom: 2rem !important;
   }
 
-  .toolbar-right{
-      flex-direction:column;
-      align-items:stretch;
-  }
-
-  .btn-view-icon{
-      align-self:center;
-  }
-
-  .filter-dropdown-menu{
-      width:100%;
-      max-width:none;
-      left:0;
-      right:0;
-  }
-
-  .popover-title{
-      font-size:1rem;
-  }
-
-  .popover-body{
-      padding:12px;
-  }
-
-} 
+}
 
 /* --- COMPACT THEME FILTER MODAL --- */
 .dark-filter {
-  background-color: #ffffff; /* Fondo blanco limpio */
+  background-color: #ffffff;
+  /* Fondo blanco limpio */
   color: #374151;
-  width: 280px; 
+  width: 280px;
   border: 1px solid #e5e7eb;
   padding: 16px;
   border-radius: 12px;
@@ -1592,7 +2327,8 @@
 }
 
 .filter-subtitle.dark {
-  color: #6b7280; /* Gris neutro */
+  color: #6b7280;
+  /* Gris neutro */
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -1608,7 +2344,8 @@
 }
 
 .dark-pill {
-  background-color: #f3f4f6; /* Gris muy claro para inactivos */
+  background-color: #f3f4f6;
+  /* Gris muy claro para inactivos */
   border: 1px solid #e5e7eb;
   color: #4b5563;
   padding: 6px 12px;
@@ -1637,8 +2374,16 @@
   border-color: #b2dfdb;
   color: #0d524d;
 }
-.pill-clases.active .pill-dot { background-color: #0f766e; }
-.dot-clases-dark { background-color: transparent; } /* Inactivo */
+
+.pill-clases.active .pill-dot {
+  background-color: #0f766e;
+}
+
+.dot-clases-dark {
+  background-color: transparent;
+}
+
+/* Inactivo */
 
 /* Reservas: Amarillo/Ámbar */
 .pill-reservas.active {
@@ -1646,8 +2391,16 @@
   border-color: #fde68a;
   color: #78350f;
 }
-.pill-reservas.active .pill-dot { background-color: #d97706; }
-.dot-reservas-dark { background-color: transparent; } /* Inactivo */
+
+.pill-reservas.active .pill-dot {
+  background-color: #d97706;
+}
+
+.dot-reservas-dark {
+  background-color: transparent;
+}
+
+/* Inactivo */
 
 /* Mantenimientos: Rojo */
 .pill-mantenimientos.active {
@@ -1655,14 +2408,23 @@
   border-color: #fca5a5;
   color: #991b1b;
 }
-.pill-mantenimientos.active .pill-dot { background-color: #b91c1c; }
-.dot-mantenimientos-dark { background-color: transparent; } /* Inactivo */
+
+.pill-mantenimientos.active .pill-dot {
+  background-color: #b91c1c;
+}
+
+.dot-mantenimientos-dark {
+  background-color: transparent;
+}
+
+/* Inactivo */
 
 .pill-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: #9ca3af; /* Color de punto por defecto cuando está inactivo */
+  background-color: #9ca3af;
+  /* Color de punto por defecto cuando está inactivo */
   transition: background-color 0.2s;
 }
 
@@ -1689,7 +2451,8 @@
 }
 
 .dark-checkbox-item.selected {
-  background-color: #f2f9f8; /* Fondo muy sutil verde */
+  background-color: #f2f9f8;
+  /* Fondo muy sutil verde */
   border-color: #e6f2f0;
 }
 
@@ -1729,7 +2492,8 @@
   color: #6b7280;
   font-size: 0.7rem;
   padding: 2px 8px;
-  border-radius: 999px; /* Forma de píldora */
+  border-radius: 999px;
+  /* Forma de píldora */
   font-weight: 600;
 }
 
@@ -1745,7 +2509,8 @@
 }
 
 .btn-aplicar-filtros {
-  background-color: #22806B; /* Verde principal */
+  background-color: #22806B;
+  /* Verde principal */
   color: #ffffff;
   border: none;
   padding: 10px 16px;
@@ -1762,7 +2527,8 @@
 }
 
 .btn-aplicar-filtros:hover {
-  background-color: #1a6655; /* Verde más oscuro al hover */
+  background-color: #1a6655;
+  /* Verde más oscuro al hover */
   box-shadow: 0 4px 6px -1px rgba(34, 128, 107, 0.3);
 }
 
@@ -1780,5 +2546,15 @@
   border-radius: 4px;
   font-weight: 600;
 }
-.info-badge.doc { background-color: #eff6ff; color: #3b82f6; border: 1px solid #bfdbfe; }
-.info-badge.tec { background-color: #fffbeb; color: #f59e0b; border: 1px solid #fde68a; }
+
+.info-badge.doc {
+  background-color: #eff6ff;
+  color: #3b82f6;
+  border: 1px solid #bfdbfe;
+}
+
+.info-badge.tec {
+  background-color: #fffbeb;
+  color: #f59e0b;
+  border: 1px solid #fde68a;
+}

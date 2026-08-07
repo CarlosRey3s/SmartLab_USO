@@ -417,7 +417,58 @@ TARJETAS RESPONSIVE
 =========================*/
 
 .inventory-cards{
-    display:none;
+    display:none !important;
+}
+
+/* Badges de estado en reservas y tarjetas */
+.status-badge {
+  padding: 4px 10px !important;
+  border-radius: 12px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.5px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-transform: uppercase !important;
+  line-height: 1.2 !important;
+}
+
+.status-badge.active,
+.status-badge.completada,
+.status-badge.aprobada,
+.status-badge.status-completada,
+.status-badge.status-aprobada {
+  background-color: #e6f4ea !important;
+  color: #1e7e34 !important;
+  border: 1px solid #b7e1cd !important;
+}
+
+.status-badge.pending,
+.status-badge.entregado,
+.status-badge.status-entregado {
+  background-color: #feefc3 !important;
+  color: #b06000 !important;
+  border: 1px solid #fce8b2 !important;
+}
+
+.status-badge.inactive,
+.status-badge.cancelada,
+.status-badge.rechazada,
+.status-badge.status-cancelada,
+.status-badge.status-rechazada {
+  background-color: #fce8e6 !important;
+  color: #c5221f !important;
+  border: 1px solid #f8b4b4 !important;
+}
+
+.status-badge.incompleto,
+.status-badge.incompleta,
+.status-badge.status-incompleto,
+.status-badge.status-incompleta {
+  background-color: #fff3cd !important;
+  color: #856404 !important;
+  border: 1px solid #ffeeba !important;
 }
 
 .inventory-card{
@@ -485,12 +536,13 @@ MÓVIL
 
 @media(max-width:768px){
 
-    .table-container{
-        display:none;
+    .table-container,
+    .inventory-table-container{
+        display:none !important;
     }
 
     .inventory-cards{
-        display:block;
+        display:block !important;
     }
 
     .inventario-controls{
@@ -541,14 +593,15 @@ TABLET Y MÓVIL
 
 @media (max-width:1200px){
 
-    /* Oculta la tabla de inventario */
-    .inventory-table-container {
+    /* Oculta las tablas de inventario, reservas y alertas */
+    .inventory-table-container,
+    .table-container {
         display: none !important;
     }
 
     /* Muestra las tarjetas */
     .inventory-cards{
-        display:grid;
+        display:grid !important;
         grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
         gap:20px;
     }
@@ -728,4 +781,46 @@ CELULARES
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     z-index: 1050;
   }
+
+  .date-filter-group {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 8px;
+  }
+
+  .date-filter-group input[type="date"],
+  .date-filter-group select,
+  .date-filter-group button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .date-filter-group span {
+    display: none;
+  }
 }
+
+.date-filter-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Modal Overlay con desenfoque verde */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(34, 128, 107, 0.15);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+

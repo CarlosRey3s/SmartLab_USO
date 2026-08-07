@@ -51,6 +51,39 @@
   border-radius: 2px;
 }
 
+/* SUB-TABS DENTRO DE REPORTES */
+.sub-tabs-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.sub-tab-btn {
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1.5px solid transparent;
+  background-color: #f3f4f6;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.sub-tab-btn:hover:not(.active) {
+  background-color: #e5e7eb;
+  color: #1f2937;
+}
+
+.sub-tab-btn.active {
+  background-color: #22806B;
+  border-color: #22806B;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(34, 128, 107, 0.25);
+}
+
 /* CARDS */
 .card {
   background: #ffffff;
@@ -412,21 +445,33 @@ MULTI-SELECT DROPDOWN
 }
 
 .management-label {
+  display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #444;
+  color: #334155;
   margin-bottom: 8px;
 }
 
 textarea {
   width: 100%;
-  min-height: 90px;
-  padding: 12px;
+  min-height: 100px;
+  padding: 12px 14px;
   border-radius: 12px;
-  border: none;
+  border: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  font-size: 14px;
+  color: #1e293b;
   resize: vertical;
   font-family: inherit;
   box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+textarea:focus {
+  border-color: #2ecc71;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.15);
 }
 
 .detail-actions {
@@ -514,7 +559,13 @@ textarea {
   background:white;
   border-radius:12px;
   padding:20px;
-  overflow-x:auto;
+  position: relative;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 16px;
 }
 
 .table-header{
@@ -582,7 +633,6 @@ textarea {
   width:100%;
   min-width:700px;
   border-collapse:collapse;
-  margin-top:16px;
 }
 
 .custom-table th{
@@ -641,54 +691,66 @@ textarea {
 
 @media (max-width:1024px){
 
-  .reports-grid{
-    grid-template-columns:1fr;
-    display: flex;
-    position: relative;
-    overflow: hidden;
+  .reports-grid {
+    display: block;
+    position: static;
+    overflow: visible;
   }
   
-  .reports-list {
-    min-width: 100%;
-    transition: transform 0.3s ease-in-out;
-  }
-  
-  .reports-detail {
-    position: absolute;
-    top: 0;
-    left: 100%;
+  .reports-grid:not(.show-detail) .reports-list {
+    display: block;
     width: 100%;
-    height: 100%;
-    transition: transform 0.3s ease-in-out;
-    background: #f5f5f5;
-    z-index: 10;
-    overflow-y: auto;
+  }
+  
+  .reports-grid:not(.show-detail) .reports-detail {
+    display: none;
   }
   
   .reports-grid.show-detail .reports-list {
-    transform: translateX(-100%);
+    display: none;
   }
   
   .reports-grid.show-detail .reports-detail {
-    transform: translateX(-100%);
+    display: flex;
+    flex-direction: column;
+    position: static;
+    width: 100%;
+    height: auto;
+    background: #ffffff;
+    z-index: 1;
+    overflow: visible;
+    box-sizing: border-box;
   }
 
   .mobile-back-btn {
-    display: inline-block;
-    background: none;
-    border: none;
-    color: #008f39;
-    font-size: 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     margin-bottom: 16px;
-    padding: 0;
-    text-align: left;
+    padding: 8px 16px;
+    border-radius: 8px;
+    align-self: flex-start;
+    transition: background 0.2s ease;
+  }
+
+  .mobile-back-btn:hover {
+    background: #dcfce7;
+  }
+
+  .messages-list-container {
+    max-height: none;
+    overflow-y: visible;
   }
 
 }
 
-/* ================= TABLET PEQUEÑA ================= */
+/* ================= TABLET PEQUEÑA / MÓVIL ================= */
 
 @media (max-width:768px){
 
@@ -699,11 +761,83 @@ textarea {
   .tabs{
     width:100%;
     justify-content:space-between;
+    gap: 8px;
   }
 
   .tab{
     flex:1;
     text-align:center;
+  }
+
+  .stats-container {
+    padding: 16px;
+  }
+
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .stat-box {
+    padding: 12px 10px;
+    gap: 10px;
+  }
+
+  .stat-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .stat-text span {
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  .stat-text h3 {
+    font-size: 15px;
+  }
+
+  .table-section {
+    padding: 16px;
+  }
+
+  .table-header{
+    flex-direction:column;
+    align-items:stretch;
+    gap: 12px;
+  }
+
+  .table-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+  }
+
+  .table-actions select,
+  .table-actions .multi-select-btn {
+    flex: 1 1 auto;
+    min-width: 110px;
+  }
+
+  .table-actions .export {
+    flex: 1 1 100%;
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  .multi-select-dropdown {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 320px;
+    z-index: 1050;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   }
 
   .message-item-header{
@@ -723,9 +857,16 @@ textarea {
     min-height:120px;
   }
 
-  .table-header{
-    flex-direction:column;
-    align-items:flex-start;
+  .reports-filter-dropdown-menu {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 320px;
+    margin-top: 0;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    z-index: 1050;
   }
 
 }
@@ -735,12 +876,12 @@ textarea {
 @media (max-width:480px){
 
   .reports-container{
-    padding:0;
+    padding: 8px;
   }
 
   .tabs{
     flex-direction:row;
-    gap:8px;
+    gap:6px;
   }
 
   .tab{
@@ -748,11 +889,44 @@ textarea {
     background:#ececec;
     border-radius:10px;
     padding:8px 4px;
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .tab.active::after{
     display:none;
+  }
+
+  .stats-container {
+    padding: 12px;
+  }
+
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .stat-box{
+    flex-direction:column;
+    text-align:center;
+    padding: 12px 6px;
+    gap: 6px;
+  }
+
+  .stat-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 15px;
+  }
+
+  .stat-text span {
+    font-size: 10px;
+    line-height: 1.2;
+  }
+
+  .stat-text h3 {
+    font-size: 14px;
+    margin-top: 2px;
   }
 
   .filters{
@@ -799,27 +973,4 @@ textarea {
     width:100%;
   }
 
-  .stat-box{
-    flex-direction:column;
-    text-align:center;
-  }
-
-}
-
-/* =========================================
-CELULARES Y TABLETS
-========================================= */
-
-@media (max-width: 768px) {
-  .reports-filter-dropdown-menu {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%;
-    max-width: 320px;
-    margin-top: 0;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-    z-index: 1050;
-  }
 }

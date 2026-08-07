@@ -23,7 +23,7 @@ interface SidebarProps {
 const menuItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['estudiante'] },
   { name: 'Dashboard', path: '/docente/dashboard', icon: LayoutDashboard, roles: ['docente'] },
-  { name: 'Dashboard', path: '/admin/dashboard', icon: ShieldCheck, roles: ['administrador', 'coordinador', 'supervisor'] },
+  { name: 'Dashboard', path: '/admin/dashboard', icon: ShieldCheck, roles: ['administrador'] },
 
   // Accesibles para Admin, Coordinador y Supervisor
   { name: 'Calendario', path: '/calendario', icon: Calendar, roles: ['administrador', 'coordinador', 'supervisor', 'docente', 'estudiante'] },

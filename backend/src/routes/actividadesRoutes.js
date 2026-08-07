@@ -19,11 +19,17 @@ router.get('/', verificarToken, actividadesController.obtenerActividades);
 
 //Rutas específicas PRIMERO
 router.get('/solicitudes/todas', verificarToken, actividadesController.obtenerTodas);
-router.get('/disponibilidad', verificarToken, actividadesController.consultarDisponibilidad); // ← AQUÍ
-//router.get('/', verificarToken, actividadesController.obtenerTodas);
 
-// RUTAS PROTEGIDAS: Ahora usan verificarToken para leer el token de Postman/Frontend
-router.put('/solicitudes/:id/resolver', verificarToken, verificarRol(['administrador', 'coordinador']), actividadesController.resolverReserva);
+// Motor de decisión: Aprobar o Rechazar (Solo administrador y coordinador)
+router.put('/solicitudes/:id/resolver', verificarToken, verificarRol(['administrador', 'coordinador']), actividadesController.resolverSolicitud);
+
+// Entregar Equipos (pasa a entregado y descuenta inventario)
+router.put('/solicitudes/:id/entregar', verificarToken, actividadesController.entregarEquipos);
+
+// Devolver Equipos (pasa a devuelto, suma inventario y reporta daños)
+router.put('/solicitudes/:id/devolver', verificarToken, actividadesController.devolverEquipos);
+
+router.get('/disponibilidad', verificarToken, actividadesController.consultarDisponibilidad);
 router.put('/solicitudes/:id/cancelar', verificarToken, actividadesController.cancelarReserva);
 router.post('/', verificarToken, validarActividades, actividadesController.crearActividad);
 router.put('/:id', verificarToken, validarActividades, actividadesController.actualizarActividad);
