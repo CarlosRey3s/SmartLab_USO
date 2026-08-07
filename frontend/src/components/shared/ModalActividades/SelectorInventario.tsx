@@ -105,7 +105,6 @@ export function SelectorInventario({
                         </ul>
                     )}
                 </div>
-
                 {equiposSeleccionados.length > 0 && (
                     <ul className="inv-selected-list">
                         {equiposSeleccionados.map((equipo) => (

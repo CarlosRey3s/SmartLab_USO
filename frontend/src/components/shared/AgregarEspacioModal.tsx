@@ -23,6 +23,7 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
   const [estado, setEstado] = useState<'disponible' | 'en_mantenimiento' | 'clausurado'>('disponible');
   const [modoReserva, setModoReserva] = useState<'espacio_completo' | 'por_estacion'>('espacio_completo');
   const [capacidadMaxima, setCapacidadMaxima] = useState(20);
+  const [rolesPermitidos, setRolesPermitidos] = useState<string[]>(['Todos']);
   
   // Para modo 'por_estacion'
   const [estaciones, setEstaciones] = useState<{nombre: string, capacidad: number}[]>([]);
@@ -63,12 +64,26 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
         setModoReserva(editData.modo_reserva || 'espacio_completo');
         setCapacidadMaxima(editData.capacidad_maxima || 20);
         setCoordinadorId(editData.coordinador_id || '');
+        let parsedRoles = ['Todos'];
+        if (editData.roles_permitidos) {
+          if (Array.isArray(editData.roles_permitidos)) {
+            parsedRoles = editData.roles_permitidos;
+          } else if (typeof editData.roles_permitidos === 'string') {
+            try {
+              parsedRoles = JSON.parse(editData.roles_permitidos);
+            } catch {
+              parsedRoles = ['Todos'];
+            }
+          }
+        }
+        setRolesPermitidos(parsedRoles);
         if (!editData.coordinador_id) setSearchTermCoordinador('');
         setEstaciones([]); 
       } else {
         setNombre(''); setDescripcion(''); setEdificio(''); setPiso(''); setAula('');
         setEstaciones([]); setCapacidadMaxima(20); setModoReserva('espacio_completo');
         setEstado('disponible'); setCoordinadorId(''); setSearchTermCoordinador('');
+        setRolesPermitidos(['Todos']);
       }
       setError('');
     }
@@ -167,7 +182,8 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
         estado,
         modo_reserva: modoReserva,
         capacidad_maxima: modoReserva === 'espacio_completo' ? capacidadMaxima : 0,
-        estaciones: modoReserva === 'por_estacion' && !editData ? estaciones : []
+        estaciones: modoReserva === 'por_estacion' && !editData ? estaciones : [],
+        roles_permitidos: rolesPermitidos
       };
 
       if (user?.rol === 'coordinador') {
@@ -197,6 +213,24 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
     }
   };
 
+  const handleRoleChange = (role: string) => {
+    if (role === 'Todos') {
+      if (rolesPermitidos.includes('Todos')) {
+        setRolesPermitidos([]);
+      } else {
+        setRolesPermitidos(['Todos']);
+      }
+    } else {
+      let newRoles = rolesPermitidos.filter(r => r !== 'Todos');
+      if (newRoles.includes(role)) {
+        newRoles = newRoles.filter(r => r !== role);
+      } else {
+        newRoles.push(role);
+      }
+      setRolesPermitidos(newRoles);
+    }
+  };
+
   return (
     <>
       <ConfirmModal 
@@ -215,7 +249,7 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
         <div className="modal-header">
           <div>
             <h2 className="modal-title">{editData ? 'Editar Espacio' : 'Agregar Espacio'}</h2>
-            <p className="modal-subtitle">Ingresa la informacion del espacio-Laboratorio</p>
+            <p className="modal-subtitle">Ingresa la informacion del espacio</p>
           </div>
           <button className="modal-close" onClick={onClose} disabled={loading}>
             <X size={24} />
@@ -230,9 +264,9 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
           
           <div className="form-row">
             <div className="form-group half">
-              <label>NOMBRE LABORATORIO</label>
+              <label>NOMBRE ESPACIO</label>
               <input 
-                type="text" placeholder="EJ: Laboratorio de computo 1" className="form-input" 
+                type="text" placeholder="EJ: Espacio de computo 1" className="form-input" 
                 value={nombre} onChange={e => setNombre(e.target.value)} 
               />
             </div>
@@ -328,11 +362,24 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
             <div className="form-group capacity-group">
               <label>CAPACIDAD MÁXIMA DE ESTUDIANTES</label>
               <div className="capacity-controls">
-                <button className="btn-circle" onClick={() => setCapacidadMaxima(Math.max(1, capacidadMaxima - 1))}>
+                <button className="btn-circle" onClick={() => setCapacidadMaxima(Math.max(1, (capacidadMaxima || 1) - 1))}>
                   <Minus size={16} />
                 </button>
-                <span className="capacity-value">{capacidadMaxima}</span>
-                <button className="btn-circle" onClick={() => setCapacidadMaxima(capacidadMaxima + 1)}>
+                <input 
+                  type="number"
+                  className="capacity-value"
+                  style={{ width: '60px', textAlign: 'center', padding: '4px', margin: '0 8px', border: '1px solid #e2e8f0', borderRadius: '6px' }}
+                  value={capacidadMaxima || ''}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setCapacidadMaxima(isNaN(val) ? ('' as any) : val);
+                  }}
+                  onBlur={() => {
+                    if (!capacidadMaxima || capacidadMaxima < 1) setCapacidadMaxima(1);
+                  }}
+                  min="1"
+                />
+                <button className="btn-circle" onClick={() => setCapacidadMaxima((capacidadMaxima || 0) + 1)}>
                   <Plus size={16} />
                 </button>
               </div>
@@ -440,6 +487,38 @@ export const AgregarEspacioModal: React.FC<AgregarEspacioModalProps> = ({ isOpen
               <div className="status-title text-rojo">CLAUSURADO</div>
               <div className="status-sub text-rojo">Fuera de servicio</div>
             </div>
+          </div>
+
+          {/* PERMISOS DE VISIBILIDAD */}
+          <div className="section-label" style={{ marginTop: '24px', marginBottom: '12px' }}>PERMISOS DE VISIBILIDAD</div>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '24px' }}>
+            {['Todos', 'Estudiante', 'Docente', 'Coordinador', 'Supervisor'].map(role => {
+              const isSelected = rolesPermitidos.includes(role);
+              return (
+                <div
+                  key={role}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleRoleChange(role);
+                  }}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '20px',
+                    border: isSelected ? '1px solid #32886c' : '1px solid #e2e8f0',
+                    backgroundColor: isSelected ? '#e6f4ea' : 'white',
+                    color: isSelected ? '#32886c' : '#64748b',
+                    fontSize: '13px',
+                    fontWeight: isSelected ? 600 : 400,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    userSelect: 'none'
+                  }}
+                >
+                  {role}
+                </div>
+              );
+            })}
           </div>
 
           <div className="form-group" style={{ marginTop: '24px' }}>

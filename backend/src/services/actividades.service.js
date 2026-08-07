@@ -1,8 +1,14 @@
-// ✅ Como debe quedar (Extrayendo el pool y renombrándolo a db)
 const { pool: db } = require('../config/db');
 const { rrulestr } = require('rrule');
+const { crearAlerta } = require('./alertas.service');
 
+const ZONA_HORARIA = 'America/El_Salvador';
 
+const dayjs = require('dayjs');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
+dayjs.extend(utc);
+dayjs.extend(timezone);
 /**
  * Función interna para verificar detalladamente los solapamientos de horarios y reglas de infraestructura.
  */
@@ -15,9 +21,7 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
     if (resEstadoLab.rows.length === 0) {
         throw new Error('El laboratorio seleccionado no existe.');
     }
-
     const { estado: estadoActualLab, modo_reserva: modoReservaLab } = resEstadoLab.rows[0];
-
     // Validaciones físicas del estado
     if (estadoActualLab === 'clausurado') {
         throw new Error('No se puede programar ninguna actividad porque el laboratorio está CLAUSURADO.');
@@ -25,7 +29,6 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
     if (estadoActualLab === 'en_mantenimiento' && tipoNuevaActividad !== 'mantenimiento') {
         throw new Error('El laboratorio está bajo mantenimiento físico. No se permiten clases ni reservas.');
     }
-
     // 1.5 [MODIFICADO] Soporte para múltiples estaciones
     let estacionesNuevas = [];
     if (Array.isArray(datosModal.estaciones) && datosModal.estaciones.length > 0) {
@@ -66,9 +69,7 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
           AND a.fecha_hora_inicio < $2 
           AND a.fecha_hora_fin > $3
           -- Solo evaluamos conflicto si es Clase, Mantenimiento o una Reserva 'aprobada'
-          AND (a.tipo IN ('clase', 'mantenimiento') OR re.estado_reserva = 'aprobada')
-    `;
-
+          AND (a.tipo IN ('clase', 'mantenimiento') OR re.estado_reserva = 'aprobada')`;
     const parametros = [laboratorio_id, finDatetime, inicioDatetime];
 
     if (idActividadExcluir) {
@@ -112,6 +113,57 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
                     }
                 }
             }
+        }
+    }
+};
+
+/**
+ * Verifica si hay stock disponible para los equipos solicitados en el rango de fechas,
+ * considerando las reservas futuras que ya están programadas (aprobadas o pendientes)
+ * y que se cruzan en tiempo, para NO sobre-prometer inventario.
+ */
+const verificarDisponibilidadItems = async (client, inicioDatetime, finDatetime, equiposSolicitados, idActividadExcluir = null) => {
+    if (!equiposSolicitados || equiposSolicitados.length === 0) return;
+
+    for (const equipo of equiposSolicitados) {
+        const itemId = equipo.id;
+        const cantPedida = parseInt(equipo.cantidad || 1, 10);
+
+        // 1. Consultar Stock Físico (cantidad_actual)
+        const queryItem = `SELECT nombre, cantidad_actual FROM item_inventario WHERE id = $1`;
+        const resItem = await client.query(queryItem, [itemId]);
+        if (resItem.rows.length === 0) throw new Error(`El equipo con ID ${itemId} no existe en el inventario.`);
+
+        const itemInfo = resItem.rows[0];
+        const stockFisico = parseInt(itemInfo.cantidad_actual, 10);
+
+        // 2. Sumar la cantidad comprometida en reservas concurrentes (que aún no se han entregado)
+        let queryChoques = `
+            SELECT COALESCE(SUM(ri.cantidad_solicitada), 0) as comprometidos
+            FROM actividades a
+            JOIN reserva_items ri ON a.id = ri.actividad_id
+            LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id
+            WHERE ri.item_id = $1
+              AND a.fecha_hora_inicio < $2 
+              AND a.fecha_hora_fin > $3
+              -- Solo nos importan reservas que separan stock pero NO lo han retirado físicamente aún
+              AND (re.estado_reserva IN ('pendiente', 'aprobada'))
+        `;
+        const params = [itemId, finDatetime, inicioDatetime];
+
+        if (idActividadExcluir) {
+            queryChoques += ` AND a.id != $4`;
+            params.push(idActividadExcluir);
+        }
+
+        const resChoques = await client.query(queryChoques, params);
+        const comprometidos = parseInt(resChoques.rows[0].comprometidos, 10);
+
+        // 3. Evaluar Disponibilidad Proyectada
+        const disponibleProyectado = stockFisico - comprometidos;
+
+        if (cantPedida > disponibleProyectado) {
+            throw new Error(`Para el horario seleccionado, solo tenemos ${Math.max(0, disponibleProyectado)} unidades disponibles de "${itemInfo.nombre}". Se están ocupando ${comprometidos} en otras reservas cruzadas.`);
         }
     }
 };
@@ -161,8 +213,9 @@ const programarActividad = async (datosModal, usuarioLogueado) => {
     const rolUsuario = usuarioLogueado.rol;
 
     // 2. Transformar las fechas y horas a formato DATETIME/TIMESTAMP
-    const inicioDatetime = new Date(`${fecha}T${desde}`);
-    const finDatetime = new Date(`${fecha}T${hasta}`);
+    const inicioDatetime = dayjs.tz(`${fecha} ${desde}`, ZONA_HORARIA).toDate();
+    const finDatetime = dayjs.tz(`${fecha} ${hasta}`, ZONA_HORARIA).toDate();
+
 
     // Procesas dinamicamente el objeto JSON de recurrencia
     const reglaRecurrenciaPlana = formatearRecurrencia(recurrencia);
@@ -173,6 +226,11 @@ const programarActividad = async (datosModal, usuarioLogueado) => {
 
         // [VALIDACIÓN CRÍTICA]: Ejecutar el árbol lógico de choques de horarios e infraestructura
         await verificarChoqueHorario(client, laboratorio, inicioDatetime, finDatetime, tipo, datosModal);
+
+        // [NUEVA VALIDACIÓN CRÍTICA]: Choques de Inventario Proyectado
+        if (datosModal.equipos && Array.isArray(datosModal.equipos) && datosModal.equipos.length > 0) {
+            await verificarDisponibilidadItems(client, inicioDatetime, finDatetime, datosModal.equipos);
+        }
 
         // Si la nueva actividad es un mantenimiento, actualizamos físicamente el estado
         if (tipo === 'mantenimiento') {
@@ -210,7 +268,7 @@ const programarActividad = async (datosModal, usuarioLogueado) => {
         } else if (tipo === 'reserva') {
 
             // LÓGICA DE ROLES: Dependiendo del rol, pasa a pendiente o aprobada automáticamente
-            const estadoInicial = (rolUsuario === 'administrador') ? 'aprobada' : 'pendiente';
+            const estadoInicial = (rolUsuario === 'administrador' || rolUsuario === 'coordinador') ? 'aprobada' : 'pendiente';
 
             const queryHija = `INSERT INTO reservas_estudiantes (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva) VALUES ($1, $2, $3, $4, $5)`;
             await client.query(queryHija, [idGenerado, idUsuario, datosModal.titulo, datosModal.nota_adicional || null, estadoInicial]);
@@ -257,12 +315,14 @@ const programarActividad = async (datosModal, usuarioLogueado) => {
 /*
  * Modificar Actividad (PUT)
  */
+
 const actualizarActividad = async (idActividad, datosModal, idUsuarioLogueado) => {
     const { tipo, laboratorio, fecha, desde, hasta, numPersonas, recurrencia } = datosModal;
 
-    // CORRECCIÓN: Renombrado a Datetime por consistencia
-    const inicioDatetime = new Date(`${fecha}T${desde}`);
-    const finDatetime = new Date(`${fecha}T${hasta}`);
+    // CORRECCIÓN: construir la fecha explícitamente en la zona horaria de El Salvador
+    // en vez de depender del TZ implícito del proceso de Node
+    const inicioDatetime = dayjs.tz(`${fecha} ${desde}`, ZONA_HORARIA).toDate();
+    const finDatetime = dayjs.tz(`${fecha} ${hasta}`, ZONA_HORARIA).toDate();
 
     // CORRECCIÓN HUECO 4: Usar la misma función que al crear para guardar el RRULE válido
     const dbRecurrencia = formatearRecurrencia(recurrencia);
@@ -386,6 +446,13 @@ const obtenerDisponibilidad = async (laboratorioId, fechaInicio, fechaFin, exclu
     // 1. Verificar si hay un evento que bloquee TODO el laboratorio 
     // (Ej. Clases, Mantenimientos o reservas del espacio completo)
     // =========================================================================
+    console.log('DEBUG disponibilidad:', { laboratorioId, fechaInicio, fechaFin, excludeId });
+
+    console.log('DEBUG disponibilidad:', { laboratorioId, fechaInicio, fechaFin, excludeId });
+
+    if (!laboratorioId || !fechaInicio || !fechaFin) {
+        throw new Error(`Parámetros inválidos: ${JSON.stringify({ laboratorioId, fechaInicio, fechaFin })}`);
+    }
     let queryBloqueo = `
         SELECT a.tipo 
         FROM actividades a
@@ -448,7 +515,8 @@ const obtenerDisponibilidad = async (laboratorioId, fechaInicio, fechaFin, exclu
         paramsItems.push(excludeId);
     }
     queryItems += ` GROUP BY ri.item_id`;
-    
+
+
     const resultItems = await db.query(queryItems, paramsItems);
 
     // Transformamos el resultado en un objeto clave-valor { id_item: cantidad_ocupada }
@@ -469,28 +537,29 @@ const obtenerDisponibilidad = async (laboratorioId, fechaInicio, fechaFin, exclu
  * Extrae las actividades con toda su infraestructura agrupada (PCs, Inventario, Nombres)
  * y expande dinámicamente las instancias recurrentes (RRULE) dentro del rango de la vista del calendario.
  */
-const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista) => {
+const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usuarioId, rol) => {
     const client = await db.connect();
 
     try {
-        // 1. Convertir los strings de fecha que envía el frontend a objetos Date de JavaScript
         const startVista = new Date(fechaInicioVista);
         const endVista = new Date(fechaFinVista);
 
-        // 2. CONSULTA FUSIONADA: Estructura masiva + Filtro temporal inteligente
         const query = `
             SELECT 
                 a.id, 
+                
+                -- Asignación limpia de títulos
                 CASE 
                     WHEN a.tipo = 'clase' THEN ca.materia
+                    WHEN a.tipo = 'mantenimiento' THEN 'Laboratorio en Mantenimiento'
                     WHEN a.tipo = 'reserva' THEN re.titulo
-                    WHEN a.tipo = 'mantenimiento' THEN 'Mantenimiento Preventivo'
                     ELSE 'Actividad'
                 END AS title, 
+                
                 a.fecha_hora_inicio AS start, 
                 a.fecha_hora_fin AS end, 
                 a.tipo,
-                a.recurrencia, -- ⚠️ ¡CRUCIAL! La necesitábamos para alimentar el motor de RRule
+                a.recurrencia,
                 
                 -- Datos del Laboratorio
                 a.laboratorio_id,
@@ -513,15 +582,18 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista) => 
                 re.nota_adicional AS reserva_nota,
                 re.estado_reserva,
                 re.usuario_id AS reserva_usuario_id,
+                u_reserva.nombre AS reserva_solicitante_nombre,
+                u_reserva.apellido AS reserva_solicitante_apellido,
+                u_reserva.expediente AS reserva_solicitante_expediente,
                 
-                -- Subconsulta para empaquetar estaciones en un Array []
+                -- Subconsulta para estaciones
                 (
                     SELECT COALESCE(array_agg(estacion_id), '{}') 
                     FROM reserva_estaciones 
                     WHERE actividad_id = a.id
                 ) AS estaciones,
                  
-                -- Subconsulta para empaquetar equipos en un Array de Objetos JSON [{}]
+                -- Subconsulta para equipos
                 (
                     SELECT COALESCE(
                         json_agg(
@@ -539,66 +611,72 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista) => 
 
             FROM actividades a
             
-            -- Uniones estratégicas para traer la metadata correspondiente
             LEFT JOIN laboratorios l ON a.laboratorio_id = l.id
             LEFT JOIN clases_academicas ca ON a.id = ca.actividad_id
             LEFT JOIN usuarios u_docente ON ca.docente_id = u_docente.id
             LEFT JOIN mantenimientos m ON a.id = m.actividad_id
             LEFT JOIN usuarios u_tecnico ON m.tecnico_id = u_tecnico.id
             LEFT JOIN reservas_estudiantes re ON a.id = re.actividad_id
-            
-            -- ====================================================================
-            -- 🚨 FILTROS PRINCIPALES
-            -- ====================================================================
+            LEFT JOIN usuarios u_reserva ON re.usuario_id = u_reserva.id
+
             WHERE (
                 (a.recurrencia IS NULL AND a.fecha_hora_inicio <= $2 AND a.fecha_hora_fin >= $1)
                 OR (a.recurrencia IS NOT NULL AND a.fecha_hora_inicio <= $2)
             )
-            AND (a.tipo != 'reserva' OR re.estado_reserva = 'aprobada');
+            -- 🚀 MATRIZ DE CONTROL DE ACCESO (RBAC + DOMINIO)
+            AND (
+                -- 1. administrador: Ve absolutamente todo el campus
+                $4 = 'administrador'
+                
+                -- 2. coordinador / docente: Solo ve laboratorios a su cargo o sus propias clases
+                OR (
+                    $4 = 'coordinador' AND (
+                        l.coordinador_id = $3 
+                        OR ca.docente_id = $3
+                    )
+                )
+                
+                -- 3. estudiante: Ve sus clases, mantenimientos y únicamente sus reservas
+                OR (
+                    $4 = 'estudiante' AND (
+                        a.tipo = 'clase'
+                        OR a.tipo = 'mantenimiento'
+                        OR (a.tipo = 'reserva' AND re.usuario_id = $3 AND re.estado_reserva = 'aprobada')
+                    )
+                )
+            );
         `;
 
-        const { rows } = await client.query(query, [startVista, endVista]);
+        const { rows } = await client.query(query, [startVista, endVista, usuarioId, rol]);
         const eventosListosParaReact = [];
 
-        // 3. El Motor de Expansión Procesando Objetos Complejos
+        // Motor de expansión RRule (sin cambios)
         for (const fila of rows) {
             if (!fila.recurrencia) {
-                // CASO A: Evento Único (No se repite)
-                // Conserva toda la estructura intacta y asignamos id_instancia estándar
                 fila.id_instancia = fila.id.toString();
                 eventosListosParaReact.push(fila);
             } else {
-                // CASO B: Evento Recurrente (Multiplicación por RRule)
                 const fechaInicioOriginal = new Date(fila.start);
                 const fechaFinOriginal = new Date(fila.end);
-
-                // Calculamos la duración exacta (ej: 2 horas de clase) en milisegundos
                 const duracionMilisegundos = fechaFinOriginal.getTime() - fechaInicioOriginal.getTime();
 
-                // Inicializamos la regla matemática con el string de la BD
                 try {
                     const regla = rrulestr(fila.recurrencia, {
                         dtstart: fechaInicioOriginal
                     });
 
-                    // Extraemos todas las fechas clonadas que caen en la vista actual (ej: todos los miércoles del mes)
                     const fechasClonadas = regla.between(startVista, endVista, true);
 
                     for (const fechaClon of fechasClonadas) {
-                        // Clonamos el objeto de la fila con TODO su contenido (estaciones, equipos, nombres)
                         const eventoClonado = { ...fila };
-
-                        // Modificamos únicamente las propiedades de tiempo para esta instancia específica
                         eventoClonado.start = fechaClon;
                         eventoClonado.end = new Date(fechaClon.getTime() + duracionMilisegundos);
-
-                        // Llave única compuesta para evitar duplicidad de keys en React Big Calendar
                         eventoClonado.id_instancia = `${fila.id}-${fechaClon.getTime()}`;
 
                         eventosListosParaReact.push(eventoClonado);
                     }
                 } catch (rruleError) {
-                    console.warn(`[Advertencia] Error al procesar regla de recurrencia para la actividad ID ${fila.id}. Regla: ${fila.recurrencia}`, rruleError.message);
+                    console.warn(`[Advertencia] Error RRule ID ${fila.id}:`, rruleError.message);
                 }
             }
         }
@@ -614,54 +692,71 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista) => 
 };
 
 // ==========================================
-// 1. OBTENER SOLICITUDES PENDIENTES (GET)
+// OBTENER TODAS LAS SOLICITUDES — Paginado + RBAC + Contadores
 // ==========================================
-const obtenerSolicitudesPendientes = async () => {
-    // Usamos json_agg para agrupar las tablas hijas como arrays dentro del JSON de respuesta
-    const query = `
-        SELECT 
-            r.actividad_id,
-            r.titulo,
-            r.nota_adicional,
-            r.estado_reserva,
-            a.fecha_hora_inicio,
-            a.fecha_hora_fin,
-            a.fecha_creacion,
-            u.nombre AS solicitante_nombre,
-            u.apellido AS solicitante_apellido,
-            u.correo AS solicitante_correo,
-            u.expediente AS solicitante_expediente,
-            l.nombre AS laboratorio_nombre,
-            l.edificio,
-            l.aula,
-            (
-                SELECT COALESCE(json_agg(json_build_object('id', e.id, 'nombre', e.nombre)), '[]')
-                FROM reserva_estaciones re 
-                JOIN estaciones_trabajo e ON re.estacion_id = e.id 
-                WHERE re.actividad_id = r.actividad_id
-            ) AS estaciones,
-            (
-                SELECT COALESCE(json_agg(json_build_object('id', i.id, 'nombre', i.nombre, 'cantidad', ri.cantidad_solicitada)), '[]')
-                FROM reserva_items ri 
-                JOIN item_inventario i ON ri.item_id = i.id 
-                WHERE ri.actividad_id = r.actividad_id
-            ) AS inventario
+const obtenerTodasSolicitudes = async (usuarioId, rol, estado = null, page = 1, limit = 10) => {
+    try {
+        await db.query(`ALTER TYPE estado_reserva_enum ADD VALUE IF NOT EXISTS 'incompleto'`);
+        await db.query(`
+            UPDATE reservas_estudiantes r
+            SET estado_reserva = 'incompleto'
+            FROM actividades a
+            WHERE r.actividad_id = a.id
+              AND r.estado_reserva = 'aprobada'
+              AND a.fecha_hora_fin < NOW()
+        `);
+    } catch (e) {
+        console.warn('Advertencia al actualizar reservas incompletas:', e.message);
+    }
+
+    // Fragmentos compartidos entre las queries
+    const baseFrom = `
         FROM reservas_estudiantes r
         JOIN actividades a ON r.actividad_id = a.id
         JOIN usuarios u ON r.usuario_id = u.id
         JOIN laboratorios l ON a.laboratorio_id = l.id
-        WHERE r.estado_reserva = 'pendiente'
-        ORDER BY a.fecha_creacion ASC;
     `;
-    const { rows } = await db.query(query);
-    return rows;
-};
 
-// ==========================================
-// OBTENER TODAS LAS SOLICITUDES (pendientes, aprobadas, rechazadas)
-// ==========================================
-const obtenerTodasSolicitudes = async () => {
-    const query = `
+    const rbacWhere = `
+        WHERE (
+            LOWER($2) = 'administrador'
+            OR (LOWER($2) = 'coordinador' AND l.coordinador_id = $1)
+            OR r.usuario_id = $1
+        )
+    `;
+
+    const baseParams = [usuarioId, rol];
+
+    // 1. Contadores por estado (para los badges de las tabs)
+    const contadoresQuery = `
+        SELECT r.estado_reserva, COUNT(*) as cantidad
+        ${baseFrom}
+        ${rbacWhere}
+        GROUP BY r.estado_reserva
+    `;
+    const contadoresResult = await db.query(contadoresQuery, baseParams);
+    const contadores = {};
+    contadoresResult.rows.forEach(row => {
+        contadores[row.estado_reserva] = parseInt(row.cantidad, 10);
+    });
+
+    // 2. Construir parámetros dinámicos para la query paginada
+    const dataParams = [...baseParams];
+    let paramIndex = 3;
+    let estadoFilter = '';
+
+    if (estado) {
+        estadoFilter = ` AND r.estado_reserva = $${paramIndex}`;
+        dataParams.push(estado);
+        paramIndex++;
+    }
+
+    const limitParam = `$${paramIndex}`;
+    const offsetParam = `$${paramIndex + 1}`;
+    dataParams.push(limit, (page - 1) * limit);
+
+    // 3. Query principal con paginación
+    const dataQuery = `
         SELECT 
             r.actividad_id,
             r.titulo,
@@ -678,6 +773,7 @@ const obtenerTodasSolicitudes = async () => {
             l.nombre AS laboratorio_nombre,
             l.edificio,
             l.aula,
+            (r.usuario_id = $1) AS es_propia,
             (
                 SELECT COALESCE(json_agg(json_build_object('id', e.id, 'nombre', e.nombre)), '[]')
                 FROM reserva_estaciones re 
@@ -690,14 +786,32 @@ const obtenerTodasSolicitudes = async () => {
                 JOIN item_inventario i ON ri.item_id = i.id 
                 WHERE ri.actividad_id = r.actividad_id
             ) AS inventario
-        FROM reservas_estudiantes r
-        JOIN actividades a ON r.actividad_id = a.id
-        JOIN usuarios u ON r.usuario_id = u.id
-        JOIN laboratorios l ON a.laboratorio_id = l.id
-        ORDER BY a.fecha_creacion DESC;
+        ${baseFrom}
+        ${rbacWhere}
+        ${estadoFilter}
+        ORDER BY a.fecha_creacion DESC
+        LIMIT ${limitParam} OFFSET ${offsetParam}
     `;
-    const { rows } = await db.query(query);
-    return rows;
+
+    const { rows } = await db.query(dataQuery, dataParams);
+
+    // 4. Calcular total para la paginación
+    let total;
+    if (estado && contadores[estado] !== undefined) {
+        total = contadores[estado];
+    } else if (!estado) {
+        total = Object.values(contadores).reduce((sum, val) => sum + val, 0);
+    } else {
+        total = 0;
+    }
+
+    return {
+        solicitudes: rows,
+        total,
+        page: parseInt(page, 10),
+        totalPages: Math.ceil(total / limit) || 1,
+        contadores
+    };
 };
 
 // ==========================================
@@ -773,6 +887,186 @@ const resolverSolicitud = async (actividadId, accion, resolutorId) => {
     throw { status: 400, message: 'Acción no válida. Use "aprobar" o "rechazar".' };
 };
 
+// ==========================================
+// 3. CANCELAR SOLICITUD (PUT - Solo el solicitante)
+// ==========================================
+const cancelarSolicitud = async (actividadId, usuarioId) => {
+    // 1. Verificar que la solicitud existe
+    const estadoQuery = await db.query(
+        `SELECT r.estado_reserva, r.usuario_id
+         FROM reservas_estudiantes r
+         WHERE r.actividad_id = $1`,
+        [actividadId]
+    );
+
+    if (estadoQuery.rows.length === 0) {
+        throw { status: 404, message: 'La solicitud no existe.' };
+    }
+
+    const reserva = estadoQuery.rows[0];
+
+    // 2. Solo el dueño puede cancelar su propia solicitud
+    if (reserva.usuario_id !== usuarioId) {
+        throw { status: 403, message: 'No tienes permiso para cancelar esta solicitud.' };
+    }
+
+    // 3. Solo se puede cancelar si está pendiente
+    if (reserva.estado_reserva !== 'pendiente') {
+        throw { status: 400, message: `No se puede cancelar una solicitud con estado: ${reserva.estado_reserva}` };
+    }
+
+    // 4. Actualizar estado a cancelada
+    await db.query(
+        `UPDATE reservas_estudiantes 
+         SET estado_reserva = 'cancelada'
+         WHERE actividad_id = $1`,
+        [actividadId]
+    );
+
+    return { message: 'Solicitud cancelada correctamente.' };
+};
+
+// ==========================================
+// 3. ENTREGAR EQUIPOS (Descuenta inventario)
+// ==========================================
+const registrarEntregaEquipos = async (actividadId, usuarioId) => {
+    // Asegurarnos de que el ENUM tiene 'entregado' ANTES de iniciar la transacción.
+    try {
+        await db.query(`ALTER TYPE estado_reserva_enum ADD VALUE IF NOT EXISTS 'entregado'`);
+    } catch (e) { /* ignoramos */ }
+
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Verificar estado actual (debe ser aprobada)
+        const resQuery = await client.query(
+            `SELECT estado_reserva FROM reservas_estudiantes WHERE actividad_id = $1 FOR UPDATE`,
+            [actividadId]
+        );
+
+        if (resQuery.rows.length === 0) {
+            throw new Error("Reserva no encontrada");
+        }
+        if (resQuery.rows[0].estado_reserva !== 'aprobada') {
+            throw new Error(`No se puede entregar equipos porque la reserva está en estado: ${resQuery.rows[0].estado_reserva}`);
+        }
+
+        // 2. Cambiar estado a 'entregado'
+        await client.query(
+            `UPDATE reservas_estudiantes SET estado_reserva = 'entregado' WHERE actividad_id = $1`,
+            [actividadId]
+        );
+
+        // 3. Descontar Inventario Físico
+        const resItems = await client.query(
+            `SELECT item_id, cantidad_solicitada FROM reserva_items WHERE actividad_id = $1`,
+            [actividadId]
+        );
+
+        for (const fila of resItems.rows) {
+            // Restar inventario
+            const rest = await client.query(
+                `UPDATE item_inventario SET cantidad_actual = cantidad_actual - $1 WHERE id = $2 AND cantidad_actual >= $1 RETURNING id`,
+                [fila.cantidad_solicitada, fila.item_id]
+            );
+            if (rest.rowCount === 0) {
+                throw new Error(`Stock insuficiente para el ítem con ID ${fila.item_id} al intentar entregar.`);
+            }
+
+            // Registrar movimiento de egreso
+            await client.query(
+                `INSERT INTO movimiento_inventario (item_id, usuario_id, tipo_movimiento, cantidad, observaciones) VALUES ($1, $2, 'egreso', $3, 'Entrega de equipos por reserva de actividad ID ' || $4)`,
+                [fila.item_id, usuarioId, fila.cantidad_solicitada, actividadId]
+            );
+        }
+
+        await client.query('COMMIT');
+        return { exito: true, mensaje: 'Equipos entregados y descontados del inventario exitosamente.' };
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+// ==========================================
+// 4. DEVOLVER EQUIPOS (Suma inventario y reporta daños)
+// ==========================================
+const registrarDevolucionEquipos = async (actividadId, reporteDano = null, resolutorId) => {
+    // Asegurarnos de que el ENUM tiene 'devuelto' ANTES de iniciar la transacción
+    try {
+        await db.query(`ALTER TYPE estado_reserva_enum ADD VALUE IF NOT EXISTS 'devuelto'`);
+    } catch (e) { /* ignoramos */ }
+
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Verificar estado actual (debe ser entregado)
+        const resQuery = await client.query(
+            `SELECT estado_reserva FROM reservas_estudiantes WHERE actividad_id = $1 FOR UPDATE`,
+            [actividadId]
+        );
+
+        if (resQuery.rows.length === 0) {
+            throw new Error("Reserva no encontrada");
+        }
+        if (resQuery.rows[0].estado_reserva !== 'entregado') {
+            throw new Error(`No se puede devolver equipos porque la reserva está en estado: ${resQuery.rows[0].estado_reserva}`);
+        }
+
+        // 2. Cambiar estado a 'devuelto' (o 'completada' si prefiere)
+        // La cambiaremos a completada que ya existe en el ENUM, pero representará "devuelto"
+        await client.query(
+            `UPDATE reservas_estudiantes SET estado_reserva = 'completada', resuelto_por = $1, fecha_resolucion = CURRENT_TIMESTAMP WHERE actividad_id = $2`,
+            [resolutorId, actividadId]
+        );
+
+        // 3. Sumar Inventario Físico
+        const resItems = await client.query(
+            `SELECT item_id, cantidad_solicitada FROM reserva_items WHERE actividad_id = $1`,
+            [actividadId]
+        );
+
+        for (const fila of resItems.rows) {
+            // Aumentar inventario (sin importar si está dañado, vuelve al inventario y la alerta lo marcará)
+            // O podríamos restarlo si se dio de baja, pero la alerta de daño solo lo reporta.
+            await client.query(
+                `UPDATE item_inventario SET cantidad_actual = cantidad_actual + $1 WHERE id = $2`,
+                [fila.cantidad_solicitada, fila.item_id]
+            );
+
+            // Registrar movimiento de ingreso
+            await client.query(
+                `INSERT INTO movimiento_inventario (item_id, usuario_id, tipo_movimiento, cantidad, observaciones) VALUES ($1, $2, 'ingreso', $3, 'Devolución de equipos por reserva de actividad ID ' || $4)`,
+                [fila.item_id, resolutorId, fila.cantidad_solicitada, actividadId]
+            );
+        }
+
+        // 4. Procesar reporte de daño si existe
+        if (reporteDano) {
+            const { item_id, tipo_problema, descripcion, cantidad_afectada } = reporteDano;
+
+            // Insertar la alerta vinculada a la actividad
+            await client.query(
+                `INSERT INTO alertas_inventario 
+                (item_id, actividad_id, usuario_reporta_id, tipo_problema, descripcion, cantidad_afectada, estado) 
+                VALUES ($1, $2, $3, $4, $5, $6, 'pendiente')`,
+                [item_id, actividadId, resolutorId, tipo_problema, descripcion, cantidad_afectada]
+            );
+        }
+
+        await client.query('COMMIT');
+        return { exito: true, mensaje: 'Equipos devueltos al inventario exitosamente.' };
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
+};
 
 module.exports = {
     programarActividad,
@@ -780,9 +1074,9 @@ module.exports = {
     eliminarActividad,
     obtenerDisponibilidad,
     obtenerActividadesExpandidas,
-    //agregado actualmente
-    obtenerSolicitudesPendientes,
     obtenerTodasSolicitudes,
-    resolverSolicitud
-
+    resolverSolicitud,
+    cancelarSolicitud,
+    registrarEntregaEquipos,
+    registrarDevolucionEquipos
 };

@@ -1,9 +1,9 @@
 // src/services/solicitudes.service.ts
 import axios from 'axios';
-import type { SolicitudPendiente } from '../types/solicitudes.types';
+import type { SolicitudesResponse } from '../types/solicitudes.types';
+import { BASE_URL } from "../config/api";
 
-// Ajusta esto si usas variables de entorno como import.meta.env.VITE_API_URL
-const API_URL = 'http://localhost:4000/api/actividades/solicitudes';
+const API_URL = `${BASE_URL}/api/actividades/solicitudes`;
 
 // Helper para enviar el token
 const getConfig = () => {
@@ -13,17 +13,24 @@ const getConfig = () => {
     };
 };
 
-export const obtenerSolicitudesPendientes = async (): Promise<SolicitudPendiente[]> => {
-    const response = await axios.get(`${API_URL}/pendientes`, getConfig());
-    return response.data;
-};
+export const obtenerTodasSolicitudes = async (
+    estado?: string, page: number = 1, limit: number = 10
+): Promise<SolicitudesResponse> => {
+    const params = new URLSearchParams();
+    if (estado) params.append('estado', estado);
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
 
-export const obtenerTodasSolicitudes = async (): Promise<SolicitudPendiente[]> => {
-    const response = await axios.get(`${API_URL}/todas`, getConfig());
+    const response = await axios.get(`${API_URL}/todas?${params.toString()}`, getConfig());
     return response.data;
 };
 
 export const resolverSolicitud = async (actividadId: number, accion: 'aprobar' | 'rechazar') => {
     const response = await axios.put(`${API_URL}/${actividadId}/resolver`, { accion }, getConfig());
+    return response.data;
+};
+
+export const cancelarSolicitud = async (actividadId: number) => {
+    const response = await axios.put(`${API_URL}/${actividadId}/cancelar`, {}, getConfig());
     return response.data;
 };

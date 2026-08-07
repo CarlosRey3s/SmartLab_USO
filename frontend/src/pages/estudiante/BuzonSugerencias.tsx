@@ -3,6 +3,7 @@ import "../../css/buzonSugerencias.css";
 import { customToast } from "../../components/custom-toast/CustomToast";
 import { useAuth } from "../../context/AuthContext";
 import { laboratoriosService } from "../../services/laboratorios.service";
+import { BASE_URL } from "../../config/api";
 
 interface Sugerencia {
   id: number;
@@ -40,7 +41,7 @@ export const BuzonSugerencias: React.FC = () => {
 
   const fetchSugerencias = async () => {
     try {
-      const res = await fetch('http://localhost:4000/api/sugerencias');
+      const res = await fetch(`${BASE_URL}/api/sugerencias`);
       const data = await res.json();
       if (data.status === 'success') {
         const mySugerencias = data.data.filter((sug: Sugerencia) => sug.usuario_id === parseInt(user?.id || '0'));
@@ -83,7 +84,7 @@ export const BuzonSugerencias: React.FC = () => {
     };
 
     try {
-      const res = await fetch('http://localhost:4000/api/sugerencias', {
+      const res = await fetch(`${BASE_URL}/api/sugerencias`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

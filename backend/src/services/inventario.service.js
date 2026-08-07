@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { verificarAlertasAutomaticas } = require('./alertas.service');
 
 // Obtener todos los items del inventario
 const obtenerTodoElInventario = async () => {
@@ -103,6 +104,15 @@ const crearMovimientoInventario = async (movimientoData) => {
     await client.query(queryActualizarStock, [cantidad, item_id]);
 
     await client.query('COMMIT');
+    
+    // 🔥 LÓGICA DE ALERTAS AUTOMÁTICAS:
+    // Hacemos await para asegurar que si se genera alerta, esté lista antes de que el frontend recargue
+    try {
+      await verificarAlertasAutomaticas(item_id);
+    } catch (err) {
+      console.error("Error disparando alerta de stock:", err);
+    }
+
     return nuevoMovimiento;
 
   } catch (error) {
@@ -137,6 +147,14 @@ const actualizarItemInventario = async (id, itemData) => {
   ];
 
   const result = await pool.query(query, values);
+  
+  // 🔥 LÓGICA DE ALERTAS AUTOMÁTICAS:
+  try {
+    await verificarAlertasAutomaticas(id);
+  } catch (err) {
+    console.error("Error disparando alerta de stock en edición:", err);
+  }
+
   return result.rows[0];
 };
 

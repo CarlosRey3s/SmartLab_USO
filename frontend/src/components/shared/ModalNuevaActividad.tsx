@@ -1,20 +1,13 @@
-import { Search, Plus, X, Monitor, Building2, Grid } from 'lucide-react';
-import Select from 'react-select';
-import { usuariosService } from '../../services/usuarios.service';
-import { chequearDisponibilidad, obtenerInventarioDisponible } from '../../services/actividades.service';
-import { laboratoriosService } from '../../services/laboratorios.service';
+import { Monitor, Building2, Grid } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/ModalNuevaActividad.css';
 import { FormularioMantenimiento } from './ModalActividades/FormularioMantenimiento';
 import { FormularioClase } from './ModalActividades/FormularioClase';
-import { FormularioReserva } from './ModalActividades/FormularioReserva';
+import { FormularioReserva } from './ModalActividades/FormularioReserva'; // Force TS reload
 import { SelectorInventario } from './ModalActividades/SelectorInventario';
-
 import { useActividadForm, type FormData, getDiaSemana } from '../../hooks/useActividadForm';
 import { canCreateClassesOrMaintenance, isLimitedToOwnLaboratories } from '../../utils/roleGuard';
-
-
-import { type TipoActividad, type ModoReserva, type LaboratorioDB, type EstacionDB, type EquipoSeleccionado, type ItemInventarioDB } from '../../hooks/useActividadForm';
+import { customToast } from '../custom-toast/CustomToast';
 
 const getRecurrenciaClase = (diaNombre: string) => [
   "No se repite",
@@ -67,8 +60,6 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
   const { user } = useAuth();
 
   //TRADUCTOR DE RECURRENCIA (dE TEXTO UI  a ojeto Estructurado)
-
-  // ── TRADUCTOR DE RECURRENCIA CORREGIDO ──
   const mapearRecurrenciaAObjeto = (textoRecurrencia: string) => {
     if (!textoRecurrencia || textoRecurrencia === "No se repite") return null;
 
@@ -113,6 +104,22 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
   };
 
   const handleGuardarWrapper = (data: any) => {
+    // 1. Un pequeño mapa para traducir el número del día de JavaScript a las letras de RRule
+    const mapaDiasRRule = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+
+    if (form.fecha && form.recurrencia === 'Personalizado...' && form.customFrequency === 'WEEKLY') {
+      // 2. Extraemos qué día de la semana es la fecha que eligió el usuario en el input de inicio
+      const fechaInicioJS = new Date(form.fecha + "T12:00:00");
+      const diaInicioLetras = mapaDiasRRule[fechaInicioJS.getDay()]; // Ej: Si es Jueves, devuelve 'TH'
+      
+      // 3. LA VALIDACIÓN ESTRELLA
+      if (form.customByDay && !form.customByDay.includes(diaInicioLetras)) {
+        // Lanzamos la alerta y detenemos el guardado
+        customToast.error("Error: El día de la Fecha de Inicio no coincide con los días de repetición elegidos. Por favor, inclúyelo o cambia la fecha de inicio.");
+        return; // Detenemos la ejecución (no hace el POST al backend)
+      }
+    }
+
     //transformamos el texto plano del select de recurrencia en el objeto estruturado seguro
     const recurrenciaEstructurada = mapearRecurrenciaAObjeto(data.recurrencia || form.recurrencia);
     onGuardar({
@@ -126,9 +133,9 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
     form, set, tipo, stepIndex,
     labsDesdeBD, cargandoLabs,
     estacionesDesdeBD, cargandoEstaciones,
-    inventarioDesdeBD, cargandoInventario,
+    inventarioDesdeBD,
     docentesOptions,
-    estacionesOcupadas, bloqueoTotal, verificando, mostrarSoloDisponibles, setMostrarSoloDisponibles,
+    estacionesOcupadas, bloqueoTotal, mostrarSoloDisponibles, setMostrarSoloDisponibles,
     equiposSeleccionados, estacionesSeleccionadas,
     agregarEquipo, quitarEquipo, aumentarCantidad, disminuirCantidad, toggleEstacion,
     handleTipo, handleAtras, handleSiguiente, canSave,
@@ -227,21 +234,21 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
               docente={form.docente}
               numPersonas={form.numPersonas}
               docentesOptions={docentesOptions}
-              onChange={(field, value) => set(field as keyof FormData, value)}
+              onChange={(field: string, value: any) => set(field as keyof FormData, value)}
             />
           )}
           {/* ── CONEXIÓN CON FORMULARIO MANTENIMIENTO ── */}
           {tipo === "mantenimiento" && currentStepKey === "datos" && (
             <FormularioMantenimiento
               descripcion={form.descripcion}
-              onChange={(field, value) => set(field as keyof FormData, value)}
+              onChange={(field: string, value: any) => set(field as keyof FormData, value)}
             />
           )}
           {/* ── CONEXIÓN CON FORMULARIO RESERVA ── */}
           {tipo === "reserva" && currentStepKey === "datos" && (
             <FormularioReserva
               titulo={form.titulo}
-              onChange={(field, value) => set(field as keyof FormData, value)}
+              onChange={(field: string, value: any) => set(field as keyof FormData, value)}
             />
           )}
 
@@ -249,40 +256,33 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
           {currentStepKey === "laboratorio" && tipo && (
             <div className="na-fields">
               <div className="na-field-group">
-                <label className="na-field-label">LABORATORIO</label>
+                <label className="na-field-label">ESPACIO</label>
                 <select
                   className="na-select"
                   value={form.laboratorio || ""}
                   onChange={(e) => { set("laboratorio", e.target.value); set("estaciones" as keyof FormData, [] as any); }}
                   disabled={cargandoLabs}
                 >
-                  <option value="">{cargandoLabs ? "Cargando laboratorios..." : "Selecciona un laboratorio"}</option>
+                  <option value="">{cargandoLabs ? "Cargando espacios..." : "Selecciona un espacio"}</option>
                   {laboratoriosAMostrar.map((lab) => (
                     <option key={lab.id} value={lab.id}>{lab.nombre}</option>
                   ))}
                 </select>
               </div>
 
-              {tipo === "clase" && (
-                <div className="na-field-group">
-                  <label className="na-field-label">N° DE ESTUDIANTES</label>
-                  <div className="na-num-row">
-                    <button className="na-num-btn" onClick={() => set("numPersonas", Math.max(1, (form.numPersonas || 1) - 1))}>−</button>
-                    <span className="na-num-val">{form.numPersonas}</span>
-                    <button className="na-num-btn" onClick={() => set("numPersonas", (form.numPersonas || 0) + 1)}>+</button>
-                  </div>
-                </div>
-              )}
-
               {tipo === "reserva" && form.laboratorio && (
                 <>
                   <div className="na-field-group">
                     <label className="na-field-label">N° DE PERSONAS</label>
-                    <div className="na-num-row">
-                      <button className="na-num-btn" onClick={() => set("numPersonas", Math.max(1, (form.numPersonas || 1) - 1))}>−</button>
-                      <span className="na-num-val">{form.numPersonas}</span>
-                      <button className="na-num-btn" onClick={() => set("numPersonas", (form.numPersonas || 0) + 1)}>+</button>
-                    </div>
+                    <input
+                      className="na-input"
+                      type="number"
+                      min={1}
+                      value={form.numPersonas || ""}
+                      onChange={(e) => set("numPersonas", Math.max(1, parseInt(e.target.value) || 1))}
+                      placeholder="Ej: 10"
+                      style={{ width: '120px' }}
+                    />
                   </div>
 
                   {modoReserva === "por_estacion" ? (
@@ -364,7 +364,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
                       <Building2 size={26} />
                       <div className="na-full-lab-title">Espacio completo</div>
                       <div className="na-full-lab-desc">
-                        Este laboratorio se reserva entero, sin estaciones individuales
+                        Este Espacio se reserva entero, sin estaciones individuales
                         {laboratorioSeleccionado?.capacidad_maxima ? ` · capacidad ${laboratorioSeleccionado.capacidad_maxima} personas` : ""}
                       </div>
                     </div>
@@ -373,7 +373,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
               )}
 
               {tipo === "mantenimiento" && (
-                <div className="na-hint">Este tipo de actividad bloquea el laboratorio completo, no requiere seleccionar estación.</div>
+                <div className="na-hint">Este tipo de actividad bloquea el espacio completo, no requiere seleccionar estación.</div>
               )}
             </div>
           )}
@@ -381,32 +381,32 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
           {/* ── PASO: INSTRUMENTOS (clase y reserva) ──  CONEXION FORMULARIO*/}
           {currentStepKey === "instrumentos" && (tipo === "clase" || tipo === "reserva") && (
             <>
-            <SelectorInventario
-              inventario={inventarioDesdeBD}
-              equiposSeleccionados={equiposSeleccionados}
-              tieneLaboratorio={!!form.laboratorio}
-              onAgregar={agregarEquipo}
-              onQuitar={quitarEquipo}
-              onAumentar={aumentarCantidad}
-              onDisminuir={disminuirCantidad}
-            />
+              <SelectorInventario
+                inventario={inventarioDesdeBD}
+                equiposSeleccionados={equiposSeleccionados}
+                tieneLaboratorio={!!form.laboratorio}
+                onAgregar={agregarEquipo}
+                onQuitar={quitarEquipo}
+                onAumentar={aumentarCantidad}
+                onDisminuir={disminuirCantidad}
+              />
 
-            {/* ── NOTA ADICIONAL (solo reservas) ── */}
-            {tipo === "reserva" && (
-              <div className="na-fields" style={{ marginTop: '18px' }}>
-                <div className="na-field-group">
-                  <label className="na-field-label">NOTA ADICIONAL (OPCIONAL)</label>
-                  <textarea
-                    className="na-input"
-                    placeholder="Ej: Necesito proyector, traeremos invitados externos, requiero acceso especial..."
-                    value={form.nota_adicional || ""}
-                    onChange={(e) => set("nota_adicional" as keyof FormData, e.target.value)}
-                    rows={3}
-                    style={{ resize: 'vertical', minHeight: '60px' }}
-                  />
+              {/* ── NOTA ADICIONAL (solo reservas) ── */}
+              {tipo === "reserva" && (
+                <div className="na-fields" style={{ marginTop: '18px' }}>
+                  <div className="na-field-group">
+                    <label className="na-field-label">NOTA ADICIONAL (OPCIONAL)</label>
+                    <textarea
+                      className="na-input"
+                      placeholder="Ej: Necesito proyector, traeremos invitados externos, requiero acceso especial..."
+                      value={form.nota_adicional || ""}
+                      onChange={(e) => set("nota_adicional" as keyof FormData, e.target.value)}
+                      rows={3}
+                      style={{ resize: 'vertical', minHeight: '60px' }}
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
             </>
           )}
 
@@ -620,14 +620,6 @@ function UserIcon({ color }: { color: string }) {
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={color} strokeWidth="1.5">
       <circle cx="8" cy="6" r="3" />
       <path d="M2 14c0-3 2.7-5 6-5s6 2 6 5" />
-    </svg>
-  );
-}
-function RecurIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ flexShrink: 0, color: "#888" }}>
-      <path d="M2 8a6 6 0 016-6 6 6 0 014.5 2M14 8a6 6 0 01-6 6 6 6 0 01-4.5-2" />
-      <path d="M12 2l2.5 2L12 6M4 10l-2.5 2L4 14" />
     </svg>
   );
 }

@@ -1,5 +1,7 @@
 const actividadesService = require('../services/actividades.service');
 
+
+
 const crearActividad = async (req, res) => {
     try {
         // 1. Extraer el usuario que viene del middleware 'verificarToken'
@@ -99,6 +101,8 @@ const consultarDisponibilidad = async (req, res) => {
         );
         res.status(200).json({ exito: true, data: disponibilidad });
     } catch (error) {
+        console.log('ERROR en consultarDisponibilidad:', error.message);
+        console.log('STACK:', error.stack);
         res.status(500).json({ exito: false, mensaje: error.message });
     }
 };
@@ -109,6 +113,19 @@ const obtenerActividades = async (req, res) => {
         // 1. React Big Calendar nos mandará el rango de fechas que está viendo el usuario
         const { start, end } = req.query;
 
+        // NUEVO: Extraemos el ID y el rol del usuario desde el token JWT
+        // (Tu middleware de autenticación debería estar inyectando 'req.usuario' o 'req.user')
+        const usuarioId = req.usuario.id;
+        const rol = req.usuario.rol;
+
+
+
+        // 🚀 AGREGA ESTA LÍNEA AQUÍ:
+        console.log("=== DEBUG SEGURIDAD ===");
+        console.log("ID del usuario:", usuarioId);
+        console.log("Rol detectado:", rol);
+        console.log("=======================");
+
         // 2. Validamos que el frontend sí nos esté mandando ese rango
         if (!start || !end) {
             return res.status(400).json({
@@ -118,7 +135,8 @@ const obtenerActividades = async (req, res) => {
         }
 
         // 3. Delegamos el trabajo a nuestra nueva súper función del servicio
-        const actividadesExpandidas = await actividadesService.obtenerActividadesExpandidas(start, end);
+        // NUEVO: Ahora pasamos los 4 parámetros (fechas + credenciales de privacidad)
+        const actividadesExpandidas = await actividadesService.obtenerActividadesExpandidas(start, end, usuarioId, rol);
 
         // 4. Devolvemos el arreglo listo para que React lo dibuje y lea los modales
         res.status(200).json({
@@ -136,23 +154,19 @@ const obtenerActividades = async (req, res) => {
     }
 };
 
-// Controlador para obtener las solicitudes pendientes
-const obtenerPendientes = async (req, res) => {
-    try {
-        const pendientes = await actividadesService.obtenerSolicitudesPendientes();
-        res.status(200).json(pendientes);
-    } catch (error) {
-        console.error('Error al obtener solicitudes pendientes:', error);
-        res.status(500).json({ message: 'Error interno al cargar las solicitudes' });
-    }
-};
 
-
-// Controlador para obtener TODAS las solicitudes (pendientes, aprobadas, rechazadas)
+// Controlador para obtener TODAS las solicitudes con filtro de seguridad (RBAC) + Paginación
 const obtenerTodas = async (req, res) => {
     try {
-        const todas = await actividadesService.obtenerTodasSolicitudes();
-        res.status(200).json(todas);
+        const usuarioId = req.usuario.id;
+        const rol = req.usuario.rol;
+        const { estado, page = 1, limit = 10 } = req.query;
+
+        const resultado = await actividadesService.obtenerTodasSolicitudes(
+            usuarioId, rol, estado || null, parseInt(page, 10), parseInt(limit, 10)
+        );
+
+        res.status(200).json(resultado);
     } catch (error) {
         console.error('Error al obtener todas las solicitudes:', error);
         res.status(500).json({ message: 'Error interno al cargar las solicitudes' });
@@ -160,28 +174,77 @@ const obtenerTodas = async (req, res) => {
 };
 
 // Controlador para Aprobar o Rechazar
-const resolverReserva = async (req, res) => {
+const resolverSolicitud = async (req, res) => {
     try {
-        const { id } = req.params; // ID de la actividad
+        const { id } = req.params;
         const { accion } = req.body; // 'aprobar' o 'rechazar'
-        const resolutorId = req.usuario.id; // Viene del auth.middleware
+        const resolutorId = req.usuario.id;
+
+        if (!accion || !['aprobar', 'rechazar'].includes(accion)) {
+            return res.status(400).json({ success: false, message: 'Debe especificar una accion válida (aprobar o rechazar)' });
+        }
 
         const resultado = await actividadesService.resolverSolicitud(id, accion, resolutorId);
-        res.status(200).json(resultado);
-
+        res.status(200).json({ success: true, message: resultado.message });
     } catch (error) {
         console.error('Error al resolver la solicitud:', error);
-        // Manejo de errores controlados (400, 404, 409)
-        if (error.status) {
-            return res.status(error.status).json({ message: error.message });
-        }
-        res.status(500).json({ message: 'Error interno del servidor al procesar la resolución' });
+        res.status(error.status || 500).json({ success: false, message: error.message || 'Error interno del servidor' });
     }
 };
 
-// Exórtala al final:
+const entregarEquipos = async (req, res) => {
+    try {
+        const { id } = req.params; // actividad_id
+        const usuarioId = req.usuario.id;
+        const resultado = await actividadesService.registrarEntregaEquipos(id, usuarioId);
+        res.status(200).json({ success: true, message: resultado.mensaje });
+    } catch (error) {
+        console.error('Error al entregar equipos:', error);
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+const devolverEquipos = async (req, res) => {
+    try {
+        const { id } = req.params; // actividad_id
+        const { reporteDano } = req.body;
+        const resolutorId = req.usuario.id;
+
+        const resultado = await actividadesService.registrarDevolucionEquipos(id, reporteDano, resolutorId);
+        res.status(200).json({ success: true, message: resultado.mensaje });
+    } catch (error) {
+        console.error('Error al devolver equipos:', error);
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+// Controlador para que el solicitante cancele su propia reserva pendiente
+const cancelarReserva = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const usuarioId = req.usuario.id;
+
+        const resultado = await actividadesService.cancelarSolicitud(id, usuarioId);
+        res.status(200).json(resultado);
+    } catch (error) {
+        console.error('Error al cancelar la solicitud:', error);
+        if (error.status) {
+            return res.status(error.status).json({ message: error.message });
+        }
+        res.status(500).json({ message: 'Error interno del servidor al cancelar la solicitud.' });
+    }
+};
+
+// Exportar controladores:
 module.exports = {
-    crearActividad, actualizarActividad,
-    eliminarActividad, obtenerActividades, consultarDisponibilidad,
-    obtenerPendientes, obtenerTodas, resolverReserva
+    crearActividad,
+    actualizarActividad,
+    eliminarActividad,
+    obtenerActividades,
+    consultarDisponibilidad,
+    obtenerTodas,
+    resolverSolicitud,
+    cancelarReserva,
+    entregarEquipos,
+    devolverEquipos
 };

@@ -15,10 +15,12 @@ msalInstance.initialize().then(() => {
     <React.StrictMode>
       <MsalProvider instance={msalInstance}>
         <AuthProvider>
-          <App/>
+          <App />
           <CustomToastProvider />
         </AuthProvider>
       </MsalProvider>
     </React.StrictMode>,
   )
 });
+
+//VITE_API_URL=https://smartlabusobackend-production.up.railway.app

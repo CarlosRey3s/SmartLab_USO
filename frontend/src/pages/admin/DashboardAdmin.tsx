@@ -1,18 +1,9 @@
 import { useEffect, useState } from "react";
-
-import {
-  getDashboard
-} from "../../services/dashboard.service";
-
-import type {
-  DashboardResponse
-} from "../../types/dashboard";
-
+import { getDashboard} from "../../services/dashboard.service";
+import type { DashboardResponse} from "../../types/dashboard";
 import "../../css/DashboardAdmin.css";
 
-
 export default function DashboardAdmin() {
-
 
   const [dashboard, setDashboard] =
     useState<DashboardResponse | null>(null);
@@ -27,41 +18,26 @@ export default function DashboardAdmin() {
 
 
 
-
   const loadDashboard = async () => {
-
 
     try {
 
-
-      const data =
-        await getDashboard();
-
+      const data = await getDashboard();
 
       setDashboard(data);
 
-
-
-    } catch(error) {
-
+    } catch (error) {
 
       console.error(
         "Error cargando dashboard",
         error
       );
 
-
     }
-
 
   };
 
-
-
-
-
-  if(!dashboard){
-
+  if (!dashboard) {
 
     return (
 
@@ -75,21 +51,13 @@ export default function DashboardAdmin() {
 
     );
 
-
   }
-
-
-
 
 
 
   return (
 
-
     <div className="content">
-
-
-
 
 
       {/* ==========================
@@ -100,17 +68,12 @@ export default function DashboardAdmin() {
       <div className="main">
 
 
-
-
-
         <div className="panel solicitudes">
-
           <div className="panel-header">
 
             Solicitudes Pendientes
 
           </div>
-
 
           <div className="counter">
 
@@ -118,24 +81,18 @@ export default function DashboardAdmin() {
 
           </div>
 
-
           <span className="panel-sub">
 
             Por aprobar
 
           </span>
 
-
         </div>
 
 
 
 
-
-
-
         <div className="panel alertas">
-
           <div className="panel-header">
 
             Stock Bajo
@@ -149,24 +106,18 @@ export default function DashboardAdmin() {
 
           </div>
 
-
           <span className="panel-sub">
 
             Items críticos
 
           </span>
 
-
         </div>
 
 
 
 
-
-
-
         <div className="panel actividades">
-
 
           <div className="panel-header">
 
@@ -174,13 +125,11 @@ export default function DashboardAdmin() {
 
           </div>
 
-
           <div className="counter">
 
             {dashboard.kpis.actividades_hoy}
 
           </div>
-
 
           <span className="panel-sub">
 
@@ -188,17 +137,9 @@ export default function DashboardAdmin() {
 
           </span>
 
-
         </div>
 
-
-
-
-
-
-
-        <div className="panel espacios">
-
+        <div className="panel laboratorios">
 
           <div className="panel-header">
 
@@ -206,34 +147,25 @@ export default function DashboardAdmin() {
 
           </div>
 
-
           <div className="counter">
 
-
-            {dashboard.kpis.espacios_ocupados}
+            {dashboard.kpis.laboratorios_ocupados}
 
             /
 
-            {dashboard.kpis.total_espacios}
-
+            {dashboard.kpis.total_laboratorios}
 
           </div>
-
 
           <span className="panel-sub">
 
             En uso actualmente
 
           </span>
-
-
         </div>
 
 
-
-
       </div>
-
 
 
 
@@ -245,9 +177,7 @@ export default function DashboardAdmin() {
       =========================== */}
 
 
-
       <div className="dashboard-bottom">
-
 
 
 
@@ -258,12 +188,7 @@ export default function DashboardAdmin() {
         =========================== */}
 
 
-
-
         <div className="card">
-
-
-
 
 
           <h3>
@@ -275,22 +200,15 @@ export default function DashboardAdmin() {
 
 
 
-
           <div className="chart-container">
-
-
-
 
 
             <div className="chart-legend">
 
 
-
               <div className="legend-item">
 
-
                 <div className="bullet reservas"></div>
-
 
                 <span>
 
@@ -298,18 +216,13 @@ export default function DashboardAdmin() {
 
                 </span>
 
-
               </div>
-
-
 
 
 
               <div className="legend-item">
 
-
                 <div className="bullet completadas"></div>
-
 
                 <span>
 
@@ -317,9 +230,7 @@ export default function DashboardAdmin() {
 
                 </span>
 
-
               </div>
-
 
 
 
@@ -329,18 +240,12 @@ export default function DashboardAdmin() {
 
 
 
-
-
             <div className="bars-wrapper">
-
-
               {
 
                 dashboard.reservas.map(
 
                   (item,index)=>(
-
-
                     <div
 
                       className="day-column"
@@ -350,34 +255,22 @@ export default function DashboardAdmin() {
                     >
 
 
-
                       <div className="bar-pair">
-
-
                         <div
-
                           className="v-bar res"
-
                           style={{
 
                             height:
                               `${item.reservas * 10}%`
 
                           }}
-
                         />
 
 
-
                         <div
-
                           className="v-bar comp"
-
                           style={{
-
-                            height:
-                              `${item.completadas * 10}%`
-
+                            height:`${item.completadas * 10}%`
                           }}
 
                         />
@@ -387,36 +280,22 @@ export default function DashboardAdmin() {
 
 
 
-
                       <div className="day-label">
-
                         {item.dia}
-
                       </div>
 
 
-
-
                     </div>
-
-
                   )
-
 
                 )
 
 
               }
-
-
-
             </div>
 
 
-
           </div>
-
-
 
 
 
@@ -432,26 +311,17 @@ export default function DashboardAdmin() {
 
 
 
-
-
           <div className="alerts-list">
-
-
             {
 
               dashboard.alertas.map(
 
                 (alerta,index)=>(
-
-
                   <div
 
                     className="alert-item"
-
                     key={index}
-
                   >
-
 
 
                     <div
@@ -459,20 +329,15 @@ export default function DashboardAdmin() {
                       className={
                         `status-dot ${alerta.tipo}`
                       }
-
                     />
 
 
-
                     <div className="alert-text">
-
-
                       <h4>
 
                         {alerta.titulo}
 
                       </h4>
-
 
 
                       <span>
@@ -482,53 +347,26 @@ export default function DashboardAdmin() {
                       </span>
 
 
-
                     </div>
-
-
-
                   </div>
-
-
                 )
-
 
               )
 
             }
-
-
-
           </div>
 
 
 
 
-
-
         </div>
-
-
-
-
-
-
-
-
-
         {/* ==========================
             AGENDA
         =========================== */}
 
 
 
-
-
         <div className="card">
-
-
-
-
 
 
           <h3>
@@ -539,10 +377,7 @@ export default function DashboardAdmin() {
 
 
 
-
-
-          <div className="agenda-list">
-
+          <div className="saturation-container">
 
 
             {
@@ -550,8 +385,6 @@ export default function DashboardAdmin() {
               dashboard.agenda.map(
 
                 (item,index)=>(
-
-
                   <div
 
                     className="agenda-item"
@@ -561,57 +394,61 @@ export default function DashboardAdmin() {
                   >
 
 
+                    <span className="day-name">
 
-                    <span className="agenda-time">
-
-
-                      {item.hora}
-
+                      {item.nombre}
 
                     </span>
 
 
 
 
-
-                    <div className="agenda-details">
-
-
-                      <h4>
-
-                        {item.actividad}
-
-                      </h4>
+                    <div className="h-bar-bg">
 
 
+                      <div
 
-                      <span>
+                        className="h-bar-fill normal"
 
-                        Espacio: {item.espacio}
+                        style={{
+                          width:`${item.porcentaje}%`
+                        }}
 
-                      </span>
-
+                      />
 
 
                     </div>
 
 
 
+
+                    <span className="row-status">
+
+
+                      {
+                        item.porcentaje >= 90
+                        ?
+                        "Saturado"
+                        :
+                        item.porcentaje >=70
+                        ?
+                        "Alto"
+                        :
+                        "Normal"
+                      }
+
+
+                    </span>
+
+
+
                   </div>
-
-
                 )
-
 
               )
 
             }
-
-
-
           </div>
-
-
 
 
 
@@ -628,18 +465,12 @@ export default function DashboardAdmin() {
 
 
 
-
           <div className="agenda-list">
-
-
-
             {
 
               dashboard.agendaSemana.map(
 
                 (item,index)=>(
-
-
                   <div
 
                     className="agenda-item"
@@ -649,51 +480,27 @@ export default function DashboardAdmin() {
                   >
 
 
-
                     <span className="agenda-time">
 
-
-                      {item.dia}
-
-                      {" - "}
-
                       {item.hora}
-
 
                     </span>
 
 
 
 
-
                     <div className="agenda-details">
-
-
                       <h4>
-
                         {item.actividad}
-
                       </h4>
-
-
-
                       <span>
 
-                        Espacio: {item.espacio}
+                        {item.laboratorio}
 
                       </span>
-
-
-
                     </div>
-
-
-
                   </div>
-
-
                 )
-
 
               )
 
@@ -701,8 +508,8 @@ export default function DashboardAdmin() {
 
 
 
-          </div>
 
+          </div>
 
 
 
@@ -714,18 +521,10 @@ export default function DashboardAdmin() {
 
 
 
-
-
       </div>
 
 
-
-
-
     </div>
-
-
   );
-
 
 }

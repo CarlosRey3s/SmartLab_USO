@@ -1,5 +1,7 @@
 // src/services/usuarios.service.ts
-const API_URL = 'http://localhost:4000/api';
+import { BASE_URL } from "../config/api";
+
+const API_URL = `${BASE_URL}/api`;
 
 export const usuariosService = {
   getUsuarios: async (usuarioId: string = '1') => {

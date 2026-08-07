@@ -1,4 +1,6 @@
-const API_URL = "http://localhost:4000/api";
+import { BASE_URL } from "../config/api";
+
+const API_URL = `${BASE_URL}/api`;
 
 export const inventarioService = {
   /**
@@ -35,11 +37,11 @@ export const inventarioService = {
     try {
       const response = await fetch(`${API_URL}/inventario`);
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || "Error al obtener inventario");
       }
-      
+
       return data;
     } catch (error) {
       console.error("Error en inventarioService.getInventario:", error);
