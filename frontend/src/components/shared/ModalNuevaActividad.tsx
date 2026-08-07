@@ -136,7 +136,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
     inventarioDesdeBD,
     docentesOptions,
     estacionesOcupadas, bloqueoTotal, mostrarSoloDisponibles, setMostrarSoloDisponibles,
-    equiposSeleccionados, estacionesSeleccionadas,
+    equiposSeleccionados, estacionesSeleccionadas, estadoLaboratorios,
     agregarEquipo, quitarEquipo, aumentarCantidad, disminuirCantidad, toggleEstacion,
     handleTipo, handleAtras, handleSiguiente, canSave,
     steps, currentStepKey, isLastStep, laboratorioSeleccionado, modoReserva
@@ -264,9 +264,14 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
                   disabled={cargandoLabs}
                 >
                   <option value="">{cargandoLabs ? "Cargando espacios..." : "Selecciona un espacio"}</option>
-                  {laboratoriosAMostrar.map((lab) => (
-                    <option key={lab.id} value={lab.id}>{lab.nombre}</option>
-                  ))}
+                  {laboratoriosAMostrar.map((lab) => {
+                    const isOcupado = estadoLaboratorios[lab.id]?.ocupado;
+                    return (
+                      <option key={lab.id} value={lab.id} disabled={isOcupado}>
+                        {lab.nombre}{isOcupado ? " (Ocupado a esta hora)" : ""}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 

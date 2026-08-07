@@ -472,6 +472,15 @@ const obtenerDisponibilidad = async (laboratorioId, fechaInicio, fechaFin, exclu
         return { disponible: false, motivo: `El laboratorio está ocupado por: ${bloqueoTotal.tipo}`, estacionesOcupadas: [], itemsOcupados: {} };
     }
 
+    // Si detectamos reservas, verificar si el laboratorio es de tipo espacio_completo
+    const tieneReserva = resultBloqueo.rows.find(row => row.tipo === 'reserva');
+    if (tieneReserva) {
+        const labResult = await db.query('SELECT modo_reserva FROM laboratorios WHERE id = $1', [laboratorioId]);
+        if (labResult.rows.length > 0 && labResult.rows[0].modo_reserva === 'espacio_completo') {
+            return { disponible: false, motivo: 'El laboratorio ya ha sido reservado en su totalidad por otro usuario en este horario.', estacionesOcupadas: [], itemsOcupados: {} };
+        }
+    }
+
     // =========================================================================
     // 2. Obtener las Estaciones Ocupadas en ese rango de tiempo
     // =========================================================================

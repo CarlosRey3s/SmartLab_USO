@@ -121,6 +121,8 @@ export function useActividadForm({ actividadExistente, onGuardar }: UseActividad
 
     const [docentesOptions, setDocentesOptions] = useState<{ value: number, label: string }[]>([]);
 
+    const [estadoLaboratorios, setEstadoLaboratorios] = useState<Record<number, { ocupado: boolean }>>({});
+
     // ── EFECTOS (Carga de datos y modo edición) ──
     useEffect(() => {
         if (actividadExistente) {
@@ -337,6 +339,37 @@ export function useActividadForm({ actividadExistente, onGuardar }: UseActividad
         return () => clearTimeout(timeoutId);
     }, [form.laboratorio, form.fecha, form.desde, form.hasta, actividadExistente]);
 
+    // ── Verificar disponibilidad de TODOS los laboratorios para el horario elegido ──
+    useEffect(() => {
+        const verificarTodosLosLaboratorios = async () => {
+            if (form.fecha && form.desde && form.hasta && labsDesdeBD.length > 0) {
+                try {
+                    const results = await Promise.all(
+                        labsDesdeBD.map(lab =>
+                            chequearDisponibilidad(lab.id, form.fecha!, form.desde!, form.hasta!, (actividadExistente as any)?.idOriginal || actividadExistente?.id)
+                            .then(res => ({ id: lab.id, result: res }))
+                        )
+                    );
+
+                    const nuevosEstados: Record<number, { ocupado: boolean }> = {};
+                    results.forEach(({ id, result }) => {
+                        // disponible === false significa bloqueo total (clase, mantenimiento o reserva espacio_completo)
+                        nuevosEstados[id] = { ocupado: result.disponible === false };
+                    });
+                    setEstadoLaboratorios(nuevosEstados);
+                } catch (error) {
+                    console.error("Error verificando todos los laboratorios", error);
+                }
+            } else {
+                setEstadoLaboratorios({});
+            }
+        };
+
+        const timeoutId = setTimeout(() => verificarTodosLosLaboratorios(), 500);
+        return () => clearTimeout(timeoutId);
+    }, [form.fecha, form.desde, form.hasta, labsDesdeBD, actividadExistente]);
+
+
     // ── Sincronizar texto de recurrencia semanal al cambiar la fecha ──
     useEffect(() => {
         if (form.fecha && form.recurrencia?.startsWith("Cada semana, el ")) {
@@ -462,7 +495,7 @@ export function useActividadForm({ actividadExistente, onGuardar }: UseActividad
         inventarioDesdeBD, cargandoInventario,
         docentesOptions,
         estacionesOcupadas, bloqueoTotal, verificando, mostrarSoloDisponibles, setMostrarSoloDisponibles,
-        equiposSeleccionados, estacionesSeleccionadas,
+        equiposSeleccionados, estacionesSeleccionadas, estadoLaboratorios,
         agregarEquipo, quitarEquipo, aumentarCantidad, disminuirCantidad, toggleEstacion,
         handleTipo, handleAtras, handleSiguiente, canSave,
         steps, currentStepKey, isLastStep, laboratorioSeleccionado, modoReserva
