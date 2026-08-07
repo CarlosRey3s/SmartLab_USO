@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, MoreHorizontal, Layers, CheckCircle2, Wrench, XCircle, Monitor, FlaskConical, Presentation, Building, Users } from 'lucide-react';
+import { Search, Filter, Plus, MoreHorizontal, Layers, CheckCircle2, Wrench, XCircle, Monitor, FlaskConical, Presentation, Building } from 'lucide-react';
 import { AgregarEspacioModal } from '../../components/shared/AgregarEspacioModal';
 import { VistaEstaciones } from '../../components/shared/VistaEstaciones';
 import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
@@ -54,7 +54,7 @@ export const EspacioView: React.FC = () => {
         setIsFilterOpen(false);
       }
     }
-    
+
     if (isFilterOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     } else {
@@ -88,7 +88,7 @@ export const EspacioView: React.FC = () => {
     if (nameLower.includes('computo') || nameLower.includes('sistemas') || nameLower.includes('pc') || nameLower.includes('informática')) return <Monitor size={24} color="#219653" />;
     if (nameLower.includes('auditorio') || nameLower.includes('conferencia') || nameLower.includes('charla')) return <Presentation size={24} color="#9B51E0" />;
     if (nameLower.includes('fisica') || nameLower.includes('quimica') || nameLower.includes('ciencia') || nameLower.includes('biologia')) return <FlaskConical size={24} color="#F2C94C" />;
-    return <Building size={24} color="#2D9CDB" />; 
+    return <Building size={24} color="#2D9CDB" />;
   };
 
   const handleEdit = (item: EspacioItem) => {
@@ -105,7 +105,7 @@ export const EspacioView: React.FC = () => {
 
   const confirmDelete = async () => {
     if (!espacioToDelete) return;
-    
+
     try {
       const data = await laboratoriosService.deleteLaboratorio(espacioToDelete);
       if (data.status === 'success') {
@@ -127,23 +127,23 @@ export const EspacioView: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const espaciosDelUsuario = user?.rol === 'coordinador' 
+  const espaciosDelUsuario = user?.rol === 'coordinador'
     ? espacios.filter(e => e.coordinador_id === user.id)
     : espacios;
 
   const totalEspacios = espaciosDelUsuario.length;
-  const ocupados = espaciosDelUsuario.filter(e => e.ocupado === true).length;
+  //const ocupados = espaciosDelUsuario.filter(e => e.ocupado === true).length;
   const disponibles = espaciosDelUsuario.filter(e => e.estado === 'disponible' && !e.ocupado).length;
   const enMantenimiento = espaciosDelUsuario.filter(e => e.estado === 'mantenimiento' || e.estado === 'en_mantenimiento').length;
   const clausurados = espaciosDelUsuario.filter(e => e.estado === 'clausurado').length;
-  
+
   // Sumar todas las estaciones disponibles
   const totalEstacionesDisponibles = espaciosDelUsuario.reduce((acc, curr) => acc + (parseInt(curr.estaciones_disponibles as string) || 0), 0);
 
   const filteredEspacios = espaciosDelUsuario.filter(item => {
     const matchSearch = item.nombre.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchFilter = filterMode === 'todos' 
-      ? true 
+    const matchFilter = filterMode === 'todos'
+      ? true
       : item.modo_reserva === filterMode;
     return matchSearch && matchFilter;
   });
@@ -171,7 +171,7 @@ export const EspacioView: React.FC = () => {
                 <span className="metric-value">{totalEspacios}</span>
               </div>
             </div>
-            
+
             <div className="metric-item">
               <div className="metric-icon-wrapper">
                 <CheckCircle2 size={32} color="#219653" />
@@ -216,18 +216,18 @@ export const EspacioView: React.FC = () => {
           <div className="inventario-controls" style={{ marginTop: '40px', padding: '0 20px' }}>
             <div className="search-inventory">
               <Search className="search-inventory-icon" size={16} />
-              <input 
-                type="text" 
-                placeholder="Buscar Espacio por Nombre" 
+              <input
+                type="text"
+                placeholder="Buscar Espacio por Nombre"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            
+
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
               <div style={{ position: 'relative' }} ref={filterRef}>
-                <button 
-                  className="btn-filter" 
+                <button
+                  className="btn-filter"
                   style={{ borderRadius: '20px' }}
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
                 >
@@ -239,14 +239,14 @@ export const EspacioView: React.FC = () => {
                   <div className="filter-dropdown-menu">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontWeight: '600', fontSize: '14px', color: '#334155' }}>Filtros</span>
-                      <button 
+                      <button
                         onClick={() => { setFilterMode('todos'); setIsFilterOpen(false); }}
                         style={{ fontSize: '12px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                       >
                         Limpiar
                       </button>
                     </div>
-                    
+
                     <div>
                       <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>Por Tipo de Espacio</label>
                       <select
@@ -320,49 +320,49 @@ export const EspacioView: React.FC = () => {
                   }
 
                   return (
-                  <tr key={item.id}>
-                    <td style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      {getIconForLab(item.nombre)}
-                      <span style={{ maxWidth: '140px', display: 'inline-block' }}>{item.nombre}</span>
-                    </td>
-                    <td>{item.modo_reserva === 'espacio_completo' ? 'Espacio Completo' : 'Por Estación'}</td>
-                    <td>{`${item.edificio}, Piso ${item.piso}, Aula ${item.aula}`}</td>
-                    <td>{item.capacidad_maxima > 0 ? item.capacidad_maxima : 'Dinámica'}</td>
-                    <td>
-                      <span className={`badge ${estadoBadgeClass}`}>
-                        {estadoTexto}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="action-menu-container">
-                        <button 
-                          className="action-button"
-                          onClick={() => setActiveMenu(activeMenu === item.id ? null : item.id)}
-                        >
-                          <MoreHorizontal size={24} />
-                        </button>
-                        
-                        {activeMenu === item.id && (
-                          <div className="actions-dropdown" style={{ right: '50px' }}>
-                            {item.modo_reserva === 'por_estacion' && (
-                              <button 
-                                className="dropdown-item"
-                                onClick={() => {
-                                  setGestionarLabId(item.id);
-                                  setGestionarLabNombre(item.nombre);
-                                  setActiveMenu(null);
-                                }}
-                              >
-                                Ver espacio de trabajo
-                              </button>
-                            )}
-                            <button className="dropdown-item" onClick={() => handleEdit(item)}>Editar</button>
-                            <button className="dropdown-item delete" onClick={() => handleDeleteClick(item.id)}>Eliminar</button>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+                    <tr key={item.id}>
+                      <td style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {getIconForLab(item.nombre)}
+                        <span style={{ maxWidth: '140px', display: 'inline-block' }}>{item.nombre}</span>
+                      </td>
+                      <td>{item.modo_reserva === 'espacio_completo' ? 'Espacio Completo' : 'Por Estación'}</td>
+                      <td>{`${item.edificio}, Piso ${item.piso}, Aula ${item.aula}`}</td>
+                      <td>{item.capacidad_maxima > 0 ? item.capacidad_maxima : 'Dinámica'}</td>
+                      <td>
+                        <span className={`badge ${estadoBadgeClass}`}>
+                          {estadoTexto}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="action-menu-container">
+                          <button
+                            className="action-button"
+                            onClick={() => setActiveMenu(activeMenu === item.id ? null : item.id)}
+                          >
+                            <MoreHorizontal size={24} />
+                          </button>
+
+                          {activeMenu === item.id && (
+                            <div className="actions-dropdown" style={{ right: '50px' }}>
+                              {item.modo_reserva === 'por_estacion' && (
+                                <button
+                                  className="dropdown-item"
+                                  onClick={() => {
+                                    setGestionarLabId(item.id);
+                                    setGestionarLabNombre(item.nombre);
+                                    setActiveMenu(null);
+                                  }}
+                                >
+                                  Ver espacio de trabajo
+                                </button>
+                              )}
+                              <button className="dropdown-item" onClick={() => handleEdit(item)}>Editar</button>
+                              <button className="dropdown-item delete" onClick={() => handleDeleteClick(item.id)}>Eliminar</button>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
                   );
                 })}
               </tbody>
@@ -389,77 +389,78 @@ export const EspacioView: React.FC = () => {
               }
 
               return (
-              <div className="espacio-card" key={item.id}>
-                <div className="espacio-card-header">
-                  <div className="espacio-card-title">
-                    {getIconForLab(item.nombre)}
-                    <div>
-                      <h3>{item.nombre}</h3>
+                <div className="espacio-card" key={item.id}>
+                  <div className="espacio-card-header">
+                    <div className="espacio-card-title">
+                      {getIconForLab(item.nombre)}
+                      <div>
+                        <h3>{item.nombre}</h3>
+                      </div>
+                    </div>
+                    <div className="action-menu-container">
+                      <button
+                        className="action-button"
+                        onClick={() => setActiveMenu(activeMenu === item.id ? null : item.id)}
+                      >
+                        <MoreHorizontal size={22} />
+                      </button>
+                      {activeMenu === item.id && (
+                        <div className="actions-dropdown">
+                          {item.modo_reserva === 'por_estacion' && (
+                            <button
+                              className="dropdown-item"
+                              onClick={() => {
+                                setGestionarLabId(item.id);
+                                setGestionarLabNombre(item.nombre);
+                                setActiveMenu(null);
+                              }}
+                            >
+                              Ver espacio de trabajo
+                            </button>
+                          )}
+                          <button className="dropdown-item" onClick={() => handleEdit(item)}>Editar</button>
+                          <button className="dropdown-item delete" onClick={() => handleDeleteClick(item.id)}>Eliminar</button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="action-menu-container">
-                    <button 
-                      className="action-button"
-                      onClick={() => setActiveMenu(activeMenu === item.id ? null : item.id)}
-                    >
-                      <MoreHorizontal size={22}/>
-                    </button>
-                    {activeMenu === item.id && (
-                      <div className="actions-dropdown">
-                        {item.modo_reserva === 'por_estacion' && (
-                          <button 
-                            className="dropdown-item"
-                            onClick={() => {
-                              setGestionarLabId(item.id);
-                              setGestionarLabNombre(item.nombre);
-                              setActiveMenu(null);
-                            }}
-                          >
-                            Ver espacio de trabajo
-                          </button>
-                        )}
-                        <button className="dropdown-item" onClick={() => handleEdit(item)}>Editar</button>
-                        <button className="dropdown-item delete" onClick={() => handleDeleteClick(item.id)}>Eliminar</button>
-                      </div>
-                    )}
+                  <div className="espacio-card-body">
+                    <div className="info-row">
+                      <span className="info-label">Tipo:</span>
+                      <strong>{item.modo_reserva === "espacio_completo" ? "Espacio Completo" : "Por Estación"}</strong>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">Ubicación:</span>
+                      <span>{`${item.edificio}, Piso ${item.piso}, Aula ${item.aula}`}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">Capacidad:</span>
+                      <span>{item.capacidad_maxima > 0 ? item.capacidad_maxima : 'Dinámica'}</span>
+                    </div>
+                    <div className="info-row" style={{ marginTop: '8px' }}>
+                      <span className="info-label">Estado:</span>
+                      <span className={`badge ${estadoBadgeClass}`}>
+                        {estadoTexto}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="espacio-card-body">
-                  <div className="info-row">
-                    <span className="info-label">Tipo:</span>
-                    <strong>{item.modo_reserva === "espacio_completo" ? "Espacio Completo" : "Por Estación"}</strong>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Ubicación:</span>
-                    <span>{`${item.edificio}, Piso ${item.piso}, Aula ${item.aula}`}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Capacidad:</span>
-                    <span>{item.capacidad_maxima > 0 ? item.capacidad_maxima : 'Dinámica'}</span>
-                  </div>
-                  <div className="info-row" style={{ marginTop: '8px' }}>
-                    <span className="info-label">Estado:</span>
-                    <span className={`badge ${estadoBadgeClass}`}>
-                      {estadoTexto}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )})}
+              )
+            })}
           </div>
         </>
       )}
 
       {isModalOpen && (
-        <AgregarEspacioModal 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
+        <AgregarEspacioModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
           onSuccess={fetchEspacios}
           editData={editData}
         />
       )}
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={isDeleteModalOpen}
         title="Eliminar Espacio"
         message="¿Estás seguro de que deseas eliminar este espacio de forma permanente?"
