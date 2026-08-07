@@ -20,6 +20,7 @@ export const obtenerTodasSolicitudes = async (
     if (estado) params.append('estado', estado);
     params.append('page', page.toString());
     params.append('limit', limit.toString());
+    params.append('_t', new Date().getTime().toString());
 
     const response = await axios.get(`${API_URL}/todas?${params.toString()}`, getConfig());
     return response.data;
