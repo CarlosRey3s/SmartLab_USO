@@ -1,4 +1,6 @@
-const API_URL = "http://localhost:4000/api/alertas";
+import { BASE_URL } from "../config/api";
+
+const API_URL = `${BASE_URL}/api/alertas`;
 
 // Helper para enviar el token
 const getHeaders = () => {

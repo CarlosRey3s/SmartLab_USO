@@ -17,7 +17,7 @@ export const obtenerActividades = async (start: string, end: string) => {
     try {
         // Hacemos la petición directa al puerto 4000 de tu backend
         const respuesta = await axios.get(API_URL, {
-            params: { start, end },
+            params: { start, end, _t: new Date().getTime() },
             headers: getAuthHeaders()
         });
 

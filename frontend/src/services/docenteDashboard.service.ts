@@ -4,11 +4,12 @@ import axios from "axios";
 import type {
     DocenteDashboard
 } from "../types/docenteDashboard.types";
+import { BASE_URL } from "../config/api";
 
 
 
-const API_URL =
-"http://localhost:4000/api/docente/dashboard";
+
+const API_URL = `${BASE_URL}/api/docente/dashboard`;
 
 
 

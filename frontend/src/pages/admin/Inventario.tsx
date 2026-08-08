@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, SlidersHorizontal, Plus, MoreVertical, CheckCircle, ArrowUp, ArrowDown, Monitor, Bell, Package, CalendarClock, History } from 'lucide-react';
+import { Search, SlidersHorizontal, Plus, MoreVertical, CheckCircle, Monitor, Bell, Package, CalendarClock, History } from 'lucide-react';
 import '../../css/inventario.css';
 import '../../css/Usuarios.css';
 import { AgregarItemModal } from '../../components/shared/AgregarItemModal';
@@ -13,6 +13,7 @@ import { customToast } from '../../components/custom-toast/CustomToast';
 import { useAuth } from '../../context/AuthContext';
 import { isReadOnlyView } from '../../utils/roleGuard';
 import * as XLSX from 'xlsx';
+import { BASE_URL } from '../../config/api';
 
 export interface InventoryItem {
   id: string | number;

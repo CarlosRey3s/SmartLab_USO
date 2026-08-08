@@ -443,3 +443,153 @@
   white-space: nowrap;
   margin-top: 2px;
 }
+
+/* ── Tab Incompleto — Naranja sutil ── */
+.ps-tab--incompleto:not(.ps-tab--activa) {
+  color: #c2410c;
+  background-color: #fff7ed;
+}
+
+.ps-tab--incompleto:not(.ps-tab--activa):hover {
+  background-color: #ffedd5;
+  color: #9a3412;
+}
+
+.ps-tab--incompleto.ps-tab--activa {
+  background-color: #ea580c;
+  border-color: #ea580c;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.25);
+}
+
+/* ── Botón Reprogramar — Azul informativo ── */
+.btn-reprogramar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.45rem 0.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.79rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  transition: opacity 0.18s, transform 0.15s, box-shadow 0.18s;
+}
+
+.btn-reprogramar:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+
+.btn-reprogramar:active {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.btn-reprogramar svg {
+  flex-shrink: 0;
+}
+
+/* ── Formulario de Reprogramación (dentro del modal) ── */
+.reprogramar-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.reprogramar-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.reprogramar-campo label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.reprogramar-campo input[type="date"],
+.reprogramar-campo input[type="time"] {
+  padding: 0.5rem 0.65rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: #1f2937;
+  background: #f9fafb;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.reprogramar-campo input[type="date"]:focus,
+.reprogramar-campo input[type="time"]:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  background: #ffffff;
+}
+
+.reprogramar-horarios {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.reprogramar-horarios .reprogramar-campo {
+  flex: 1;
+}
+
+/* ── Tab Ausente — Morado/Gris sutil ── */
+.ps-tab--ausente:not(.ps-tab--activa) {
+  color: #5b21b6;
+  background-color: #f5f3ff;
+}
+
+.ps-tab--ausente:not(.ps-tab--activa):hover {
+  background-color: #ede9fe;
+  color: #4c1d95;
+}
+
+.ps-tab--ausente.ps-tab--activa {
+  background-color: #7c3aed;
+  border-color: #7c3aed;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+}
+
+/* ── Botón Ausente (Marcar Inasistencia) — Botón Rojo/Gris ── */
+.btn-ausente {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.45rem 0.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.79rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #ffffff;
+  background: linear-gradient(135deg, #64748b, #475569);
+  box-shadow: 0 2px 8px rgba(71, 85, 105, 0.3);
+  transition: opacity 0.18s, transform 0.15s, box-shadow 0.18s;
+}
+
+.btn-ausente:hover {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-ausente:active {
+  transform: translateY(0);
+}
+
+.btn-ausente svg {
+  flex-shrink: 0;
+}

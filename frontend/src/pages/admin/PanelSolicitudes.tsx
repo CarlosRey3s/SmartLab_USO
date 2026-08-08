@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Check, X, Clock, MapPin, Monitor, Wrench, User, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Check, X, Clock, MapPin, Monitor, Wrench, User, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RefreshCw, UserX } from 'lucide-react';
 import type { SolicitudPendiente } from '../../types/solicitudes.types';
-import { obtenerTodasSolicitudes, resolverSolicitud, cancelarSolicitud } from '../../services/solicitudes.services';
+import { obtenerTodasSolicitudes, resolverSolicitud, cancelarSolicitud, reprogramarSolicitud, marcarAusente } from '../../services/solicitudes.services';
 import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
 import { customToast } from '../../components/custom-toast/CustomToast';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/solicitudes.css';
 
-type TabType = 'pendiente' | 'aprobada' | 'rechazada' | 'cancelada';
+type TabType = 'pendiente' | 'aprobada' | 'rechazada' | 'cancelada' | 'incompleto' | 'ausente';
 const ITEMS_POR_PAGINA = 10;
 
 const PanelSolicitudes: React.FC = () => {
@@ -29,8 +29,17 @@ const PanelSolicitudes: React.FC = () => {
 
   // ConfirmModal + protección doble clic
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [confirmData, setConfirmData] = useState<{ id: number; accion: 'aprobar' | 'rechazar' | 'cancelar' } | null>(null);
+  const [confirmData, setConfirmData] = useState<{ id: number; accion: 'aprobar' | 'rechazar' | 'cancelar' | 'ausente' } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [motivoRechazo, setMotivoRechazo] = useState('');
+
+  // Modal de Reprogramación
+  const [isReprogramarOpen, setIsReprogramarOpen] = useState(false);
+  const [reprogramarId, setReprogramarId] = useState<number | null>(null);
+  const [repFecha, setRepFecha] = useState('');
+  const [repHoraInicio, setRepHoraInicio] = useState('');
+  const [repHoraFin, setRepHoraFin] = useState('');
+  const [isReprogramando, setIsReprogramando] = useState(false);
 
   // ── Cargar solicitudes paginadas desde el backend ──
   const cargarSolicitudes = useCallback(async (estado?: string, page?: number) => {
@@ -54,7 +63,7 @@ const PanelSolicitudes: React.FC = () => {
   }, [tabActiva, paginaActual]);
 
   // ── Motor de decisión: Aprobar / Rechazar / Cancelar ──
-  const solicitarResolucion = (actividadId: number, accion: 'aprobar' | 'rechazar' | 'cancelar') => {
+  const solicitarResolucion = (actividadId: number, accion: 'aprobar' | 'rechazar' | 'cancelar' | 'ausente') => {
     setConfirmData({ id: actividadId, accion });
     setIsConfirmOpen(true);
   };
@@ -68,8 +77,11 @@ const PanelSolicitudes: React.FC = () => {
       if (accion === 'cancelar') {
         await cancelarSolicitud(id);
         customToast.success('Solicitud cancelada exitosamente.');
+      } else if (accion === 'ausente') {
+        await marcarAusente(id);
+        customToast.success('Estudiante marcado como ausente. Inventario liberado.');
       } else {
-        await resolverSolicitud(id, accion);
+        await resolverSolicitud(id, accion, accion === 'rechazar' ? motivoRechazo : undefined);
         customToast.success(`Solicitud ${accion === 'aprobar' ? 'aprobada' : 'rechazada'} exitosamente.`);
       }
       cargarSolicitudes(tabActiva, paginaActual);
@@ -80,7 +92,39 @@ const PanelSolicitudes: React.FC = () => {
     } finally {
       setIsConfirmOpen(false);
       setConfirmData(null);
+      setMotivoRechazo('');
       setIsProcessing(false);
+    }
+  };
+
+  // ── Reprogramar ──
+  const abrirModalReprogramar = (actividadId: number) => {
+    setReprogramarId(actividadId);
+    setRepFecha('');
+    setRepHoraInicio('');
+    setRepHoraFin('');
+    setIsReprogramarOpen(true);
+  };
+
+  const procesarReprogramacion = async () => {
+    if (!reprogramarId || isReprogramando) return;
+    if (!repFecha || !repHoraInicio || !repHoraFin) {
+      customToast.error('Debes completar la fecha, hora de inicio y hora de fin.');
+      return;
+    }
+    setIsReprogramando(true);
+    try {
+      await reprogramarSolicitud(reprogramarId, repFecha, repHoraInicio, repHoraFin);
+      customToast.success('Solicitud reprogramada exitosamente. Se creó una nueva solicitud pendiente.');
+      setIsReprogramarOpen(false);
+      setReprogramarId(null);
+      cargarSolicitudes(tabActiva, paginaActual);
+    } catch (error: any) {
+      console.error('Error al reprogramar:', error);
+      const msg = error.response?.data?.message || 'Ocurrió un error al reprogramar la solicitud.';
+      customToast.error(`Error: ${msg}`);
+    } finally {
+      setIsReprogramando(false);
     }
   };
 
@@ -123,6 +167,15 @@ const PanelSolicitudes: React.FC = () => {
     setDetalleAbierto(prev => prev === id ? null : id);
   };
 
+  // ── Obtener fecha mínima (hoy) para el input date ──
+  const getFechaMinima = () => {
+    const hoy = new Date();
+    const y = hoy.getFullYear();
+    const m = String(hoy.getMonth() + 1).padStart(2, '0');
+    const d = String(hoy.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
   return (
     <div className="panel-solicitudes-container">
 
@@ -136,13 +189,13 @@ const PanelSolicitudes: React.FC = () => {
 
       {/* ── Tabs ── */}
       <div className="ps-tabs">
-        {(['pendiente', 'aprobada', 'rechazada', 'cancelada'] as TabType[]).map((tab) => (
+        {(['pendiente', 'aprobada', 'rechazada', 'cancelada', 'incompleto', 'ausente'] as TabType[]).map((tab) => (
           <button
             key={tab}
-            className={`ps-tab${tabActiva === tab ? ' ps-tab--activa' : ''}`}
+            className={`ps-tab${tabActiva === tab ? ' ps-tab--activa' : ''}${tab === 'incompleto' ? ' ps-tab--incompleto' : ''}${tab === 'ausente' ? ' ps-tab--ausente' : ''}`}
             onClick={() => cambiarTab(tab)}
           >
-            {tab.charAt(0).toUpperCase() + tab.slice(1) + 's'}
+            {tab === 'incompleto' ? 'Incompletas' : tab === 'ausente' ? 'Ausentes' : tab.charAt(0).toUpperCase() + tab.slice(1) + 's'}
             {contadores[tab] ? ` (${contadores[tab]})` : ''}
           </button>
         ))}
@@ -155,7 +208,7 @@ const PanelSolicitudes: React.FC = () => {
         </div>
       ) : solicitudes.length === 0 ? (
         <div className="estado-mensaje">
-          No hay solicitudes {tabActiva === 'pendiente' ? 'pendientes' : tabActiva === 'aprobada' ? 'aprobadas' : tabActiva === 'rechazada' ? 'rechazadas' : 'canceladas'}.
+          No hay solicitudes {tabActiva === 'pendiente' ? 'pendientes' : tabActiva === 'aprobada' ? 'aprobadas' : tabActiva === 'rechazada' ? 'rechazadas' : tabActiva === 'incompleto' ? 'incompletas' : tabActiva === 'ausente' ? 'ausentes' : 'canceladas'}.
         </div>
       ) : (
         <div className="lista-solicitudes">
@@ -269,6 +322,11 @@ const PanelSolicitudes: React.FC = () => {
                         <strong>Nota:</strong> {solicitud.nota_adicional}
                       </div>
                     )}
+                    {solicitud.estado_reserva === 'rechazada' && solicitud.motivo_resolucion && (
+                      <div className="detalle-nota" style={{ marginTop: '8px', borderLeftColor: '#ef4444' }}>
+                        <strong style={{ color: '#ef4444' }}>Motivo de rechazo:</strong> {solicitud.motivo_resolucion}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -304,6 +362,28 @@ const PanelSolicitudes: React.FC = () => {
                           </button>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {tabActiva === 'incompleto' && esAutoridad && (
+                    <div className="tarjeta-acciones">
+                      <button
+                        className="btn-reprogramar"
+                        onClick={() => abrirModalReprogramar(solicitud.actividad_id)}
+                      >
+                        <RefreshCw size={15} /> Reprogramar
+                      </button>
+                    </div>
+                  )}
+
+                  {tabActiva === 'aprobada' && esAutoridad && (
+                    <div className="tarjeta-acciones">
+                      <button
+                        className="btn-ausente"
+                        onClick={() => solicitarResolucion(solicitud.actividad_id, 'ausente')}
+                      >
+                        <UserX size={15} /> Marcar Inasistencia
+                      </button>
                     </div>
                   )}
 
@@ -349,29 +429,104 @@ const PanelSolicitudes: React.FC = () => {
         title={
           confirmData?.accion === 'aprobar' ? 'Aprobar Solicitud' :
           confirmData?.accion === 'rechazar' ? 'Rechazar Solicitud' :
+          confirmData?.accion === 'ausente' ? 'Marcar Inasistencia' :
           'Cancelar Solicitud'
         }
         message={
           isProcessing
             ? 'Procesando...'
+            : confirmData?.accion === 'ausente'
+            ? '¿Estás seguro de marcar a este estudiante como ausente? Esto liberará el inventario reservado.'
             : `¿Estás seguro de que deseas ${confirmData?.accion} esta solicitud?`
         }
         confirmText={
           isProcessing ? 'Procesando...' :
           confirmData?.accion === 'aprobar' ? 'Aprobar' :
           confirmData?.accion === 'rechazar' ? 'Rechazar' :
+          confirmData?.accion === 'ausente' ? 'Confirmar Ausencia' :
           'Sí, cancelar'
         }
         cancelText="Volver"
-        type={confirmData?.accion === 'aprobar' ? 'info' : 'danger'}
+        type={confirmData?.accion === 'aprobar' ? 'info' : confirmData?.accion === 'ausente' ? 'danger' : 'danger'}
         onConfirm={procesarResolucion}
         onCancel={() => {
           if (!isProcessing) {
             setIsConfirmOpen(false);
             setConfirmData(null);
+            setMotivoRechazo('');
           }
         }}
-      />
+      >
+        {confirmData?.accion === 'rechazar' && (
+          <div style={{ marginTop: '15px' }}>
+            <label style={{ fontSize: '14px', fontWeight: 500, color: '#374151', display: 'block', marginBottom: '8px' }}>
+              Motivo del rechazo (opcional)
+            </label>
+            <textarea
+              value={motivoRechazo}
+              onChange={(e) => setMotivoRechazo(e.target.value)}
+              placeholder="Explica brevemente por qué se rechaza la solicitud..."
+              rows={3}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '8px',
+                border: '1px solid #d1d5db',
+                resize: 'none',
+                fontSize: '14px',
+                fontFamily: 'inherit'
+              }}
+            />
+          </div>
+        )}
+      </ConfirmModal>
+
+      {/* ── Modal de Reprogramación ── */}
+      <ConfirmModal
+        isOpen={isReprogramarOpen}
+        title="Reprogramar Solicitud"
+        message={isReprogramando ? 'Procesando reprogramación...' : 'Selecciona la nueva fecha y horario para esta solicitud.'}
+        confirmText={isReprogramando ? 'Procesando...' : 'Reprogramar'}
+        cancelText="Cancelar"
+        type="info"
+        onConfirm={procesarReprogramacion}
+        onCancel={() => {
+          if (!isReprogramando) {
+            setIsReprogramarOpen(false);
+            setReprogramarId(null);
+          }
+        }}
+      >
+        <div className="reprogramar-form">
+          <div className="reprogramar-campo">
+            <label>Nueva fecha</label>
+            <input
+              type="date"
+              value={repFecha}
+              min={getFechaMinima()}
+              onChange={(e) => setRepFecha(e.target.value)}
+            />
+          </div>
+          <div className="reprogramar-horarios">
+            <div className="reprogramar-campo">
+              <label>Hora inicio</label>
+              <input
+                type="time"
+                value={repHoraInicio}
+                onChange={(e) => setRepHoraInicio(e.target.value)}
+              />
+            </div>
+            <div className="reprogramar-campo">
+              <label>Hora fin</label>
+              <input
+                type="time"
+                value={repHoraFin}
+                onChange={(e) => setRepHoraFin(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      </ConfirmModal>
     </div>
   );
 };

@@ -20,17 +20,37 @@ export const obtenerTodasSolicitudes = async (
     if (estado) params.append('estado', estado);
     params.append('page', page.toString());
     params.append('limit', limit.toString());
+    params.append('_t', new Date().getTime().toString());
 
     const response = await axios.get(`${API_URL}/todas?${params.toString()}`, getConfig());
     return response.data;
 };
 
-export const resolverSolicitud = async (actividadId: number, accion: 'aprobar' | 'rechazar') => {
-    const response = await axios.put(`${API_URL}/${actividadId}/resolver`, { accion }, getConfig());
+export const resolverSolicitud = async (actividadId: number, accion: 'aprobar' | 'rechazar', motivo_resolucion?: string) => {
+    const response = await axios.put(`${API_URL}/${actividadId}/resolver`, { accion, motivo_resolucion }, getConfig());
     return response.data;
 };
 
 export const cancelarSolicitud = async (actividadId: number) => {
     const response = await axios.put(`${API_URL}/${actividadId}/cancelar`, {}, getConfig());
+    return response.data;
+};
+
+export const reprogramarSolicitud = async (
+    actividadId: number,
+    fecha: string,
+    hora_inicio: string,
+    hora_fin: string
+) => {
+    const response = await axios.put(
+        `${API_URL}/${actividadId}/reprogramar`,
+        { fecha, hora_inicio, hora_fin },
+        getConfig()
+    );
+    return response.data;
+};
+
+export const marcarAusente = async (actividadId: number) => {
+    const response = await axios.put(`${API_URL}/${actividadId}/ausente`, {}, getConfig());
     return response.data;
 };

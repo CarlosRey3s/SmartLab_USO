@@ -31,6 +31,11 @@ router.put('/solicitudes/:id/devolver', verificarToken, actividadesController.de
 
 router.get('/disponibilidad', verificarToken, actividadesController.consultarDisponibilidad);
 router.put('/solicitudes/:id/cancelar', verificarToken, actividadesController.cancelarReserva);
+// Reprogramar solicitud incompleta (Solo administrador y coordinador)
+router.put('/solicitudes/:id/reprogramar', verificarToken, verificarRol(['administrador', 'coordinador']), actividadesController.reprogramarSolicitud);
+// Marcar Inasistencia de Estudiante Fantasma (Solo administrador y coordinador)
+router.put('/solicitudes/:id/ausente', verificarToken, verificarRol(['administrador', 'coordinador']), actividadesController.marcarAusente);
+
 router.post('/', verificarToken, validarActividades, actividadesController.crearActividad);
 router.put('/:id', verificarToken, validarActividades, actividadesController.actualizarActividad);
 router.delete('/:id', verificarToken, actividadesController.eliminarActividad);

@@ -177,14 +177,14 @@ const obtenerTodas = async (req, res) => {
 const resolverSolicitud = async (req, res) => {
     try {
         const { id } = req.params;
-        const { accion } = req.body; // 'aprobar' o 'rechazar'
+        const { accion, motivo_resolucion } = req.body; // 'aprobar' o 'rechazar'
         const resolutorId = req.usuario.id;
 
         if (!accion || !['aprobar', 'rechazar'].includes(accion)) {
             return res.status(400).json({ success: false, message: 'Debe especificar una accion válida (aprobar o rechazar)' });
         }
 
-        const resultado = await actividadesService.resolverSolicitud(id, accion, resolutorId);
+        const resultado = await actividadesService.resolverSolicitud(id, accion, resolutorId, motivo_resolucion);
         res.status(200).json({ success: true, message: resultado.message });
     } catch (error) {
         console.error('Error al resolver la solicitud:', error);
@@ -235,6 +235,36 @@ const cancelarReserva = async (req, res) => {
     }
 };
 
+// Controlador para reprogramar una solicitud incompleta (solo admin/coordinador)
+const reprogramarSolicitud = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { fecha, hora_inicio, hora_fin } = req.body;
+
+        if (!fecha || !hora_inicio || !hora_fin) {
+            return res.status(400).json({ success: false, message: 'Se requieren fecha, hora_inicio y hora_fin.' });
+        }
+
+        const resultado = await actividadesService.reprogramarSolicitud(id, fecha, hora_inicio, hora_fin);
+        res.status(200).json({ success: true, message: resultado.message, nuevoId: resultado.nuevoId });
+    } catch (error) {
+        console.error('Error al reprogramar la solicitud:', error);
+        res.status(error.status || 500).json({ success: false, message: error.message || 'Error interno del servidor' });
+    }
+};
+
+const marcarAusente = async (req, res) => {
+    try {
+        const { id } = req.params; // actividad_id
+        const resolutorId = req.usuario.id;
+        const resultado = await actividadesService.marcarAusente(id, resolutorId);
+        res.status(200).json({ success: true, message: resultado.mensaje });
+    } catch (error) {
+        console.error('Error al marcar inasistencia:', error);
+        res.status(error.status || 500).json({ success: false, message: error.message || 'Error interno del servidor' });
+    }
+};
+
 // Exportar controladores:
 module.exports = {
     crearActividad,
@@ -246,5 +276,7 @@ module.exports = {
     resolverSolicitud,
     cancelarReserva,
     entregarEquipos,
-    devolverEquipos
+    devolverEquipos,
+    reprogramarSolicitud,
+    marcarAusente
 };

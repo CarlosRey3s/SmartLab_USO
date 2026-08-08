@@ -15,10 +15,11 @@ export interface SolicitudPendiente {
     actividad_id: number;
     titulo: string;
     nota_adicional: string | null;
-    estado_reserva: 'pendiente' | 'aprobada' | 'rechazada' | 'cancelada';
+    estado_reserva: 'pendiente' | 'aprobada' | 'rechazada' | 'cancelada' | 'incompleto' | 'ausente';
     fecha_hora_inicio: string;
     fecha_hora_fin: string;
     fecha_creacion: string;
+    motivo_resolucion?: string;
     solicitante_nombre: string;
     solicitante_apellido: string;
     solicitante_correo: string;
