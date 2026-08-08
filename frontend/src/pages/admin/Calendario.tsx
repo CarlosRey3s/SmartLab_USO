@@ -62,7 +62,7 @@ const CustomHeader = ({ date }: { date: Date }) => {
   return (
     <div className={`custom-header-cell ${esHoy ? 'hoy' : ''}`}>
       <span className="dia-texto">{format(date, 'eee', { locale: es }).toUpperCase()}</span>
-      <span className="dia-numero">{format(date, 'dd')}</span>
+      <span className="dia-numero">{format(date, 'd')}</span>
     </div>
   );
 };
@@ -79,7 +79,8 @@ const CustomDateHeader = ({ label, date, isOffRange }: any) => {
   const monthStr = format(date, 'MMM', { locale: es }).toLowerCase();
   // Quitar el punto que a veces pone date-fns
   const cleanMonthStr = monthStr.replace('.', '');
-  const displayLabel = isFirstOfMonth ? `1 ${cleanMonthStr}` : label;
+  const dayNumber = format(date, 'd');
+  const displayLabel = isFirstOfMonth ? `1 ${cleanMonthStr}` : dayNumber;
 
   return (
     <div className={`custom-date-header ${isToday(date) ? 'hoy' : ''} ${isOffRange ? 'off-range' : ''}`}>
@@ -315,6 +316,8 @@ export const CalendarioView = () => {
 
   const [eventoSeleccionado, setEventoSeleccionado] = useState<EventoLaboratorio | null>(null);
   const [popoverPos, setPopoverPos] = useState({ x: 0, y: 0 });
+  const [popoverDragY, setPopoverDragY] = useState(0);
+  const [popoverTouchStartY, setPopoverTouchStartY] = useState<number | null>(null);
 
   const [eventos, setEventos] = useState<EventoLaboratorio[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -329,6 +332,47 @@ export const CalendarioView = () => {
     reservas: true,
     laboratorios: [] as string[]
   });
+
+  // Estados para el manejo de Swipe en móviles
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchEndX, setTouchEndX] = useState<number | null>(null);
+
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEndX(null); // Reset
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStartX || !touchEndX) return;
+    const distance = touchStartX - touchEndX;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      // Swipe izquierda -> Siguiente periodo
+      moverPeriodo(1);
+    }
+    if (isRightSwipe) {
+      // Swipe derecha -> Periodo anterior
+      moverPeriodo(-1);
+    }
+  };
+
+  const moverPeriodo = (direccion: number) => {
+    setFechaActual(prev => {
+      const nuevaFecha = new Date(prev);
+      if (vistaActual === 'month') nuevaFecha.setMonth(prev.getMonth() + direccion);
+      else if (vistaActual === 'week' || vistaActual === 'work_week') nuevaFecha.setDate(prev.getDate() + (7 * direccion));
+      else if (vistaActual === 'day' || vistaActual === 'agenda') nuevaFecha.setDate(prev.getDate() + direccion);
+      return nuevaFecha;
+    });
+  };
 
   const cargarDatos = async () => {
     try {
@@ -559,127 +603,154 @@ export const CalendarioView = () => {
       <div className="calendar-page-wrapper" onClick={() => eventoSeleccionado && setEventoSeleccionado(null)}>
         {cargando && <div className="loading-overlay">Cargando base de datos smartlabs...</div>}
         {eventoSeleccionado && (
-          <div
-            className="event-popover-container"
-            style={{ top: popoverPos.y, left: popoverPos.x }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="popover-header">
-              <div className="popover-actions">
-                {(() => {
-                  if (!user) return false;
-                  if (user.rol === 'administrador') return true;
-                  if (user.rol === 'coordinador') {
-                    return !eventoSeleccionado.coordinador_id || String(eventoSeleccionado.coordinador_id) === String(user.id);
-                  }
-                  if (user.rol === 'docente') {
-                    return eventoSeleccionado.tipo === 'reserva' && String(eventoSeleccionado.usuario_id) === String(user.id);
-                  }
-                  return false;
-                })() && (
-                    <>
-                      <button className="btn-popover-action" onClick={handleEditarEvento} title="Editar">
-                        <Edit2 size={16} />
-                      </button>
-                      <button className="btn-popover-action btn-delete" onClick={handleEliminarEvento} title="Eliminar">
-                        <Trash2 size={16} />
-                      </button>
-                    </>
-                  )}
-                <button className="btn-popover-action" onClick={() => setEventoSeleccionado(null)} title="Cerrar">
-                  <X size={18} />
-                </button>
+          <>
+            {/* Overlay oscuro para móvil */}
+            <div className="popover-mobile-overlay" onClick={() => setEventoSeleccionado(null)} />
+            <div
+              className="event-popover-container"
+              style={{
+                top: popoverPos.y,
+                left: popoverPos.x,
+                ...(popoverDragY > 0 ? { transform: `translateY(${popoverDragY}px)`, transition: 'none' } : {})
+              }}
+              onClick={(e) => e.stopPropagation()}
+              onTouchStart={(e) => {
+                setPopoverTouchStartY(e.targetTouches[0].clientY);
+                setPopoverDragY(0);
+              }}
+              onTouchMove={(e) => {
+                if (popoverTouchStartY === null) return;
+                const diff = e.targetTouches[0].clientY - popoverTouchStartY;
+                if (diff > 0) setPopoverDragY(diff); // Solo hacia abajo
+              }}
+              onTouchEnd={() => {
+                if (popoverDragY > 100) {
+                  setEventoSeleccionado(null); // Cerrar si arrastró más de 100px
+                }
+                setPopoverDragY(0);
+                setPopoverTouchStartY(null);
+              }}
+            >
+              {/* Barra de arrastre para móvil */}
+              <div className="popover-drag-handle"><div className="drag-bar" /></div>
+
+              <div className="popover-header">
+                <div className="popover-actions">
+                  {(() => {
+                    if (!user) return false;
+                    if (user.rol === 'administrador') return true;
+                    if (user.rol === 'coordinador') {
+                      return !eventoSeleccionado.coordinador_id || String(eventoSeleccionado.coordinador_id) === String(user.id);
+                    }
+                    if (user.rol === 'docente') {
+                      return eventoSeleccionado.tipo === 'reserva' && String(eventoSeleccionado.usuario_id) === String(user.id);
+                    }
+                    return false;
+                  })() && (
+                      <>
+                        <button className="btn-popover-action" onClick={handleEditarEvento} title="Editar">
+                          <Edit2 size={16} />
+                        </button>
+                        <button className="btn-popover-action btn-delete" onClick={handleEliminarEvento} title="Eliminar">
+                          <Trash2 size={16} />
+                        </button>
+                      </>
+                    )}
+                  <button className="btn-popover-action" onClick={() => setEventoSeleccionado(null)} title="Cerrar">
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <h3 className="popover-title">{eventoSeleccionado.title}</h3>
+                <p className="popover-time">
+                  {format(eventoSeleccionado.start, "EEEE d 'de' MMMM • h:mm a", { locale: es })} - {format(eventoSeleccionado.end, 'h:mm a')}
+                </p>
               </div>
 
-              <h3 className="popover-title">{eventoSeleccionado.title}</h3>
-              <p className="popover-time">
-                {format(eventoSeleccionado.start, "EEEE d 'de' MMMM • h:mm a", { locale: es })} - {format(eventoSeleccionado.end, 'h:mm a')}
-              </p>
-            </div>
+              <div className="popover-body">
+                <div className="popover-row">
+                  <CalendarIcon size={16} className="popover-icon" />
+                  <span>{eventoSeleccionado.laboratorio_nombre}</span>
+                </div>
 
-            <div className="popover-body">
-              <div className="popover-row">
-                <CalendarIcon size={16} className="popover-icon" />
-                <span>{eventoSeleccionado.laboratorio_nombre}</span>
-              </div>
+                {eventoSeleccionado.tipo === 'clase' && (
+                  <>
+                    <div className="popover-row"><FileText size={16} className="popover-icon" /> <span>Materia: {eventoSeleccionado.materia}</span></div>
+                    <div className="popover-row"><User size={16} className="popover-icon" /> <span>Docente: {eventoSeleccionado.docente_nombre || 'No asignado'}</span></div>
+                    {eventoSeleccionado.clase_estudiantes != null && (
+                      <div className="popover-row"><Users size={16} className="popover-icon" /> <span>Estudiantes: {eventoSeleccionado.clase_estudiantes}</span></div>
+                    )}
+                  </>
+                )}
 
-              {eventoSeleccionado.tipo === 'clase' && (
-                <>
-                  <div className="popover-row"><FileText size={16} className="popover-icon" /> <span>Materia: {eventoSeleccionado.materia}</span></div>
-                  <div className="popover-row"><User size={16} className="popover-icon" /> <span>Docente: {eventoSeleccionado.docente_nombre || 'No asignado'}</span></div>
-                  {eventoSeleccionado.clase_estudiantes != null && (
-                    <div className="popover-row"><Users size={16} className="popover-icon" /> <span>Estudiantes: {eventoSeleccionado.clase_estudiantes}</span></div>
-                  )}
-                </>
-              )}
+                {eventoSeleccionado.tipo === 'mantenimiento' && (
+                  <>
+                    <div className="popover-row"><Wrench size={16} className="popover-icon text-red" /> <span>Técnico: {eventoSeleccionado.tecnico_nombre || 'No asignado'}</span></div>
+                    <div className="popover-row"><FileText size={16} className="popover-icon" /> <span className="text-sm">{eventoSeleccionado.mant_descripcion}</span></div>
+                  </>
+                )}
 
-              {eventoSeleccionado.tipo === 'mantenimiento' && (
-                <>
-                  <div className="popover-row"><Wrench size={16} className="popover-icon text-red" /> <span>Técnico: {eventoSeleccionado.tecnico_nombre || 'No asignado'}</span></div>
-                  <div className="popover-row"><FileText size={16} className="popover-icon" /> <span className="text-sm">{eventoSeleccionado.mant_descripcion}</span></div>
-                </>
-              )}
-
-              {eventoSeleccionado.tipo === 'reserva' && (
-                <>
-                  {eventoSeleccionado.reserva_solicitante_nombre && (
-                    <div className="popover-row">
-                      <User size={16} className="popover-icon" />
-                      <span>Reservado por: {eventoSeleccionado.reserva_solicitante_nombre} {eventoSeleccionado.reserva_solicitante_apellido} ({eventoSeleccionado.reserva_solicitante_expediente})</span>
-                    </div>
-                  )}
-                  {eventoSeleccionado.reserva_nota && (
-                    <div className="popover-row"><FileText size={16} className="popover-icon" /> <span className="text-sm">Nota: {eventoSeleccionado.reserva_nota}</span></div>
-                  )}
-                  {eventoSeleccionado.estado_reserva && (
-                    <div className="popover-row">
-                      <Info size={16} className="popover-icon" />
-                      <span>
-                        Estado:{' '}
-                        <span className={`estado-badge estado-${eventoSeleccionado.estado_reserva.toLowerCase()}`}>
-                          {eventoSeleccionado.estado_reserva.toUpperCase()}
+                {eventoSeleccionado.tipo === 'reserva' && (
+                  <>
+                    {eventoSeleccionado.reserva_solicitante_nombre && (
+                      <div className="popover-row">
+                        <User size={16} className="popover-icon" />
+                        <span>Reservado por: {eventoSeleccionado.reserva_solicitante_nombre} {eventoSeleccionado.reserva_solicitante_apellido} ({eventoSeleccionado.reserva_solicitante_expediente})</span>
+                      </div>
+                    )}
+                    {eventoSeleccionado.reserva_nota && (
+                      <div className="popover-row"><FileText size={16} className="popover-icon" /> <span className="text-sm">Nota: {eventoSeleccionado.reserva_nota}</span></div>
+                    )}
+                    {eventoSeleccionado.estado_reserva && (
+                      <div className="popover-row">
+                        <Info size={16} className="popover-icon" />
+                        <span>
+                          Estado:{' '}
+                          <span className={`estado-badge estado-${eventoSeleccionado.estado_reserva.toLowerCase()}`}>
+                            {eventoSeleccionado.estado_reserva.toUpperCase()}
+                          </span>
                         </span>
-                      </span>
-                    </div>
-                  )}
+                      </div>
+                    )}
 
-                  {eventoSeleccionado.estaciones && eventoSeleccionado.estaciones.length > 0 && (
-                    <div className="popover-section">
-                      <div className="flex justify-between items-center mb-1">
-                        <p className="popover-section-title mb-0">
-                          🖥️ ESTACIONES RESERVADAS:
+                    {eventoSeleccionado.estaciones && eventoSeleccionado.estaciones.length > 0 && (
+                      <div className="popover-section">
+                        <div className="flex justify-between items-center mb-1">
+                          <p className="popover-section-title mb-0">
+                            🖥️ ESTACIONES RESERVADAS:
+                          </p>
+                          <span className="text-xs font-bold text-gray-500">Total: {eventoSeleccionado.estaciones.length}</span>
+                        </div>
+                        <div className="estaciones-grid mt-1">
+                          {eventoSeleccionado.estaciones.map((est: number) => (
+                            <div key={est} className="estacion-badge">
+                              {est}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {eventoSeleccionado.equipos && eventoSeleccionado.equipos.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-gray-200">
+                        <p className="text-xs font-semibold text-gray-500 mb-1">
+                          📦 MATERIALES SOLICITADOS:
                         </p>
-                        <span className="text-xs font-bold text-gray-500">Total: {eventoSeleccionado.estaciones.length}</span>
+                        <ul className="space-y-1">
+                          {eventoSeleccionado.equipos.map((equipo: any) => (
+                            <li key={equipo.id} className="text-sm text-gray-700 flex justify-between bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
+                              <span>• {equipo.nombre}</span>
+                              <strong className="text-indigo-600">Cant: {equipo.cantidad}</strong>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                      <div className="estaciones-grid mt-1">
-                        {eventoSeleccionado.estaciones.map((est: number) => (
-                          <div key={est} className="estacion-badge">
-                            {est}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {eventoSeleccionado.equipos && eventoSeleccionado.equipos.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-gray-200">
-                      <p className="text-xs font-semibold text-gray-500 mb-1">
-                        📦 MATERIALES SOLICITADOS:
-                      </p>
-                      <ul className="space-y-1">
-                        {eventoSeleccionado.equipos.map((equipo: any) => (
-                          <li key={equipo.id} className="text-sm text-gray-700 flex justify-between bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
-                            <span>• {equipo.nombre}</span>
-                            <strong className="text-indigo-600">Cant: {equipo.cantidad}</strong>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </>
-              )}
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          </>
         )}
         {modalAbierto && (
           <ModalNuevaActividad
@@ -688,7 +759,12 @@ export const CalendarioView = () => {
             actividadExistente={actividadAEditar}
           />
         )}
-        <div className="calendar-main-container">
+        <div 
+          className="calendar-main-container"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
           <Calendar
             localizer={localizer}
             events={eventosFiltrados}

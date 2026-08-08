@@ -52,7 +52,7 @@
 }
 
 .calendar-page-wrapper .btn-hoy {
-  background-color: #0f766e;
+  background-color: #AD868A;
   color: white;
   padding: .5rem 1.25rem;
   border-radius: 9999px;
@@ -268,7 +268,7 @@
 }
 
 .calendar-page-wrapper .custom-header-cell.hoy .dia-numero {
-  background: #0f766e;
+  background: #AD868A;
   color: white;
   font-weight: 600;
 }
@@ -478,7 +478,7 @@
 }
 
 .calendar-page-wrapper .custom-date-header.hoy span {
-  background: #0f766e;
+  background: #AD868A;
   color: white;
   font-weight: 500;
 }
@@ -548,6 +548,15 @@
   padding: 12px 16px;
   border-bottom: 1px solid #f3f4f6;
   position: relative;
+}
+
+/* Ocultar elementos de bottom-sheet en desktop */
+.popover-drag-handle {
+  display: none;
+}
+
+.popover-mobile-overlay {
+  display: none;
 }
 
 .popover-actions {
@@ -1198,6 +1207,32 @@
   }
 
   .calendar-page-wrapper .btn-crear,
+  .calendar-page-wrapper .rbc-month-view .custom-event-content {
+    padding: 2px;
+  }
+
+  .calendar-page-wrapper .rbc-month-view .event-time {
+    display: none;
+  }
+
+  .calendar-page-wrapper .evento-base {
+    margin-bottom: 2px !important;
+  }
+
+  /* Ajuste del ancho de la columna de horas para móviles */
+  .calendar-page-wrapper .rbc-time-gutter,
+  .calendar-page-wrapper .rbc-time-header-gutter,
+  .calendar-page-wrapper .rbc-allday-cell {
+    width: 40px !important;
+    min-width: 40px !important;
+  }
+
+  .calendar-page-wrapper .rbc-time-gutter .rbc-label {
+    font-size: 0.65rem;
+    padding-right: 4px;
+  }
+
+  .calendar-page-wrapper .btn-crear,
   .calendar-page-wrapper .mis-laboratorios-card,
   .calendar-page-wrapper .btn-exportar {
     width: 100%;
@@ -1207,9 +1242,71 @@
     margin-bottom: 2rem !important;
   }
 
+  /* ── Popover fullscreen (Bottom Sheet) en móvil ── */
+  .popover-mobile-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .45);
+    z-index: 999998;
+    animation: fadeInOverlay .2s ease;
+  }
+
+  @keyframes fadeInOverlay {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
   .calendar-page-wrapper .event-popover-container {
-    width: 95%;
-    left: 2.5% !important;
+    position: fixed !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-height: 85vh;
+    border-radius: 20px 20px 0 0 !important;
+    box-shadow: 0 -4px 30px rgba(0, 0, 0, .2) !important;
+    border: none !important;
+    overflow-y: auto;
+    animation: slideUpSheet .3s ease !important;
+    z-index: 999999 !important;
+  }
+
+  @keyframes slideUpSheet {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .popover-drag-handle {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0 4px;
+    cursor: grab;
+  }
+
+  .popover-drag-handle .drag-bar {
+    width: 40px;
+    height: 5px;
+    background: #d1d5db;
+    border-radius: 999px;
+  }
+
+  .calendar-page-wrapper .event-popover-container .popover-header {
+    padding: 12px 20px 16px;
+  }
+
+  .calendar-page-wrapper .event-popover-container .popover-title {
+    font-size: 1.25rem;
+  }
+
+  .calendar-page-wrapper .event-popover-container .popover-body {
+    padding: 16px 20px 32px;
+  }
+
+  .calendar-page-wrapper .event-popover-container .popover-row {
+    font-size: 0.95rem;
+    gap: 14px;
+    padding: 4px 0;
   }
 
   /* Ajustes vista mes móvil */
