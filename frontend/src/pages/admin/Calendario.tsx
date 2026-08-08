@@ -74,7 +74,7 @@ const CustomMonthHeader = ({ date }: { date: Date }) => {
   );
 };
 
-const CustomDateHeader = ({ label, date, isOffRange }: any) => {
+const CustomDateHeader = ({ date, isOffRange }: any) => {
   const isFirstOfMonth = date.getDate() === 1;
   const monthStr = format(date, 'MMM', { locale: es }).toLowerCase();
   // Quitar el punto que a veces pone date-fns
