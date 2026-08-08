@@ -67,15 +67,26 @@ const CustomHeader = ({ date }: { date: Date }) => {
   );
 };
 
-const CustomMonthHeader = ({ date }: { date: Date }) => (
-  <div className="custom-month-header">{format(date, 'eee', { locale: es }).toUpperCase()}</div>
-);
+const CustomMonthHeader = ({ date }: { date: Date }) => {
+  const esColumnaDeHoy = getDay(date) === getDay(new Date());
+  return (
+    <div className={`custom-month-header ${esColumnaDeHoy ? 'hoy' : ''}`}>{format(date, 'eee', { locale: es }).toUpperCase()}</div>
+  );
+};
 
-const CustomDateHeader = ({ label, date, isOffRange }: any) => (
-  <div className={`custom-date-header ${isToday(date) ? 'hoy' : ''} ${isOffRange ? 'off-range' : ''}`}>
-    <span>{label}</span>
-  </div>
-);
+const CustomDateHeader = ({ label, date, isOffRange }: any) => {
+  const isFirstOfMonth = date.getDate() === 1;
+  const monthStr = format(date, 'MMM', { locale: es }).toLowerCase();
+  // Quitar el punto que a veces pone date-fns
+  const cleanMonthStr = monthStr.replace('.', '');
+  const displayLabel = isFirstOfMonth ? `1 ${cleanMonthStr}` : label;
+
+  return (
+    <div className={`custom-date-header ${isToday(date) ? 'hoy' : ''} ${isOffRange ? 'off-range' : ''}`}>
+      <span>{displayLabel}</span>
+    </div>
+  );
+};
 
 const CustomEvent = ({ event }: any) => {
   const diffMs = event.end.getTime() - event.start.getTime();
@@ -542,8 +553,6 @@ export const CalendarioView = () => {
     document.body.removeChild(link);
   };
 
-
-
   // ANTES DEL RETURN
   return (
     <NavegacionContext.Provider value={{ irAFecha: (fecha) => setFechaActual(fecha) }}>
@@ -702,7 +711,7 @@ export const CalendarioView = () => {
         <div className="calendar-sidebar-right">
           {(!user || !isReadOnlyView(user.rol as any)) && (
             <button className="btn-crear" onClick={() => setModalAbierto(true)}>
-              <Plus size={20} /> Crear
+              <Plus size={20} /> <span className="btn-crear-text">Crear</span>
             </button>
           )}
           <PanelSolicitudes />
