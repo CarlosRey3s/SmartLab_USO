@@ -16,6 +16,8 @@ CREATE TYPE tipo_actividad_enum AS ENUM ('clase', 'reserva', 'mantenimiento');
 CREATE TYPE estado_reserva_enum AS ENUM ('pendiente', 'aprobada', 'cancelada', 'completada','rechazada');
 CREATE TYPE tipo_movimiento_enum AS ENUM ('ingreso', 'egreso', 'ajuste');
 CREATE TYPE estado_sugerencia_enum AS ENUM ('pendiente', 'en_revisión', 'atendida', 'archivada');
+CREATE TYPE tipo_alerta_enum AS ENUM ('daño', 'bajo_stock', 'agotado', 'extravio', 'otro');
+CREATE TYPE estado_alerta_enum AS ENUM ('pendiente', 'en_revision', 'resuelto', 'descartado');
 
 -- ===========================================================================
 -- 2. TABLAS BASE DE ENTIDADES
@@ -34,18 +36,19 @@ CREATE TABLE usuarios (
     fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tabla: laboratorios (Ahora con asignación de coordinador)
+-- Tabla: laboratorios (Ahora con asignación de coordinador y roles permitidos)
 CREATE TABLE laboratorios (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL UNIQUE,
     descripcion TEXT,
-    edificio VARCHAR(100) NOT NULL, -- NUEVO: Nombre o bloque del edificio
-    piso VARCHAR(50) NOT NULL,      -- NUEVO: Nivel o piso (Ej: 'Planta Baja', 'Nivel 2')
-    aula VARCHAR(50) NOT NULL,      -- NUEVO: Número o código del local
-    capacidad_maxima INT NOT NULL DEFAULT 0, -- NUEVO: Capacidad total si es espacio completo o suma de estaciones
+    edificio VARCHAR(100) NOT NULL, -- Nombre o bloque del edificio
+    piso VARCHAR(50) NOT NULL,      -- Nivel o piso (Ej: 'Planta Baja', 'Nivel 2')
+    aula VARCHAR(50) NOT NULL,      -- Número o código del local
+    capacidad_maxima INT NOT NULL DEFAULT 0, -- Capacidad total si es espacio completo o suma de estaciones
     estado estado_lab_enum NOT NULL DEFAULT 'disponible',
     modo_reserva modo_reserva_enum NOT NULL DEFAULT 'por_estacion', 
-    coordinador_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL, 
+    coordinador_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    roles_permitidos JSONB NOT NULL DEFAULT '["todos"]'::jsonb, -- NUEVO: roles con permiso de reservar/usar el laboratorio
     fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -168,10 +171,44 @@ CREATE TABLE buzon_sugerencias (
 );
 
 -- ===========================================================================
+-- 6. MÓDULO: ALERTAS DE INVENTARIO
+-- ===========================================================================
+
+-- Tabla: alertas_inventario
+CREATE TABLE alertas_inventario (
+    id SERIAL PRIMARY KEY,
+    item_id INTEGER NOT NULL REFERENCES item_inventario(id) ON DELETE CASCADE,
+    actividad_id INTEGER REFERENCES actividades(id) ON DELETE SET NULL,
+    usuario_reporta_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+
+    tipo_problema tipo_alerta_enum NOT NULL,
+    descripcion TEXT NOT NULL,
+    cantidad_afectada INT NOT NULL DEFAULT 1 CHECK (cantidad_afectada > 0),
+    estado estado_alerta_enum NOT NULL DEFAULT 'pendiente',
+
+    fecha_reporte TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    fecha_resolucion TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    resuelto_por_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL
+);
+
+-- Tabla: historial_alertas (bitácora de cambios de estado de una alerta)
+CREATE TABLE historial_alertas (
+    id SERIAL PRIMARY KEY,
+    alerta_id INTEGER NOT NULL REFERENCES alertas_inventario(id) ON DELETE CASCADE,
+    estado_anterior estado_alerta_enum,
+    estado_nuevo estado_alerta_enum NOT NULL,
+    cambiado_por_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    fecha_cambio TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    comentario TEXT
+);
+
+-- ===========================================================================
 -- INDEXACIÓN ESTRATÉGICA
 -- ===========================================================================
 CREATE INDEX idx_actividades_fechas ON actividades (fecha_hora_inicio, fecha_hora_fin);
 CREATE INDEX idx_actividades_lab ON actividades (laboratorio_id);
 CREATE INDEX idx_sugerencias_estado ON buzon_sugerencias (estado_gestion);
-
-
+CREATE INDEX idx_alertas_estado ON alertas_inventario (estado);
+CREATE INDEX idx_alertas_item ON alertas_inventario (item_id);
+CREATE INDEX idx_alertas_actividad ON alertas_inventario (actividad_id);
+CREATE INDEX idx_historial_alerta ON historial_alertas (alerta_id);
