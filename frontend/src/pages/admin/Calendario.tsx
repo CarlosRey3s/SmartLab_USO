@@ -759,7 +759,7 @@ export const CalendarioView = () => {
             actividadExistente={actividadAEditar}
           />
         )}
-        <div 
+        <div
           className="calendar-main-container"
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
