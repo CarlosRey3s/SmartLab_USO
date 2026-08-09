@@ -1224,6 +1224,7 @@ const marcarAusente = async (actividadId, resolutorId) => {
     return { mensaje: 'La solicitud se marcó como inasistencia y el equipo fue liberado.' };
 };
 
+
 module.exports = {
     programarActividad,
     actualizarActividad,
@@ -1236,5 +1237,5 @@ module.exports = {
     registrarEntregaEquipos,
     registrarDevolucionEquipos,
     reprogramarSolicitud,
-    marcarAusente
+    marcarAusente,
 };

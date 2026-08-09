@@ -1,87 +1,157 @@
-const { pool } = require("../config/db");
+const {
+    obtenerTodasSolicitudes
+} = require('./actividades.service');
 
-class EstudianteDashboardService {
+const obtenerDashboardEstudiante = async (usuarioId, rol) => {
 
-    async getReservasEstudiante(usuarioId) {
+    try {
 
-        const query = `
-            SELECT
-                r.actividad_id AS id,
-                l.nombre AS laboratorio,
-                r.titulo,
-                r.nota_adicional,
-                r.estado_reserva,
+        // =====================================================
+        // OBTENER RESERVAS DESDE ACTIVIDADES SERVICE
+        // NO MODIFICAMOS ACTIVIDADES SERVICE
+        // =====================================================
 
-                TO_CHAR(
-                    a.fecha_hora_inicio,
-                    'YYYY-MM-DD HH24:MI'
-                ) AS inicio,
+        const resultado = await obtenerTodasSolicitudes(
+            usuarioId,
+            rol,
+            null,
+            1,
+            100
+        );
 
-                TO_CHAR(
-                    a.fecha_hora_fin,
-                    'YYYY-MM-DD HH24:MI'
-                ) AS fin,
+        const solicitudes = resultado?.solicitudes || [];
 
-                l.edificio,
-                l.piso,
-                l.aula,
+        // =====================================================
+        // TRANSFORMAR DATOS PARA EL DASHBOARD
+        // =====================================================
 
-                COALESCE(
-                    STRING_AGG(
-                        DISTINCT et.nombre,
-                        ', '
-                        ORDER BY et.nombre
-                    ),
-                    ''
-                ) AS estaciones
+        const reservas = solicitudes.map((reserva) => {
 
-            FROM reservas_estudiantes r
+            const inicio = reserva.fecha_hora_inicio
+                ? new Date(reserva.fecha_hora_inicio)
+                : null;
 
-            INNER JOIN actividades a
-                ON a.id = r.actividad_id
+            const fin = reserva.fecha_hora_fin
+                ? new Date(reserva.fecha_hora_fin)
+                : null;
 
-            INNER JOIN laboratorios l
-                ON l.id = a.laboratorio_id
+            return {
 
-            LEFT JOIN reserva_estaciones re
-                ON re.actividad_id = r.actividad_id
+                id: reserva.actividad_id,
 
-            LEFT JOIN estaciones_trabajo et
-                ON et.id = re.estacion_id
+                titulo: reserva.titulo || '',
 
-            WHERE r.usuario_id = $1
+                estado_reserva:
+                    reserva.estado_reserva || '',
 
-            GROUP BY
-                r.actividad_id,
-                l.nombre,
-                r.titulo,
-                r.nota_adicional,
-                r.estado_reserva,
-                a.fecha_hora_inicio,
-                a.fecha_hora_fin,
-                l.edificio,
-                l.piso,
-                l.aula
+                inicio: inicio
+                    ? formatearFecha(inicio)
+                    : '',
 
-            ORDER BY
-                a.fecha_hora_inicio DESC;
-        `;
+                fin: fin
+                    ? formatearFecha(fin)
+                    : '',
 
-        const result = await pool.query(query, [usuarioId]);
+                laboratorio:
+                    reserva.laboratorio_nombre || 'Espacio no disponible',
 
-        return result.rows;
-    }
+                edificio:
+                    reserva.edificio || 'Sin edificio',
 
+                aula:
+                    reserva.aula || 'Sin aula',
 
-    async getDashboard(usuarioId) {
+                // =================================================
+                // ESTACIONES
+                // =================================================
 
-        const reservas = await this.getReservasEstudiante(usuarioId);
+                estaciones:
+                    Array.isArray(reserva.estaciones)
+                        ? reserva.estaciones.length
+                        : 0,
+
+                // =================================================
+                // INVENTARIO
+                // =================================================
+
+                inventario:
+                    Array.isArray(reserva.inventario)
+                        ? reserva.inventario
+                        : []
+
+            };
+
+        });
+
+        // =====================================================
+        // RESPUESTA FINAL
+        // =====================================================
 
         return {
-            reservas
+
+            reservas,
+
+            resumen: {
+
+                total: reservas.length,
+
+                pendientes:
+                    reservas.filter(
+                        r => r.estado_reserva === 'pendiente'
+                    ).length,
+
+                aprobadas:
+                    reservas.filter(
+                        r => r.estado_reserva === 'aprobada'
+                    ).length,
+
+                completadas:
+                    reservas.filter(
+                        r => r.estado_reserva === 'completada'
+                    ).length,
+
+                canceladas:
+                    reservas.filter(
+                        r => r.estado_reserva === 'cancelada'
+                    ).length,
+
+                rechazadas:
+                    reservas.filter(
+                        r => r.estado_reserva === 'rechazada'
+                    ).length
+
+            }
+
         };
+
+    } catch (error) {
+
+        console.error(
+            'Error en obtenerDashboardEstudiante:',
+            error
+        );
+
+        throw error;
+
     }
 
-}
+};
 
-module.exports = new EstudianteDashboardService();
+
+// =========================================================
+// FORMATEAR FECHA
+// =========================================================
+
+const formatearFecha = (fecha) => {
+
+    const pad = (numero) =>
+        String(numero).padStart(2, '0');
+
+    return `${fecha.getFullYear()}-${pad(fecha.getMonth() + 1)}-${pad(fecha.getDate())} ${pad(fecha.getHours())}:${pad(fecha.getMinutes())}:${pad(fecha.getSeconds())}`;
+
+};
+
+
+module.exports = {
+    obtenerDashboardEstudiante
+};
