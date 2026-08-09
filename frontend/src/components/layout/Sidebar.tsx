@@ -17,7 +17,6 @@ import logoUSO from '../../assets/logo_USO.png';
 interface SidebarProps {
   isOpen: boolean;
   onToggle?: () => void;
-  userName?: string;
   userRole?: string;
 }
 
@@ -39,7 +38,6 @@ const menuItems = [
 export const Sidebar = ({
   isOpen,
   onToggle,
-  userName = 'Astrid',
   userRole = 'Administrador',
 }: SidebarProps) => {
 
