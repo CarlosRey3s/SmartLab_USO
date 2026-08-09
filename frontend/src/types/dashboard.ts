@@ -1,72 +1,63 @@
 export interface DashboardKPI {
 
-    solicitudes_pendientes:number;
+  solicitudes_pendientes: number;
 
-    stock_bajo:number;
+  stock_bajo: number;
 
-    actividades_hoy:number;
+  actividades_hoy: number;
 
-    laboratorios_ocupados:number;
+  espacios_ocupados: number;
 
-    total_laboratorios:number;
+  total_espacios: number;
 
 }
+
+
 
 
 
 export interface ReservaSemana {
 
-    dia:string;
+  dia: string;
 
-    reservas:number;
+  reservas: number;
 
-    completadas:number;
+  completadas: number;
 
 }
+
+
 
 
 
 export interface AlertaDashboard {
 
+  tipo: string;
 
-    tipo:string;
+  titulo: string;
 
-    titulo:string;
+  detalle: string;
 
-    detalle:string;
-
-    fecha:string;
-
+  fecha?: string;
 
 }
 
 
-
-export interface SaturacionLaboratorio {
-
-
-    nombre:string;
-
-    actividades:number;
-
-    porcentaje:number;
-
-
-}
 
 
 
 export interface AgendaDashboard {
 
+  dia?: string;
 
-    hora:string;
+  hora: string;
 
-    actividad:string;
+  actividad: string;
 
-    laboratorio:string;
-
+  espacio: string;
 
 }
+
 
 
 
@@ -74,19 +65,19 @@ export interface AgendaDashboard {
 export interface DashboardResponse {
 
 
-    kpis:DashboardKPI;
+  kpis: DashboardKPI;
 
 
-    reservas:ReservaSemana[];
+  reservas: ReservaSemana[];
 
 
-    alertas:AlertaDashboard[];
+  alertas: AlertaDashboard[];
 
 
-    saturacion:SaturacionLaboratorio[];
+  agenda: AgendaDashboard[];
 
 
-    agenda:AgendaDashboard[];
+  agendaSemana: AgendaDashboard[];
 
 
 }
