@@ -1,21 +1,21 @@
 import { useEffect, useState } from "react";
-import { getDashboard} from "../../services/dashboard.service";
-import type { DashboardResponse} from "../../types/dashboard";
+import { getDashboard } from "../../services/dashboard.service";
+import type { DashboardResponse } from "../../types/dashboard";
 import "../../css/DashboardAdmin.css";
 
 export default function DashboardAdmin() {
 
   const [dashboard, setDashboard] =
     useState<DashboardResponse | null>(null);
-    useEffect(() => {  loadDashboard(); }, []);
-    const loadDashboard = async () => {
+  useEffect(() => { loadDashboard(); }, []);
+  const loadDashboard = async () => {
 
-      try {
-        const data = await getDashboard();
-        setDashboard(data);
-      } catch (error) {
-        console.error(  "Error cargando dashboard",  error );
-      }
+    try {
+      const data = await getDashboard();
+      setDashboard(data);
+    } catch (error) {
+      console.error("Error cargando dashboard", error);
+    }
   };
 
   if (!dashboard) {
@@ -44,7 +44,7 @@ export default function DashboardAdmin() {
             Por Aprobar
           </span>
         </div>
-        
+
         <div className="panel alertas">
           <div className="panel-header">
             Stock Bajo
@@ -114,7 +114,7 @@ export default function DashboardAdmin() {
             <div className="bars-wrapper">
               {
                 dashboard.reservas.map(
-                  (item,index)=>(
+                  (item, index) => (
                     <div
                       className="day-column"
                       key={index}
@@ -123,14 +123,14 @@ export default function DashboardAdmin() {
                         <div
                           className="v-bar res"
                           style={{
-                            height:`${item.reservas * 10}%`
+                            height: `${item.reservas * 10}%`
                           }}
                         />
                         <div
                           className="v-bar comp"
                           style={{
-                            height:`${item.completadas * 10}%`
-                          }}/>
+                            height: `${item.completadas * 10}%`
+                          }} />
                       </div>
 
                       <div className="day-label">
@@ -149,13 +149,13 @@ export default function DashboardAdmin() {
           <div className="alerts-list">
             {
               dashboard.alertas.map(
-                (alerta,index)=>(
+                (alerta, index) => (
                   <div
                     className="alert-item"
                     key={index}>
                     <div
                       className={
-                        `status-dot ${alerta.tipo}`}/>
+                        `status-dot ${alerta.tipo}`} />
                     <div className="alert-text">
                       <h4>
                         {alerta.titulo}
@@ -180,7 +180,7 @@ export default function DashboardAdmin() {
           <div className="saturation-container">
             {
               dashboard.saturacion.map(
-                (item,index)=>(
+                (item, index) => (
                   <div
                     className="h-bar-row"
                     key={index}
@@ -192,11 +192,11 @@ export default function DashboardAdmin() {
                       <div
                         className="h-bar-fill normal"
                         style={{
-                          width:`${item.porcentaje}%`
-                        }}/>
+                          width: `${item.porcentaje}%`
+                        }} />
                     </div>
                     <span className="row-status">
-                      { item.porcentaje >= 90 ? "Saturado":item.porcentaje >=70?"Alto":"Normal"}
+                      {item.porcentaje >= 90 ? "Saturado" : item.porcentaje >= 70 ? "Alto" : "Normal"}
                     </span>
                   </div>
                 )
@@ -209,7 +209,7 @@ export default function DashboardAdmin() {
           <div className="agenda-list">
             {
               dashboard.agenda.map(
-                (item,index)=>(
+                (item, index) => (
                   <div
                     className="agenda-item"
                     key={index}
