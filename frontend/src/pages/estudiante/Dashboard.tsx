@@ -283,32 +283,6 @@ export default function Dashboard() {
 
 
             {/* ==================================================
-                ENCABEZADO
-            ================================================== */}
-
-            <div className="student-dashboard-header">
-
-                <div>
-
-                    <span className="dashboard-eyebrow">
-                        PANEL DEL ESTUDIANTE
-                    </span>
-
-                    <h1 className="section-main-title">
-                        Mi Dashboard
-                    </h1>
-
-                    <p className="dashboard-description">
-                        Consulta el estado de tus reservas y
-                        próximos espacios.
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            {/* ==================================================
                 RESUMEN
             ================================================== */}
 
@@ -420,7 +394,9 @@ export default function Dashboard() {
                     </div>
 
 
-                    {/* SIN RESERVAS */}
+                    {/* ==================================================
+                        SIN RESERVAS
+                    ================================================== */}
 
                     {reservas.length === 0 && (
 
@@ -444,7 +420,9 @@ export default function Dashboard() {
                     )}
 
 
-                    {/* LISTA */}
+                    {/* ==================================================
+                        LISTA DE RESERVAS
+                    ================================================== */}
 
                     {reservas.length > 0 && (
 
@@ -605,6 +583,10 @@ export default function Dashboard() {
                 <aside className="dashboard-side-panel">
 
 
+                    {/* ==================================================
+                        RESUMEN DE ESTADOS
+                    ================================================== */}
+
                     <div className="dashboard-side-card">
 
                         <div className="dashboard-side-card-header">
@@ -698,6 +680,7 @@ export default function Dashboard() {
 
                             </div>
 
+
                         </div>
 
                     </div>
@@ -735,3 +718,4 @@ export default function Dashboard() {
     );
 
 }
+

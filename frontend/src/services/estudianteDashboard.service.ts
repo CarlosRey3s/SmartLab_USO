@@ -4,6 +4,10 @@ import { BASE_URL } from "../config/api";
 
 const API_URL = `${BASE_URL}/api/estudiante/dashboard`;
 
+// =====================================================
+// OBTENER TOKEN
+// =====================================================
+
 const getAuthHeaders = () => {
     const token = localStorage.getItem("uso_token");
 

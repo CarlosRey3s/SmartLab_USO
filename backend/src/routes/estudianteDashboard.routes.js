@@ -11,7 +11,11 @@ const { verificarToken } = require('../middlewares/auth.middleware');
 // DASHBOARD ESTUDIANTE
 // =====================================================
 
-router.get("/", verificarToken, getDashboardEstudiante);
+router.get(
+    '/',
+    verificarToken,
+    getDashboardEstudiante
+);
 
 
 module.exports = router;
