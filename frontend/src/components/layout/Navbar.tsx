@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Menu, Bell, LogOut } from 'lucide-react';
+import { Menu, LogOut, HelpCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/Navbar.css';
 
@@ -90,28 +90,22 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
 
             <div className="navbar-dropdown">
 
-              <button
-                className="logout-button"
-                onClick={handleLogout}
-              >
+              <button className="logout-button" onClick={handleLogout} >
                 <LogOut size={16} />
                 <span>Cerrar sesión</span>
               </button>
 
+              <a href="https://tu-enlace-de-documentacion.com" target="_blank" rel="noopener noreferrer" className="documents-button"
+                style={{ textDecoration: 'none' }}
+              >
+                <HelpCircle size={16} />
+                <span>Ayuda</span>
+              </a>
             </div>
 
           )}
 
         </div>
-
-
-        <button
-          className="icon-button notification-button"
-          aria-label="Notificaciones"
-        >
-          <Bell size={20} strokeWidth={2} />
-          <span className="notification-badge"></span>
-        </button>
 
       </div>
 

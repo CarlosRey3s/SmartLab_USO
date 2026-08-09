@@ -49,7 +49,7 @@ const ToastItem: React.FC<CustomToastProps> = ({
         {isError && <AlertCircle size={24} color="#fff" />}
         {isInfo && <Info size={24} color="#fff" />}
       </div>
-      <div className="content">
+      <div className="toast-content">
         <h4>{toast.title}</h4>
         <p>{toast.message}</p>
       </div>

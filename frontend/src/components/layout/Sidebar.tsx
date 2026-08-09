@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import '../../index.css';
+import logoUSO from '../../assets/logo_USO.png';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -75,28 +76,28 @@ export const Sidebar = ({
 
   useEffect(() => {
 
-  const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent) => {
 
-    if (
-      window.innerWidth <= 992 &&
-      isOpen &&
-      sidebarRef.current &&
-      !sidebarRef.current.contains(event.target as Node)
-    ) {
-      onToggle?.();
-    }
+      if (
+        window.innerWidth <= 992 &&
+        isOpen &&
+        sidebarRef.current &&
+        !sidebarRef.current.contains(event.target as Node)
+      ) {
+        onToggle?.();
+      }
 
-  };
-
-
-  document.addEventListener('mousedown', handleClickOutside);
+    };
 
 
-  return () => {
-    document.removeEventListener('mousedown', handleClickOutside);
-  };
+    document.addEventListener('mousedown', handleClickOutside);
 
-}, [isOpen, onToggle]);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+
+  }, [isOpen, onToggle]);
 
 
   return (
@@ -104,8 +105,12 @@ export const Sidebar = ({
 
       <div className="sb__header">
 
-        <div className="sb__avatar">
-          {initials}
+        <div className="sb__avatar"  > {/* Puedes quitar el color de fondo si el logo ya lo trae */}
+          <img
+            src={logoUSO}
+            alt="Logo Universidad"
+            style={{ width: '110%', height: '110%', objectFit: 'contain' }}
+          />
         </div>
 
         <div className="sb__brand">

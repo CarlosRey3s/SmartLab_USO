@@ -63,18 +63,18 @@
   flex-shrink: 0;
 }
 
-.premium-toast .content {
+.premium-toast .toast-content {
   flex-grow: 1;
 }
 
-.premium-toast .content h4 {
+.premium-toast .toast-content h4 {
   margin: 0 0 4px 0;
   font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.3px;
 }
 
-.premium-toast .content p {
+.premium-toast .toast-content p {
   margin: 0;
   font-size: 14px;
   opacity: 0.9;
