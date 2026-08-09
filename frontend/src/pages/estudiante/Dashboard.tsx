@@ -5,830 +5,754 @@ import {
 
 import "../../css/evaluaciones.css";
 
-
 import {
     obtenerDashboardEstudiante
 } from "../../services/estudianteDashboard.service";
 
-
 import type {
-    EstudianteDashboard
+    EstudianteDashboard,
+    ReservaEstudiante
 } from "../../types/estudianteDashboard.types";
 
-
-
-export default function Dashboard(){
-
+export default function Dashboard() {
 
     const [
         dashboard,
         setDashboard
     ] = useState<EstudianteDashboard | null>(null);
 
-
-
     const [
-        openAccordion,
-        setOpenAccordion
-    ] = useState<string | null>(null);
+        cargando,
+        setCargando
+    ] = useState(true);
 
 
+    // =====================================================
+    // CARGAR DASHBOARD
+    // =====================================================
 
-
-
-    const toggleAccordion = (id:string)=>{
-
-
-        if(openAccordion === id){
-
-            setOpenAccordion(null);
-
-        }else{
-
-            setOpenAccordion(id);
-
-        }
-
-
-    };
-
-
-
-
-
-
-    useEffect(()=>{
-
+    useEffect(() => {
 
         cargarDashboard();
 
-
-    },[]);
-
+    }, []);
 
 
+    const cargarDashboard = async () => {
 
+        try {
 
-
-    const cargarDashboard = async()=>{
-
-
-        try{
-
-
-            console.log(
-                "Dashboard estudiante funcionando"
-            );
-
+            setCargando(true);
 
             const data =
-            await obtenerDashboardEstudiante();
-
-
-
-            console.log(
-                "Datos recibidos:",
-                data
-            );
-
-
+                await obtenerDashboardEstudiante();
 
             setDashboard(data);
 
-
-
-
-            if(data.horario.length > 0){
-
-
-                setOpenAccordion(
-                    `horario_${data.horario[0].id}`
-                );
-
-
-            }
-
-
-
-        }catch(error){
-
+        } catch (error) {
 
             console.error(
-                "Error cargando dashboard estudiante",
+                "Error cargando dashboard del estudiante:",
                 error
             );
 
+        } finally {
+
+            setCargando(false);
 
         }
-
 
     };
 
 
+    // =====================================================
+    // FORMATEAR FECHA
+    // =====================================================
+
+    const obtenerFecha = (
+        fecha: string
+    ) => {
+
+        if (!fecha) {
+
+            return {
+                dia: "--",
+                mes: "---",
+                anio: "----"
+            };
+
+        }
+
+        const fechaPartes =
+            fecha.split(" ")[0].split("-");
+
+        if (fechaPartes.length !== 3) {
+
+            return {
+                dia: "--",
+                mes: "---",
+                anio: "----"
+            };
+
+        }
+
+        const meses = [
+            "ENE",
+            "FEB",
+            "MAR",
+            "ABR",
+            "MAY",
+            "JUN",
+            "JUL",
+            "AGO",
+            "SEP",
+            "OCT",
+            "NOV",
+            "DIC"
+        ];
+
+        const mesNumero =
+            Number(fechaPartes[1]);
+
+        return {
+
+            dia: fechaPartes[2],
+
+            mes:
+                meses[mesNumero - 1] ?? "---",
+
+            anio:
+                fechaPartes[0]
+
+        };
+
+    };
 
 
+    // =====================================================
+    // ESTADO
+    // =====================================================
+
+    const obtenerTextoEstado = (
+        estado: string
+    ) => {
+
+        switch (estado) {
+
+            case "pendiente":
+                return "Pendiente";
+
+            case "aprobada":
+                return "Aprobada";
+
+            case "cancelada":
+                return "Cancelada";
+
+            case "completada":
+                return "Completada";
+
+            case "rechazada":
+                return "Rechazada";
+
+            default:
+                return estado;
+
+        }
+
+    };
 
 
-    if(!dashboard){
+    const obtenerClaseEstado = (
+        estado: string
+    ) => {
 
+        switch (estado) {
+
+            case "aprobada":
+                return "dashboard-status-approved";
+
+            case "pendiente":
+                return "dashboard-status-pending";
+
+            case "cancelada":
+                return "dashboard-status-cancelled";
+
+            case "completada":
+                return "dashboard-status-completed";
+
+            case "rechazada":
+                return "dashboard-status-rejected";
+
+            default:
+                return "";
+
+        }
+
+    };
+
+
+    // =====================================================
+    // CARGANDO
+    // =====================================================
+
+    if (cargando) {
 
         return (
 
             <div className="student-dashboard">
 
+                <div className="student-dashboard-loading">
 
-                <h2 className="section-main-title">
+                    <div className="loading-icon">
+                        ⏳
+                    </div>
 
-                    Cargando laboratorios...
+                    <h2>
+                        Cargando dashboard...
+                    </h2>
 
-                </h2>
+                    <p>
+                        Estamos preparando tu información.
+                    </p>
 
+                </div>
 
             </div>
 
         );
 
+    }
+
+
+    // =====================================================
+    // ERROR
+    // =====================================================
+
+    if (!dashboard) {
+
+        return (
+
+            <div className="student-dashboard">
+
+                <div className="student-dashboard-empty">
+
+                    <div className="empty-icon">
+                        ⚠️
+                    </div>
+
+                    <h2>
+                        No se pudo cargar la información
+                    </h2>
+
+                    <p>
+                        Intenta actualizar la página.
+                    </p>
+
+                </div>
+
+            </div>
+
+        );
 
     }
 
 
+    // =====================================================
+    // RESERVAS
+    // =====================================================
+
+    const reservas =
+        dashboard.reservas ?? [];
 
 
+    const reservasPendientes =
+        reservas.filter(
+            reserva =>
+                reserva.estado_reserva === "pendiente"
+        ).length;
 
+
+    const reservasAprobadas =
+        reservas.filter(
+            reserva =>
+                reserva.estado_reserva === "aprobada"
+        ).length;
+
+
+    // =====================================================
+    // DASHBOARD
+    // =====================================================
 
     return (
-
 
         <div className="student-dashboard">
 
 
+            {/* ==================================================
+                ENCABEZADO
+            ================================================== */}
 
-            <h2 className="section-main-title">
+            <div className="student-dashboard-header">
 
-                Mis Laboratorios
+                <div>
 
-            </h2>
+                    <span className="dashboard-eyebrow">
+                        PANEL DEL ESTUDIANTE
+                    </span>
 
+                    <h1 className="section-main-title">
+                        Mi Dashboard
+                    </h1>
 
-
-
-
-
-            {/* ================= HORARIO ACADÉMICO ================= */}
-
-
-
-            <div className="category-block">
-
-
-
-                <div className="category-header">
-
-
-                    <span className="checkbox-icon"></span>
-
-
-                    <h3>
-
-                        HORARIO ACADÉMICO
-
-                    </h3>
-
+                    <p className="dashboard-description">
+                        Consulta el estado de tus reservas y
+                        próximos espacios.
+                    </p>
 
                 </div>
-
-
-
-
-
-
-
-                <div className="accordion-list">
-
-
-
-                    {
-                        dashboard.horario.length === 0 &&
-
-
-                        <p>
-                            No tienes clases asignadas.
-                        </p>
-
-                    }
-
-
-
-
-
-
-                    {
-                        dashboard.horario.map((item)=>{
-
-
-                            const id =
-                            `horario_${item.id}`;
-
-
-
-                            return (
-
-
-                                <div
-
-                                    key={item.id}
-
-                                    className={
-                                        `accordion-item ${
-                                            openAccordion === id
-                                            ?
-                                            "open"
-                                            :
-                                            "closed"
-                                        }`
-                                    }
-
-                                >
-
-
-
-
-
-                                    <div
-
-                                        className="accordion-summary"
-
-                                        onClick={()=>toggleAccordion(id)}
-
-                                        style={{
-                                            cursor:"pointer"
-                                        }}
-
-                                    >
-
-
-
-
-                                        <div className="summary-left">
-
-
-
-                                            <span className="icon-lab microscope">
-
-                                                🔬
-
-                                            </span>
-
-
-
-                                            <span className="label-type">
-
-                                                Clases
-
-                                            </span>
-
-
-
-                                            <span className="label-name">
-
-                                                {item.laboratorio}
-
-                                            </span>
-
-
-
-                                        </div>
-
-
-
-
-
-                                        <span className="arrow-icon">
-
-
-                                            {
-                                                openAccordion === id
-                                                ?
-                                                "▲"
-                                                :
-                                                "▼"
-                                            }
-
-
-                                        </span>
-
-
-
-
-                                    </div>
-
-
-
-
-
-
-
-
-
-                                    {
-                                        openAccordion === id &&
-
-
-
-                                        <div className="accordion-content">
-
-
-
-
-
-                                            <div className="info-group">
-
-
-                                                <h4>
-
-                                                    Horario asignado
-
-                                                </h4>
-
-
-
-                                                <p>
-
-                                                    {item.inicio}
-
-                                                    {" - "}
-
-                                                    {item.fin}
-
-
-                                                </p>
-
-
-
-                                            </div>
-
-
-
-
-
-
-
-
-                                            <div className="info-group details-section">
-
-
-
-                                                <h4>
-
-                                                    Detalles del Laboratorio
-
-                                                </h4>
-
-
-
-
-
-                                                <p>
-
-                                                    <strong>
-                                                        Materia:
-                                                    </strong>
-
-                                                    {" "}
-
-                                                    {item.materia}
-
-                                                </p>
-
-
-
-
-
-                                                <p>
-
-                                                    <strong>
-                                                        Docente:
-                                                    </strong>
-
-                                                    {" "}
-
-                                                    {item.docente}
-
-                                                </p>
-
-
-
-
-
-
-                                                <p>
-
-                                                    <strong>
-                                                        Edificio:
-                                                    </strong>
-
-                                                    {" "}
-
-                                                    {item.edificio}
-
-                                                </p>
-
-
-
-
-
-
-                                                <p>
-
-                                                    <strong>
-                                                        Aula:
-                                                    </strong>
-
-                                                    {" "}
-
-                                                    {item.aula}
-
-                                                </p>
-
-
-
-
-
-
-                                                <p>
-
-                                                    <strong>
-                                                        Estado:
-                                                    </strong>
-
-
-                                                    {" "}
-
-
-                                                    <span className="status-active">
-
-                                                        Activo
-
-                                                    </span>
-
-
-                                                </p>
-
-
-
-
-                                            </div>
-
-
-
-
-                                        </div>
-
-
-                                    }
-
-
-
-
-
-                                </div>
-
-
-
-                            );
-
-
-                        })
-
-
-                    }
-
-
-
-
-
-                </div>
-
-
-
 
             </div>
 
 
+            {/* ==================================================
+                RESUMEN
+            ================================================== */}
+
+            <div className="student-dashboard-summary">
 
 
+                <div className="dashboard-summary-card">
 
+                    <div className="summary-card-icon">
+                        📅
+                    </div>
 
+                    <div>
 
+                        <span className="summary-card-label">
+                            Total de reservas
+                        </span>
 
+                        <strong className="summary-card-number">
+                            {reservas.length}
+                        </strong>
 
-            {/* ================= RESERVAS ================= */}
-
-
-
-            <div className="category-block">
-
-
-
-                <div className="category-header">
-
-
-
-                    <span className="checkbox-icon"></span>
-
-
-
-                    <h3>
-
-                        RESERVAS DE LABORATORIO
-
-                    </h3>
-
-
+                    </div>
 
                 </div>
 
 
+                <div className="dashboard-summary-card">
 
+                    <div className="summary-card-icon">
+                        ⏳
+                    </div>
 
+                    <div>
 
+                        <span className="summary-card-label">
+                            Pendientes
+                        </span>
 
+                        <strong className="summary-card-number">
+                            {reservasPendientes}
+                        </strong>
 
-                <div className="accordion-list">
+                    </div>
 
+                </div>
 
 
+                <div className="dashboard-summary-card">
 
+                    <div className="summary-card-icon">
+                        ✓
+                    </div>
 
-                    {
-                        dashboard.reservas.length === 0 &&
+                    <div>
 
+                        <span className="summary-card-label">
+                            Aprobadas
+                        </span>
 
-                        <p>
+                        <strong className="summary-card-number">
+                            {reservasAprobadas}
+                        </strong>
 
-                            No tienes reservas realizadas.
+                    </div>
 
-                        </p>
+                </div>
 
+            </div>
 
-                    }
 
+            {/* ==================================================
+                CONTENIDO PRINCIPAL
+            ================================================== */}
 
+            <div className="student-dashboard-content">
 
 
+                {/* ==================================================
+                    RESERVAS
+                ================================================== */}
 
+                <section className="dashboard-reservations-panel">
 
-                    {
-                        dashboard.reservas.map((item)=>{
 
+                    <div className="dashboard-panel-header">
 
-                            const id =
-                            `reserva_${item.id}`;
+                        <div>
 
+                            <span className="dashboard-panel-eyebrow">
+                                ACTIVIDAD
+                            </span>
 
+                            <h2>
+                                Mis reservas
+                            </h2>
 
+                            <p>
+                                Revisa tus próximas reservas y su estado.
+                            </p>
 
-                            return (
+                        </div>
 
+                        <div className="dashboard-panel-count">
+                            {reservas.length}
+                        </div>
 
-                                <div
+                    </div>
 
-                                    key={item.id}
 
-                                    className={
-                                        `accordion-item ${
-                                            openAccordion === id
-                                            ?
-                                            "open"
-                                            :
-                                            "closed"
-                                        }`
-                                    }
+                    {/* ==================================================
+                        SIN RESERVAS
+                    ================================================== */}
 
+                    {reservas.length === 0 && (
 
-                                >
+                        <div className="dashboard-no-reservations">
 
+                            <div className="empty-icon">
+                                📅
+                            </div>
 
+                            <h3>
+                                No tienes reservas
+                            </h3>
 
+                            <p>
+                                Cuando realices una reserva,
+                                aparecerá aquí.
+                            </p>
 
-                                    <div
+                        </div>
 
-                                        className="accordion-summary"
+                    )}
 
-                                        onClick={()=>toggleAccordion(id)}
 
-                                        style={{
-                                            cursor:"pointer"
-                                        }}
+                    {/* ==================================================
+                        LISTA
+                    ================================================== */}
 
-                                    >
+                    {reservas.length > 0 && (
 
+                        <div className="dashboard-reservation-list">
 
+                            {reservas.map(
+                                (
+                                    item: ReservaEstudiante
+                                ) => {
 
-                                        <div className="summary-left">
+                                    const fecha =
+                                        obtenerFecha(
+                                            item.inicio
+                                        );
 
+                                    const horaInicio =
+                                        item.inicio?.split(" ")[1] ?? "";
 
+                                    const horaFin =
+                                        item.fin?.split(" ")[1] ?? "";
 
-                                            <span className="icon-lab folder">
 
-                                                📁
+                                    return (
 
-                                            </span>
+                                        <article
+                                            key={item.id}
+                                            className="dashboard-reservation"
+                                        >
 
 
+                                            {/* FECHA */}
 
-                                            <span className="label-type">
+                                            <div className="dashboard-reservation-date">
 
-                                                Reserva
+                                                <span className="dashboard-date-day">
+                                                    {fecha.dia}
+                                                </span>
 
-                                            </span>
+                                                <span className="dashboard-date-month">
+                                                    {fecha.mes}
+                                                </span>
 
+                                            </div>
 
 
+                                            {/* INFORMACIÓN */}
 
-                                            <span className="label-name">
+                                            <div className="dashboard-reservation-info">
 
-                                                {item.laboratorio}
+                                                <div className="dashboard-reservation-top">
 
-                                            </span>
+                                                    <span className="dashboard-reservation-type">
+                                                        RESERVA
+                                                    </span>
 
+                                                    <span
+                                                        className={
+                                                            `dashboard-status ${
+                                                                obtenerClaseEstado(
+                                                                    item.estado_reserva
+                                                                )
+                                                            }`
+                                                        }
+                                                    >
+                                                        {
+                                                            obtenerTextoEstado(
+                                                                item.estado_reserva
+                                                            )
+                                                        }
+                                                    </span>
 
+                                                </div>
 
 
-                                        </div>
+                                                <h3>
+                                                    {item.laboratorio}
+                                                </h3>
 
 
+                                                <div className="dashboard-reservation-meta">
 
+                                                    <span>
+                                                        🕐 {horaInicio} - {horaFin}
+                                                    </span>
 
+                                                    <span>
+                                                        📍 {item.edificio}
+                                                    </span>
 
+                                                    <span>
+                                                        Piso {item.piso}
+                                                    </span>
 
-                                        <span className="arrow-icon">
+                                                    <span>
+                                                        Aula {item.aula}
+                                                    </span>
 
+                                                </div>
 
-                                            {
-                                                openAccordion === id
-                                                ?
-                                                "▲"
-                                                :
-                                                "▼"
-                                            }
 
+                                                {item.titulo && (
 
-                                        </span>
-
-
-
-                                    </div>
-
-
-
-
-
-
-
-                                    {
-                                        openAccordion === id &&
-
-
-                                        <div className="accordion-content">
-
-
-
-                                            <div className="info-group">
-
-
-
-                                                <h4>
-
-                                                    Información de reserva
-
-                                                </h4>
-
-
-
-
-
-                                                <p>
-
-                                                    <strong>
-                                                        Título:
-                                                    </strong>
-
-                                                    {" "}
-
-                                                    {item.titulo}
-
-                                                </p>
-
-
-
-
-
-
-                                                <p>
-
-                                                    <strong>
-                                                        Inicio:
-                                                    </strong>
-
-                                                    {" "}
-
-                                                    {item.inicio}
-
-                                                </p>
-
-
-
-
-
-
-                                                <p>
-
-                                                    <strong>
-                                                        Estado:
-                                                    </strong>
-
-                                                    {" "}
-
-                                                    {item.estado_reserva}
-
-                                                </p>
-
-
-
-
-
-
-                                                {
-                                                    item.nota_adicional &&
-
-
-                                                    <p>
+                                                    <p className="dashboard-reservation-reason">
 
                                                         <strong>
-                                                            Nota:
+                                                            Motivo:
                                                         </strong>
-
 
                                                         {" "}
 
-                                                        {item.nota_adicional}
-
+                                                        {item.titulo}
 
                                                     </p>
 
-
-                                                }
-
-
-
-
+                                                )}
 
                                             </div>
 
 
+                                            {/* ESTACIONES */}
 
-                                        </div>
+                                            {item.estaciones && (
+
+                                                <div className="dashboard-reservation-stations">
+
+                                                    <span>
+                                                        🖥️
+                                                    </span>
+
+                                                    <strong>
+                                                        {item.estaciones}
+                                                    </strong>
+
+                                                    <small>
+                                                        estaciones
+                                                    </small>
+
+                                                </div>
+
+                                            )}
+
+                                        </article>
+
+                                    );
+
+                                }
+                            )}
+
+                        </div>
+
+                    )}
+
+                </section>
 
 
-                                    }
+                {/* ==================================================
+                    PANEL LATERAL
+                ================================================== */}
+
+                <aside className="dashboard-side-panel">
 
 
+                    <div className="dashboard-side-card">
+
+                        <div className="dashboard-side-card-header">
+
+                            <div className="side-card-icon">
+                                📊
+                            </div>
+
+                            <div>
+
+                                <span>
+                                    RESUMEN
+                                </span>
+
+                                <h3>
+                                    Estado de reservas
+                                </h3>
+
+                            </div>
+
+                        </div>
 
 
+                        <div className="dashboard-status-summary">
+
+
+                            <div className="status-summary-row">
+
+                                <div>
+
+                                    <span className="status-dot pending"></span>
+
+                                    Pendientes
 
                                 </div>
 
+                                <strong>
+                                    {reservasPendientes}
+                                </strong>
 
-                            );
-
-
-
-                        })
-
-
-                    }
+                            </div>
 
 
+                            <div className="status-summary-row">
+
+                                <div>
+
+                                    <span className="status-dot approved"></span>
+
+                                    Aprobadas
+
+                                </div>
+
+                                <strong>
+                                    {reservasAprobadas}
+                                </strong>
+
+                            </div>
 
 
+                            <div className="status-summary-row">
 
-                </div>
+                                <div>
+
+                                    <span className="status-dot completed"></span>
+
+                                    Completadas
+
+                                </div>
+
+                                <strong>
+                                    {
+                                        reservas.filter(
+                                            reserva =>
+                                                reserva.estado_reserva ===
+                                                "completada"
+                                        ).length
+                                    }
+                                </strong>
+
+                            </div>
 
 
+                            <div className="status-summary-row">
 
+                                <div>
+
+                                    <span className="status-dot cancelled"></span>
+
+                                    Canceladas
+
+                                </div>
+
+                                <strong>
+                                    {
+                                        reservas.filter(
+                                            reserva =>
+                                                reserva.estado_reserva ===
+                                                "cancelada"
+                                        ).length
+                                    }
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    {/* ==================================================
+                        INFORMACIÓN
+                    ================================================== */}
+
+                    <div className="dashboard-side-card dashboard-info-card">
+
+                        <div className="side-card-icon">
+                            💡
+                        </div>
+
+                        <h3>
+                            Recuerda
+                        </h3>
+
+                        <p>
+                            Revisa el estado de tus reservas
+                            antes de utilizar un espacio.
+                        </p>
+
+                    </div>
+
+                </aside>
 
             </div>
 
-
-
-
-
-
         </div>
 
-
     );
-
 
 }

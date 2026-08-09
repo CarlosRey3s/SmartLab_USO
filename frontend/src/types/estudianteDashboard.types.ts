@@ -1,31 +1,4 @@
-export interface HorarioEstudiante {
-
-
-    id: number;
-
-    laboratorio: string;
-
-    edificio: string;
-
-    aula: string;
-
-    descripcion: string | null;
-
-    materia: string;
-
-    docente: string;
-
-    inicio: string;
-
-    fin: string;
-
-
-}
-
-
-
 export interface ReservaEstudiante {
-
 
     id: number;
 
@@ -41,17 +14,19 @@ export interface ReservaEstudiante {
 
     fin: string;
 
+    edificio: string;
+
+    piso: string;
+
+    aula: string;
+
+    estaciones: string;
 
 }
 
 
-
 export interface EstudianteDashboard {
 
-
-    horario: HorarioEstudiante[];
-
     reservas: ReservaEstudiante[];
-
 
 }

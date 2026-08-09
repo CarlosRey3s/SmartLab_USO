@@ -1,155 +1,1142 @@
 :root {
-  --verde: #22806B;
-  --verde-oscuro: #1B5E52;
-  --verde-hover: #29967E;
-  --dorado: #FACB4B;
-  --rosado: #AD868A;
-  --blanco: #FFFFFF;
-  --gris: #F4F6F8;
-  --texto: #333;
-  --borde-acordeon: #C7B3B5; /* Tono grisáceo/rosado del borde original */
+
+    --verde: #22806B;
+    --verde-oscuro: #1B5E52;
+    --verde-hover: #29967E;
+
+    --dorado: #FACB4B;
+    --rosado: #AD868A;
+
+    --blanco: #FFFFFF;
+
+    --gris: #F4F6F8;
+    --gris-medio: #E7EBED;
+    --gris-borde: #D8DEDF;
+
+    --texto: #333333;
+    --texto-secundario: #707777;
+
+    --verde-suave: #E8F4F0;
 }
 
-/* ===== CONTENEDOR GENERAL ===== */
+
+/* ============================================================
+   CONTENEDOR
+============================================================ */
+
 .student-dashboard {
-  flex: 1;
-  padding: 24px;
-  background: #EAEAEA; /* Fondo gris claro de la sección interna */
-  border-radius: 16px 16px 0 0;
-  margin: 10px;
-  font-family: Arial, sans-serif;
+
+    flex: 1;
+
+    margin: 10px;
+
+    padding: 30px;
+
+    min-height: calc(100vh - 20px);
+
+    background: #EAEAEA;
+
+    border-radius: 18px 18px 0 0;
+
+    font-family:
+        Arial,
+        sans-serif;
+
 }
+
+
+/* ============================================================
+   ENCABEZADO
+============================================================ */
+
+.student-dashboard-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 24px;
+
+}
+
+
+.dashboard-eyebrow {
+
+    display: block;
+
+    margin-bottom: 6px;
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+    letter-spacing: 1.5px;
+
+    color: var(--verde);
+
+}
+
 
 .section-main-title {
-  font-size: 18px;
-  color: #2c2c2c;
-  margin-top: 0;
-  margin-bottom: 20px;
-  font-weight: bold;
+
+    margin: 0;
+
+    font-size: 28px;
+
+    font-weight: 700;
+
+    color: var(--texto);
+
 }
 
-/* ===== BLOQUES DE CATEGORÍA ===== */
-.category-block {
-  margin-bottom: 30px;
+
+.dashboard-description {
+
+    margin: 7px 0 0;
+
+    font-size: 14px;
+
+    color: var(--texto-secundario);
+
 }
 
-.category-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 15px;
+
+/* ============================================================
+   RESUMEN SUPERIOR
+============================================================ */
+
+.student-dashboard-summary {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 16px;
+
+    margin-bottom: 22px;
+
 }
 
-.category-header h3 {
-  margin: 0;
-  font-size: 15px;
-  font-weight: bold;
-  color: #222;
-  letter-spacing: 0.5px;
+
+.dashboard-summary-card {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 18px 20px;
+
+    background: var(--blanco);
+
+    border: 1px solid var(--gris-borde);
+
+    border-radius: 14px;
+
+    box-shadow:
+        0 3px 10px rgba(0, 0, 0, .03);
+
 }
 
-/* Cuadrado verde al lado del título */
-.checkbox-icon {
-  width: 22px;
-  height: 22px;
-  border: 2px solid var(--verde);
-  border-radius: 6px;
-  background: var(--blanco);
-  display: inline-block;
+
+.summary-card-icon {
+
+    width: 42px;
+
+    height: 42px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 11px;
+
+    background: var(--verde-suave);
+
+    font-size: 19px;
+
 }
 
-/* ===== ACORDEONES (LISTA) ===== */
-.accordion-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+
+.summary-card-label {
+
+    display: block;
+
+    margin-bottom: 3px;
+
+    font-size: 11px;
+
+    color: var(--texto-secundario);
+
 }
 
-.accordion-item {
-  background: #F5F5F5;
-  border-radius: 12px;
-  overflow: hidden;
-  transition: all 0.2s ease;
+
+.summary-card-number {
+
+    display: block;
+
+    font-size: 22px;
+
+    color: var(--verde-oscuro);
+
 }
 
-/* Estado Cerrado */
-.accordion-item.closed {
-  border: 1.5px solid var(--borde-acordeon);
+
+/* ============================================================
+   CONTENIDO
+============================================================ */
+
+.student-dashboard-content {
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        300px;
+
+    gap: 20px;
+
+    align-items: start;
+
 }
 
-/* Estado Abierto (Borde e indicador Dorado) */
-.accordion-item.open {
-  border: 2px solid var(--dorado);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+
+/* ============================================================
+   PANEL PRINCIPAL
+============================================================ */
+
+.dashboard-reservations-panel {
+
+    padding: 22px;
+
+    background: var(--blanco);
+
+    border: 1px solid var(--gris-borde);
+
+    border-radius: 16px;
+
 }
 
-/* Encabezado del Acordeón */
-.accordion-summary {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 20px;
-  background: #F5F5F5;
+
+.dashboard-panel-header {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin-bottom: 20px;
+
 }
 
-.summary-left {
-  display: flex;
-  align-items: center;
-  gap: 15px;
+
+.dashboard-panel-eyebrow {
+
+    display: block;
+
+    margin-bottom: 4px;
+
+    font-size: 10px;
+
+    font-weight: bold;
+
+    letter-spacing: 1.3px;
+
+    color: var(--verde);
+
 }
 
-/* Iconos circulares (Microscopio / Carpeta) */
-.icon-lab {
-  font-size: 16px;
-  opacity: 0.7;
+
+.dashboard-panel-header h2 {
+
+    margin: 0;
+
+    font-size: 18px;
+
+    color: var(--texto);
+
 }
 
-.label-type {
-  font-size: 14px;
-  color: #444;
-  padding-right: 15px;
-  border-right: 1px solid #ccc; /* Línea divisoria vertical interna */
+
+.dashboard-panel-header p {
+
+    margin: 5px 0 0;
+
+    font-size: 12px;
+
+    color: var(--texto-secundario);
+
 }
 
-.label-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #111;
+
+.dashboard-panel-count {
+
+    min-width: 35px;
+
+    height: 35px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 10px;
+
+    background: var(--verde-suave);
+
+    color: var(--verde-oscuro);
+
+    font-size: 14px;
+
+    font-weight: bold;
+
 }
 
-/* Flechas arriba/abajo */
-.arrow-icon {
-  font-size: 14px;
-  color: #666;
+
+/* ============================================================
+   RESERVAS
+============================================================ */
+
+.dashboard-reservation-list {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+
 }
 
-/* ===== CONTENIDO DESPLEGADO ===== */
-.accordion-content {
-  background: #F5F5F5;
-  padding: 0 20px 20px 54px; /* Alineado con el inicio del texto superior */
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+
+.dashboard-reservation {
+
+    display: grid;
+
+    grid-template-columns:
+        58px
+        minmax(0, 1fr)
+        auto;
+
+    align-items: center;
+
+    gap: 15px;
+
+    padding: 14px;
+
+    border: 1px solid var(--gris-borde);
+
+    border-radius: 12px;
+
+    transition:
+        border-color .2s ease,
+        box-shadow .2s ease,
+        transform .2s ease;
+
 }
 
-.info-group h4 {
-  margin: 0 0 6px 0;
-  font-size: 14px;
-  font-weight: bold;
-  color: #333;
+
+.dashboard-reservation:hover {
+
+    border-color: #B8CCCA;
+
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, .04);
+
+    transform: translateY(-1px);
+
 }
 
-.info-group p {
-  margin: 3px 0;
-  font-size: 13.5px;
-  color: #555;
+
+/* ============================================================
+   FECHA
+============================================================ */
+
+.dashboard-reservation-date {
+
+    width: 55px;
+
+    min-height: 58px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 10px;
+
+    background: var(--verde-suave);
+
 }
 
-.details-section {
-  margin-top: 5px;
+
+.dashboard-date-day {
+
+    font-size: 21px;
+
+    line-height: 1;
+
+    font-weight: bold;
+
+    color: var(--verde-oscuro);
+
 }
 
-.status-active {
-  color: #2b2b2b;
-  font-weight: 500;
+
+.dashboard-date-month {
+
+    margin-top: 5px;
+
+    font-size: 9px;
+
+    font-weight: bold;
+
+    letter-spacing: .7px;
+
+    color: var(--verde);
+
+}
+
+
+/* ============================================================
+   INFORMACIÓN
+============================================================ */
+
+.dashboard-reservation-info {
+
+    min-width: 0;
+
+}
+
+
+.dashboard-reservation-top {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin-bottom: 3px;
+
+}
+
+
+.dashboard-reservation-type {
+
+    font-size: 9px;
+
+    font-weight: bold;
+
+    letter-spacing: 1px;
+
+    color: var(--rosado);
+
+}
+
+
+.dashboard-reservation-info h3 {
+
+    margin: 0;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    color: var(--texto);
+
+}
+
+
+.dashboard-reservation-meta {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 12px;
+
+    margin-top: 7px;
+
+    font-size: 11px;
+
+    color: var(--texto-secundario);
+
+}
+
+
+.dashboard-reservation-reason {
+
+    margin: 7px 0 0;
+
+    font-size: 11px;
+
+    color: var(--texto-secundario);
+
+}
+
+
+.dashboard-reservation-reason strong {
+
+    color: var(--texto);
+
+}
+
+
+/* ============================================================
+   ESTADOS
+============================================================ */
+
+.dashboard-status {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 4px 9px;
+
+    border-radius: 20px;
+
+    font-size: 10px;
+
+    font-weight: bold;
+
+}
+
+
+.dashboard-status-approved {
+
+    background: #E7F4EF;
+
+    color: var(--verde-oscuro);
+
+}
+
+
+.dashboard-status-pending {
+
+    background: #FFF5D8;
+
+    color: #8A6A00;
+
+}
+
+
+.dashboard-status-cancelled {
+
+    background: #F3E9EA;
+
+    color: #7A5055;
+
+}
+
+
+.dashboard-status-completed {
+
+    background: #E8F0F4;
+
+    color: #496B7A;
+
+}
+
+
+.dashboard-status-rejected {
+
+    background: #F7E4E4;
+
+    color: #8A3E3E;
+
+}
+
+
+/* ============================================================
+   ESTACIONES
+============================================================ */
+
+.dashboard-reservation-stations {
+
+    min-width: 70px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 8px 10px;
+
+    border-radius: 9px;
+
+    background: var(--gris);
+
+}
+
+
+.dashboard-reservation-stations span {
+
+    font-size: 15px;
+
+}
+
+
+.dashboard-reservation-stations strong {
+
+    margin-top: 2px;
+
+    font-size: 13px;
+
+    color: var(--texto);
+
+}
+
+
+.dashboard-reservation-stations small {
+
+    font-size: 9px;
+
+    color: var(--texto-secundario);
+
+}
+
+
+/* ============================================================
+   PANEL LATERAL
+============================================================ */
+
+.dashboard-side-panel {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 15px;
+
+}
+
+
+.dashboard-side-card {
+
+    padding: 20px;
+
+    background: var(--blanco);
+
+    border: 1px solid var(--gris-borde);
+
+    border-radius: 16px;
+
+}
+
+
+.dashboard-side-card-header {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 11px;
+
+    padding-bottom: 16px;
+
+    border-bottom: 1px solid var(--gris-medio);
+
+}
+
+
+.side-card-icon {
+
+    width: 36px;
+
+    height: 36px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 9px;
+
+    background: var(--verde-suave);
+
+    font-size: 16px;
+
+}
+
+
+.dashboard-side-card-header span {
+
+    display: block;
+
+    margin-bottom: 3px;
+
+    font-size: 9px;
+
+    font-weight: bold;
+
+    letter-spacing: 1px;
+
+    color: var(--verde);
+
+}
+
+
+.dashboard-side-card-header h3 {
+
+    margin: 0;
+
+    font-size: 14px;
+
+    color: var(--texto);
+
+}
+
+
+/* ============================================================
+   RESUMEN DE ESTADOS
+============================================================ */
+
+.dashboard-status-summary {
+
+    padding-top: 5px;
+
+}
+
+
+.status-summary-row {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 11px 0;
+
+    font-size: 12px;
+
+    color: var(--texto);
+
+    border-bottom: 1px solid var(--gris);
+
+}
+
+
+.status-summary-row:last-child {
+
+    border-bottom: none;
+
+}
+
+
+.status-summary-row > div {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+}
+
+
+.status-summary-row strong {
+
+    font-size: 13px;
+
+    color: var(--texto);
+
+}
+
+
+.status-dot {
+
+    width: 8px;
+
+    height: 8px;
+
+    border-radius: 50%;
+
+    display: inline-block;
+
+}
+
+
+.status-dot.pending {
+
+    background: #D9A900;
+
+}
+
+
+.status-dot.approved {
+
+    background: var(--verde);
+
+}
+
+
+.status-dot.completed {
+
+    background: #6B8C9B;
+
+}
+
+
+.status-dot.cancelled {
+
+    background: var(--rosado);
+
+}
+
+
+/* ============================================================
+   INFORMACIÓN
+============================================================ */
+
+.dashboard-info-card {
+
+    background: var(--verde-suave);
+
+    border-color: transparent;
+
+}
+
+
+.dashboard-info-card .side-card-icon {
+
+    margin-bottom: 10px;
+
+}
+
+
+.dashboard-info-card h3 {
+
+    margin: 0 0 6px;
+
+    font-size: 14px;
+
+    color: var(--verde-oscuro);
+
+}
+
+
+.dashboard-info-card p {
+
+    margin: 0;
+
+    font-size: 12px;
+
+    line-height: 1.5;
+
+    color: var(--texto-secundario);
+
+}
+
+
+/* ============================================================
+   SIN RESERVAS
+============================================================ */
+
+.dashboard-no-reservations {
+
+    padding: 45px 20px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
+
+    border: 1px dashed var(--gris-borde);
+
+    border-radius: 12px;
+
+}
+
+
+.empty-icon {
+
+    width: 50px;
+
+    height: 50px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    margin-bottom: 10px;
+
+    border-radius: 50%;
+
+    background: var(--verde-suave);
+
+    font-size: 22px;
+
+}
+
+
+.dashboard-no-reservations h3 {
+
+    margin: 0;
+
+    font-size: 15px;
+
+    color: var(--texto);
+
+}
+
+
+.dashboard-no-reservations p {
+
+    margin: 6px 0 0;
+
+    font-size: 12px;
+
+    color: var(--texto-secundario);
+
+}
+
+
+/* ============================================================
+   ESTADO VACÍO / ERROR
+============================================================ */
+
+.student-dashboard-empty {
+
+    min-height: 350px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
+
+    background: var(--blanco);
+
+    border: 1px dashed var(--gris-borde);
+
+    border-radius: 16px;
+
+}
+
+
+.student-dashboard-empty h2 {
+
+    margin: 0;
+
+    color: var(--texto);
+
+}
+
+
+.student-dashboard-empty p {
+
+    margin: 7px 0 0;
+
+    font-size: 13px;
+
+    color: var(--texto-secundario);
+
+}
+
+
+/* ============================================================
+   CARGANDO
+============================================================ */
+
+.student-dashboard-loading {
+
+    min-height: 400px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
+
+}
+
+
+.loading-icon {
+
+    margin-bottom: 12px;
+
+    font-size: 28px;
+
+}
+
+
+.student-dashboard-loading h2 {
+
+    margin: 0;
+
+    font-size: 18px;
+
+    color: var(--texto);
+
+}
+
+
+.student-dashboard-loading p {
+
+    margin-top: 7px;
+
+    font-size: 13px;
+
+    color: var(--texto-secundario);
+
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 1000px) {
+
+    .student-dashboard-content {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .dashboard-side-panel {
+
+        display: grid;
+
+        grid-template-columns:
+            repeat(2, 1fr);
+
+    }
+
+}
+
+
+@media (max-width: 750px) {
+
+    .student-dashboard {
+
+        padding: 20px;
+
+    }
+
+
+    .student-dashboard-summary {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .dashboard-side-panel {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .dashboard-reservation {
+
+        grid-template-columns:
+            55px
+            minmax(0, 1fr);
+
+    }
+
+
+    .dashboard-reservation-stations {
+
+        grid-column: 2;
+
+        justify-self: start;
+
+        flex-direction: row;
+
+        gap: 6px;
+
+    }
+
+}
+
+
+@media (max-width: 550px) {
+
+    .student-dashboard {
+
+        margin: 5px;
+
+        padding: 16px;
+
+    }
+
+
+    .student-dashboard-header {
+
+        margin-bottom: 18px;
+
+    }
+
+
+    .section-main-title {
+
+        font-size: 24px;
+
+    }
+
+
+    .dashboard-reservation {
+
+        padding: 12px;
+
+    }
+
+
+    .dashboard-reservation-meta {
+
+        flex-direction: column;
+
+        gap: 4px;
+
+    }
+
+
+    .dashboard-reservation-top {
+
+        align-items: flex-start;
+
+        flex-direction: column;
+
+        gap: 5px;
+
+    }
+
 }
