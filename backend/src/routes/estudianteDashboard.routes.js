@@ -1,15 +1,20 @@
-const express = require("express");
+const express = require('express');
 
 const router = express.Router();
 
-const estudianteDashboardController = require("../controllers/estudianteDashboard.controller");
+const {
+    getDashboardEstudiante
+} = require('../controllers/estudianteDashboard.controller');
 
-const { verificarToken } = require("../middlewares/auth.middleware");
+
+// =====================================================
+// DASHBOARD ESTUDIANTE
+// =====================================================
 
 router.get(
-"/",
-verificarToken,
-estudianteDashboardController.getDashboard
+    '/',
+    getDashboardEstudiante
 );
+
 
 module.exports = router;

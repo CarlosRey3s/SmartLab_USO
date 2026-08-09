@@ -1,44 +1,65 @@
-const estudianteDashboardService = require("../services/estudianteDashboard.service");
+const {
+    obtenerDashboardEstudiante
+} = require('../services/estudianteDashboard.service');
 
-class EstudianteDashboardController {
 
-    async getDashboard(req, res) {
+const getDashboardEstudiante = async (req, res) => {
 
-        try {
+    try {
 
-            console.log("USUARIO RECIBIDO EN DASHBOARD:", req.usuario);
+        const usuarioId =
+            req.user?.id ||
+            req.usuario?.id;
 
-            if (!req.usuario || !req.usuario.id) {
+        const rol =
+            req.user?.rol ||
+            req.usuario?.rol;
 
-                return res.status(401).json({
-                    success: false,
-                    message: "No se pudo identificar al usuario autenticado."
-                });
+        console.log("=================================");
+        console.log("DASHBOARD ESTUDIANTE");
+        console.log("Usuario:", usuarioId);
+        console.log("Rol:", rol);
+        console.log("=================================");
 
-            }
+        if (!usuarioId) {
 
-            const usuarioId = req.usuario.id;
-
-            console.log("ID USADO PARA DASHBOARD:", usuarioId);
-
-            const data = await estudianteDashboardService.getDashboard(usuarioId);
-
-            return res.status(200).json(data);
-
-        } catch (error) {
-
-            console.error("ERROR DASHBOARD ESTUDIANTE:", error);
-
-            return res.status(500).json({
-                success: false,
-                message: "Error cargando dashboard estudiante",
-                error: error.message
+            return res.status(401).json({
+                mensaje: "Usuario no autenticado"
             });
 
         }
 
+        const dashboard =
+            await obtenerDashboardEstudiante(
+                usuarioId,
+                rol
+            );
+
+        console.log(
+            "RESPUESTA DASHBOARD:",
+            JSON.stringify(dashboard, null, 2)
+        );
+
+        return res.status(200).json(dashboard);
+
+    } catch (error) {
+
+        console.error(
+            "ERROR DASHBOARD ESTUDIANTE:",
+            error
+        );
+
+        return res.status(500).json({
+            mensaje:
+                error.message ||
+                "Error al cargar el dashboard"
+        });
+
     }
 
-}
+};
 
-module.exports = new EstudianteDashboardController();
+
+module.exports = {
+    getDashboardEstudiante
+};

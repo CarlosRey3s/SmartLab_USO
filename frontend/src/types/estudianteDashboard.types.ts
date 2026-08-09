@@ -2,11 +2,7 @@ export interface ReservaEstudiante {
 
     id: number;
 
-    laboratorio: string;
-
     titulo: string;
-
-    nota_adicional: string | null;
 
     estado_reserva: string;
 
@@ -14,13 +10,43 @@ export interface ReservaEstudiante {
 
     fin: string;
 
-    edificio: string;
+    laboratorio: string;
 
-    piso: string;
+    edificio: string;
 
     aula: string;
 
-    estaciones: string;
+    estaciones: number;
+
+    inventario: InventarioReserva[];
+
+}
+
+
+export interface InventarioReserva {
+
+    id: number;
+
+    nombre: string;
+
+    cantidad: number;
+
+}
+
+
+export interface ResumenDashboard {
+
+    total: number;
+
+    pendientes: number;
+
+    aprobadas: number;
+
+    completadas: number;
+
+    canceladas: number;
+
+    rechazadas: number;
 
 }
 
@@ -28,5 +54,7 @@ export interface ReservaEstudiante {
 export interface EstudianteDashboard {
 
     reservas: ReservaEstudiante[];
+
+    resumen: ResumenDashboard;
 
 }

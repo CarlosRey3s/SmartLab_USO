@@ -14,6 +14,7 @@ import type {
     ReservaEstudiante
 } from "../../types/estudianteDashboard.types";
 
+
 export default function Dashboard() {
 
     const [
@@ -33,36 +34,40 @@ export default function Dashboard() {
 
     useEffect(() => {
 
-        cargarDashboard();
+        const cargar = async () => {
+
+            try {
+
+                setCargando(true);
+
+                const data =
+                    await obtenerDashboardEstudiante();
+
+                console.log(
+                    "DASHBOARD ESTUDIANTE:",
+                    data
+                );
+
+                setDashboard(data);
+
+            } catch (error) {
+
+                console.error(
+                    "Error cargando dashboard del estudiante:",
+                    error
+                );
+
+            } finally {
+
+                setCargando(false);
+
+            }
+
+        };
+
+        cargar();
 
     }, []);
-
-
-    const cargarDashboard = async () => {
-
-        try {
-
-            setCargando(true);
-
-            const data =
-                await obtenerDashboardEstudiante();
-
-            setDashboard(data);
-
-        } catch (error) {
-
-            console.error(
-                "Error cargando dashboard del estudiante:",
-                error
-            );
-
-        } finally {
-
-            setCargando(false);
-
-        }
-
-    };
 
 
     // =====================================================
@@ -83,10 +88,10 @@ export default function Dashboard() {
 
         }
 
-        const fechaPartes =
+        const partes =
             fecha.split(" ")[0].split("-");
 
-        if (fechaPartes.length !== 3) {
+        if (partes.length !== 3) {
 
             return {
                 dia: "--",
@@ -111,18 +116,18 @@ export default function Dashboard() {
             "DIC"
         ];
 
-        const mesNumero =
-            Number(fechaPartes[1]);
+        const mes =
+            Number(partes[1]);
 
         return {
 
-            dia: fechaPartes[2],
+            dia: partes[2],
 
             mes:
-                meses[mesNumero - 1] ?? "---",
+                meses[mes - 1] ?? "---",
 
             anio:
-                fechaPartes[0]
+                partes[0]
 
         };
 
@@ -258,25 +263,14 @@ export default function Dashboard() {
 
 
     // =====================================================
-    // RESERVAS
+    // DATOS
     // =====================================================
 
     const reservas =
         dashboard.reservas ?? [];
 
-
-    const reservasPendientes =
-        reservas.filter(
-            reserva =>
-                reserva.estado_reserva === "pendiente"
-        ).length;
-
-
-    const reservasAprobadas =
-        reservas.filter(
-            reserva =>
-                reserva.estado_reserva === "aprobada"
-        ).length;
+    const resumen =
+        dashboard.resumen;
 
 
     // =====================================================
@@ -334,7 +328,7 @@ export default function Dashboard() {
                         </span>
 
                         <strong className="summary-card-number">
-                            {reservas.length}
+                            {resumen.total}
                         </strong>
 
                     </div>
@@ -355,7 +349,7 @@ export default function Dashboard() {
                         </span>
 
                         <strong className="summary-card-number">
-                            {reservasPendientes}
+                            {resumen.pendientes}
                         </strong>
 
                     </div>
@@ -376,18 +370,19 @@ export default function Dashboard() {
                         </span>
 
                         <strong className="summary-card-number">
-                            {reservasAprobadas}
+                            {resumen.aprobadas}
                         </strong>
 
                     </div>
 
                 </div>
 
+
             </div>
 
 
             {/* ==================================================
-                CONTENIDO PRINCIPAL
+                CONTENIDO
             ================================================== */}
 
             <div className="student-dashboard-content">
@@ -425,9 +420,7 @@ export default function Dashboard() {
                     </div>
 
 
-                    {/* ==================================================
-                        SIN RESERVAS
-                    ================================================== */}
+                    {/* SIN RESERVAS */}
 
                     {reservas.length === 0 && (
 
@@ -451,9 +444,7 @@ export default function Dashboard() {
                     )}
 
 
-                    {/* ==================================================
-                        LISTA
-                    ================================================== */}
+                    {/* LISTA */}
 
                     {reservas.length > 0 && (
 
@@ -470,10 +461,14 @@ export default function Dashboard() {
                                         );
 
                                     const horaInicio =
-                                        item.inicio?.split(" ")[1] ?? "";
+                                        item.inicio
+                                            ?.split(" ")[1]
+                                            ?.substring(0, 5) ?? "";
 
                                     const horaFin =
-                                        item.fin?.split(" ")[1] ?? "";
+                                        item.fin
+                                            ?.split(" ")[1]
+                                            ?.substring(0, 5) ?? "";
 
 
                                     return (
@@ -511,11 +506,9 @@ export default function Dashboard() {
 
                                                     <span
                                                         className={
-                                                            `dashboard-status ${
-                                                                obtenerClaseEstado(
-                                                                    item.estado_reserva
-                                                                )
-                                                            }`
+                                                            `dashboard-status ${obtenerClaseEstado(
+                                                                item.estado_reserva
+                                                            )}`
                                                         }
                                                     >
                                                         {
@@ -541,10 +534,6 @@ export default function Dashboard() {
 
                                                     <span>
                                                         📍 {item.edificio}
-                                                    </span>
-
-                                                    <span>
-                                                        Piso {item.piso}
                                                     </span>
 
                                                     <span>
@@ -575,7 +564,7 @@ export default function Dashboard() {
 
                                             {/* ESTACIONES */}
 
-                                            {item.estaciones && (
+                                            {item.estaciones > 0 && (
 
                                                 <div className="dashboard-reservation-stations">
 
@@ -653,7 +642,7 @@ export default function Dashboard() {
                                 </div>
 
                                 <strong>
-                                    {reservasPendientes}
+                                    {resumen.pendientes}
                                 </strong>
 
                             </div>
@@ -670,7 +659,7 @@ export default function Dashboard() {
                                 </div>
 
                                 <strong>
-                                    {reservasAprobadas}
+                                    {resumen.aprobadas}
                                 </strong>
 
                             </div>
@@ -687,13 +676,7 @@ export default function Dashboard() {
                                 </div>
 
                                 <strong>
-                                    {
-                                        reservas.filter(
-                                            reserva =>
-                                                reserva.estado_reserva ===
-                                                "completada"
-                                        ).length
-                                    }
+                                    {resumen.completadas}
                                 </strong>
 
                             </div>
@@ -710,13 +693,7 @@ export default function Dashboard() {
                                 </div>
 
                                 <strong>
-                                    {
-                                        reservas.filter(
-                                            reserva =>
-                                                reserva.estado_reserva ===
-                                                "cancelada"
-                                        ).length
-                                    }
+                                    {resumen.canceladas}
                                 </strong>
 
                             </div>
@@ -747,7 +724,9 @@ export default function Dashboard() {
 
                     </div>
 
+
                 </aside>
+
 
             </div>
 
