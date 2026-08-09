@@ -7,7 +7,8 @@
 /* ── Contenedor: crece para llenar el espacio disponible del sidebar ── */
 .panel-solicitudes-container {
   flex: 1;
-  min-height: 0;           /* Crucial para que flex-child pueda shrink */
+  min-height: 0;
+  /* Crucial para que flex-child pueda shrink */
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
@@ -16,7 +17,8 @@
   border: 1px solid #e5e7eb;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
   padding: 0.9rem 0.85rem 0.75rem;
-  overflow: hidden;        /* Evita que desborde hacia fuera */
+  overflow: hidden;
+  /* Evita que desborde hacia fuera */
 }
 
 /* ── Encabezado: "Solicitudes" + badge "N pendientes" ── */
@@ -25,7 +27,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  flex-shrink: 0;          /* No se comprime */
+  flex-shrink: 0;
+  /* No se comprime */
 }
 
 .ps-titulo {
@@ -98,31 +101,38 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── Lista de tarjetas: ÚNICA zona con scroll ── */
 .lista-solicitudes {
   flex: 1;
-  min-height: 0;           /* Permite que el flex-child haga scroll */
+  min-height: 0;
+  /* Permite que el flex-child haga scroll */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  padding-right: 2px;      /* Espacio para la scrollbar */
+  padding-right: 2px;
+  /* Espacio para la scrollbar */
 }
 
 /* Scrollbar fina y discreta */
 .lista-solicitudes::-webkit-scrollbar {
   width: 3px;
 }
+
 .lista-solicitudes::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .lista-solicitudes::-webkit-scrollbar-thumb {
   background-color: #d1d5db;
   border-radius: 4px;
 }
+
 .lista-solicitudes::-webkit-scrollbar-thumb:hover {
   background-color: #9ca3af;
 }
@@ -135,7 +145,8 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;          /* No se comprime dentro del scroll */
+  flex-shrink: 0;
+  /* No se comprime dentro del scroll */
   overflow: hidden;
   transition: box-shadow 0.18s;
 }
@@ -180,8 +191,8 @@
 
 .badge-rol--administrador,
 .badge-rol--administradora {
-  background-color: #ede9fe;
-  color: #5b21b6;
+  background-color: #EEE0E2;
+  color: #866165;
 }
 
 .badge-rol--docente {
@@ -232,8 +243,15 @@
 }
 
 @keyframes fadeSlide {
-  from { opacity: 0; transform: translateY(-3px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .detalle-fila {
@@ -444,24 +462,17 @@
   margin-top: 2px;
 }
 
-/* ── Tab Incompleto — Naranja sutil ── */
-.ps-tab--incompleto:not(.ps-tab--activa) {
-  color: #c2410c;
-  background-color: #fff7ed;
-}
-
-.ps-tab--incompleto:not(.ps-tab--activa):hover {
-  background-color: #ffedd5;
-  color: #9a3412;
-}
+/* ── Tab Incompleto ── */
 
 .ps-tab--incompleto.ps-tab--activa {
-  background-color: #ea580c;
-  border-color: #ea580c;
-  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.25);
+  background-color: #22806B;
+  border-color: #22806B;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(34, 128, 107, 0.25);
 }
 
-/* ── Botón Reprogramar — Azul informativo ── */
+/* ── Botón Reprogramar — Amarillo pastel ── */
 .btn-reprogramar {
   flex: 1;
   display: flex;
@@ -474,16 +485,17 @@
   font-size: 0.79rem;
   font-weight: 700;
   cursor: pointer;
-  color: #ffffff;
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  color: #9e7c11;
+  /* Texto oscuro para contraste en fondo pastel */
+  background: linear-gradient(135deg, #fdf5d3, #fcf1bd);
+  box-shadow: 0 2px 8px rgba(250, 203, 75, 0.25);
   transition: opacity 0.18s, transform 0.15s, box-shadow 0.18s;
 }
 
 .btn-reprogramar:hover {
   opacity: 0.9;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 4px 12px rgba(250, 203, 75, 0.35);
 }
 
 .btn-reprogramar:active {
@@ -530,8 +542,8 @@
 .reprogramar-campo input[type="date"]:focus,
 .reprogramar-campo input[type="time"]:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  border-color: #FACB4B;
+  box-shadow: 0 0 0 3px rgba(250, 203, 75, 0.25);
   background: #ffffff;
 }
 
@@ -544,21 +556,14 @@
   flex: 1;
 }
 
-/* ── Tab Ausente — Morado/Gris sutil ── */
-.ps-tab--ausente:not(.ps-tab--activa) {
-  color: #5b21b6;
-  background-color: #f5f3ff;
-}
-
-.ps-tab--ausente:not(.ps-tab--activa):hover {
-  background-color: #ede9fe;
-  color: #4c1d95;
-}
+/* ── Tab Ausente ── */
 
 .ps-tab--ausente.ps-tab--activa {
-  background-color: #7c3aed;
-  border-color: #7c3aed;
-  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+  background-color: #22806B;
+  border-color: #22806B;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(34, 128, 107, 0.25);
 }
 
 /* ── Botón Ausente (Marcar Inasistencia) — Botón Rojo/Gris ── */
@@ -575,14 +580,14 @@
   font-weight: 700;
   cursor: pointer;
   color: #ffffff;
-  background: linear-gradient(135deg, #64748b, #475569);
-  box-shadow: 0 2px 8px rgba(71, 85, 105, 0.3);
+  background: #22806B;
+  box-shadow: 0 2px 8px rgba(34, 128, 107, 0.3);
   transition: opacity 0.18s, transform 0.15s, box-shadow 0.18s;
 }
 
 .btn-ausente:hover {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+  background: #1b6b59;
+  box-shadow: 0 4px 12px rgba(34, 128, 107, 0.35);
   transform: translateY(-1px);
 }
 

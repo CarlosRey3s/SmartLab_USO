@@ -285,15 +285,15 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
           </div>
 
           <div className="dropdown-container">
-            <button onClick={() => { setMenuVistaAbierto(!MenuVistaAbierto); setMenuFiltroAbierto(false); }} className="btn-view active">
+            <button onPointerDown={(e) => { e.stopPropagation(); setMenuVistaAbierto(!MenuVistaAbierto); setMenuFiltroAbierto(false); }} className="btn-view active">
               {{ month: 'Mes', week: 'Semana', work_week: 'Semana', day: 'Día', agenda: 'Agenda' }[toolbar.view] || 'Vista'}
               {MenuVistaAbierto ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
             {MenuVistaAbierto && (
               <div className="dropdown-menu">
-                <button onClick={() => cambiarVista('day')} className="dropdown-item">Día</button>
-                <button onClick={() => cambiarVista('week')} className="dropdown-item">Semana</button>
-                <button onClick={() => cambiarVista('month')} className="dropdown-item">Mes</button>
+                <button onPointerDown={(e) => { e.stopPropagation(); cambiarVista('day'); }} className="dropdown-item">Día</button>
+                <button onPointerDown={(e) => { e.stopPropagation(); cambiarVista('week'); }} className="dropdown-item">Semana</button>
+                <button onPointerDown={(e) => { e.stopPropagation(); cambiarVista('month'); }} className="dropdown-item">Mes</button>
               </div>
             )}
           </div>
@@ -318,6 +318,16 @@ export const CalendarioView = () => {
   const [popoverPos, setPopoverPos] = useState({ x: 0, y: 0 });
   const [popoverDragY, setPopoverDragY] = useState(0);
   const [popoverTouchStartY, setPopoverTouchStartY] = useState<number | null>(null);
+  const [isClosingPopover, setIsClosingPopover] = useState(false);
+
+  const cerrarPopover = () => {
+    setIsClosingPopover(true);
+    setTimeout(() => {
+      setEventoSeleccionado(null);
+      setIsClosingPopover(false);
+      setPopoverDragY(0);
+    }, 200); // Mismo tiempo que la transición CSS
+  };
 
   const [eventos, setEventos] = useState<EventoLaboratorio[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -600,14 +610,14 @@ export const CalendarioView = () => {
   // ANTES DEL RETURN
   return (
     <NavegacionContext.Provider value={{ irAFecha: (fecha) => setFechaActual(fecha) }}>
-      <div className="calendar-page-wrapper" onClick={() => eventoSeleccionado && setEventoSeleccionado(null)}>
+      <div className="calendar-page-wrapper" onClick={() => eventoSeleccionado && cerrarPopover()}>
         {cargando && <div className="loading-overlay">Cargando base de datos smartlabs...</div>}
         {eventoSeleccionado && (
           <>
             {/* Overlay oscuro para móvil */}
-            <div className="popover-mobile-overlay" onClick={() => setEventoSeleccionado(null)} />
+            <div className={`popover-mobile-overlay ${isClosingPopover ? 'closing' : ''}`} onClick={() => cerrarPopover()} />
             <div
-              className="event-popover-container"
+              className={`event-popover-container ${isClosingPopover ? 'closing' : ''}`}
               style={{
                 top: popoverPos.y,
                 left: popoverPos.x,
@@ -625,9 +635,10 @@ export const CalendarioView = () => {
               }}
               onTouchEnd={() => {
                 if (popoverDragY > 100) {
-                  setEventoSeleccionado(null); // Cerrar si arrastró más de 100px
+                  cerrarPopover(); // Cerrar si arrastró más de 100px
+                } else {
+                  setPopoverDragY(0); // Snap back suave
                 }
-                setPopoverDragY(0);
                 setPopoverTouchStartY(null);
               }}
             >
@@ -656,7 +667,7 @@ export const CalendarioView = () => {
                         </button>
                       </>
                     )}
-                  <button className="btn-popover-action" onClick={() => setEventoSeleccionado(null)} title="Cerrar">
+                  <button className="btn-popover-action" onClick={() => cerrarPopover()} title="Cerrar">
                     <X size={18} />
                   </button>
                 </div>

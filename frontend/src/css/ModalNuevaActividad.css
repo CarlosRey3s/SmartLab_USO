@@ -24,7 +24,7 @@
 .na-modal {
   background: #ffffff;
   border-radius: 16px;
-  width: 780px;
+  width: 600px;
   max-width: 100%;
   max-height: 90vh;
   display: flex;
@@ -97,78 +97,94 @@
   margin-bottom: 12px;
 }
 
-/* Selector de tipo */
-.na-tipo-selector {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 4px;
+/* Selector de tipo vertical (nuevo) */
+.na-tipo-vertical-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  margin-bottom: 12px;
 }
 
-.na-tipo-btn {
-  border: 0.5px solid #e5e5e5;
-  border-radius: 10px;
-  padding: 10px 8px;
-  cursor: pointer;
-  text-align: center;
-  transition: border-color 0.15s, background 0.15s;
+.na-tipo-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid #e5e5e5;
   background: #ffffff;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
 }
 
-.na-tipo-btn:hover {
-  border-color: #1d9e75;
+.na-tipo-card:hover {
+  border-color: #d1d1d1;
+  background: #fbfbfb;
 }
 
-/* Tipo activo — Clase */
-.na-tipo-clase.na-tipo-on {
-  border: 1.5px solid #1d9e75;
-  background: #f7fdf9;
-}
-
-/* Tipo activo — Mantenimiento */
-.na-tipo-mant.na-tipo-mant-on {
-  border: 1.5px solid #e24b4a;
-  background: #fff8f8;
-}
-
-/* Tipo activo — Reserva */
-.na-tipo-res.na-tipo-res-on {
-  border: 1.5px solid #f0c04a;
-  background: #fffcf3;
-}
-
-.na-tipo-ico {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+.na-tipo-ico-wrap {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: #f4f4f4;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 6px;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
 }
 
-.na-ico-clase {
-  background: #e1f5ee;
+.na-tipo-text {
+  display: flex;
+  flex-direction: column;
 }
 
-.na-ico-mant {
-  background: #fcebeb;
-}
-
-.na-ico-res {
-  background: #faeeda;
-}
-
-.na-tipo-name {
-  font-size: 12px;
-  font-weight: 500;
+.na-tipo-title {
+  font-size: 14px;
+  font-weight: 600;
   color: #1a1a1a;
+  margin-bottom: 2px;
 }
 
 .na-tipo-desc {
-  font-size: 10px;
-  color: #888;
-  margin-top: 2px;
+  font-size: 12px;
+  color: #666666;
+}
+
+/* Activos por tipo */
+.na-tipo-card-active.tipo-clase {
+  border: 1.5px solid #1d9e75;
+  background: #f7fdf9;
+}
+.na-tipo-card-active.tipo-clase .na-tipo-ico-wrap {
+  background: #e1f5ee;
+}
+.na-tipo-card-active.tipo-clase .na-tipo-title {
+  color: #0f6e56;
+}
+
+.na-tipo-card-active.tipo-mantenimiento {
+  border: 1.5px solid #e24b4a;
+  background: #fff8f8;
+}
+.na-tipo-card-active.tipo-mantenimiento .na-tipo-ico-wrap {
+  background: #fcebeb;
+}
+.na-tipo-card-active.tipo-mantenimiento .na-tipo-title {
+  color: #a32d2d;
+}
+
+.na-tipo-card-active.tipo-reserva {
+  border: 1.5px solid #f0c04a;
+  background: #fffcf3;
+}
+.na-tipo-card-active.tipo-reserva .na-tipo-ico-wrap {
+  background: #faeeda;
+}
+.na-tipo-card-active.tipo-reserva .na-tipo-title {
+  color: #854f0b;
 }
 
 /* Separador */

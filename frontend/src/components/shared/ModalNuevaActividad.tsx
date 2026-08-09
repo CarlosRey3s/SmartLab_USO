@@ -1,5 +1,6 @@
 import { Monitor, Building2, Grid } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useState } from 'react';
 import '../../css/ModalNuevaActividad.css';
 import { FormularioMantenimiento } from './ModalActividades/FormularioMantenimiento';
 import { FormularioClase } from './ModalActividades/FormularioClase';
@@ -58,6 +59,7 @@ interface NuevaActividadProps {
 
 export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: NuevaActividadProps) {
   const { user } = useAuth();
+  const [tempTipo, setTempTipo] = useState<string | null>(null);
 
   //TRADUCTOR DE RECURRENCIA (dE TEXTO UI  a ojeto Estructurado)
   const mapearRecurrenciaAObjeto = (textoRecurrencia: string) => {
@@ -164,7 +166,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
           <div>
             <div className="na-header-title">{actividadExistente ? "Editar Actividad" : "Nueva Actividad"}</div>
             <div className="na-header-sub">
-              {tipo ? HEADER_SUBS[tipo] : "Selecciona el tipo de actividad para continuar"}
+              {tipo ? HEADER_SUBS[tipo] : "¿Qué tipo de actividad deseas crear?"}
             </div>
           </div>
           <button className="na-close" onClick={onClose}>×</button>
@@ -199,32 +201,50 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
 
           {/* ── SELECCIÓN DE TIPO (pantalla inicial, sin más campos) ── */}
           {!tipo && (
-            <>
-              <div className="na-field-label">TIPO DE ACTIVIDAD</div>
-              <div className="na-tipo-selector">
-                {user && canCreateClassesOrMaintenance(user.rol as any) && (
-                  <>
-                    <button className="na-tipo-btn na-tipo-clase" onClick={() => handleTipo("clase")}>
-                      <div className="na-tipo-ico na-ico-clase"><CalendarIcon color="#0F6E56" /></div>
-                      <div className="na-tipo-name">Clase regular</div>
+            <div className="na-tipo-vertical-list">
+              {user && canCreateClassesOrMaintenance(user.rol as any) && (
+                <>
+                  <button 
+                    className={`na-tipo-card ${tempTipo === 'clase' ? 'na-tipo-card-active tipo-clase' : ''}`} 
+                    onClick={() => setTempTipo("clase")}
+                  >
+                    <div className="na-tipo-ico-wrap">
+                      <CalendarIcon color={tempTipo === 'clase' ? "#0F6E56" : "#666666"} />
+                    </div>
+                    <div className="na-tipo-text">
+                      <div className="na-tipo-title">Clase regular</div>
                       <div className="na-tipo-desc">Clase con docente asignado</div>
-                    </button>
+                    </div>
+                  </button>
 
-                    <button className="na-tipo-btn na-tipo-mant" onClick={() => handleTipo("mantenimiento")}>
-                      <div className="na-tipo-ico na-ico-mant"><WrenchIcon color="#A32D2D" /></div>
-                      <div className="na-tipo-name">Cierre técnico</div>
-                      <div className="na-tipo-desc">Cierre técnico del laboratorio</div>
-                    </button>
-                  </>
-                )}
+                  <button 
+                    className={`na-tipo-card ${tempTipo === 'mantenimiento' ? 'na-tipo-card-active tipo-mantenimiento' : ''}`} 
+                    onClick={() => setTempTipo("mantenimiento")}
+                  >
+                    <div className="na-tipo-ico-wrap">
+                      <WrenchIcon color={tempTipo === 'mantenimiento' ? "#A32D2D" : "#666666"} />
+                    </div>
+                    <div className="na-tipo-text">
+                      <div className="na-tipo-title">Cierre técnico</div>
+                      <div className="na-tipo-desc">Bloquea el laboratorio por mantenimiento</div>
+                    </div>
+                  </button>
+                </>
+              )}
 
-                <button className="na-tipo-btn na-tipo-res" onClick={() => handleTipo("reserva")}>
-                  <div className="na-tipo-ico na-ico-res"><UserIcon color="#854F0B" /></div>
-                  <div className="na-tipo-name">Reserva directa</div>
-                  <div className="na-tipo-desc">Reserva manual del admin</div>
-                </button>
-              </div>
-            </>
+              <button 
+                className={`na-tipo-card ${tempTipo === 'reserva' ? 'na-tipo-card-active tipo-reserva' : ''}`} 
+                onClick={() => setTempTipo("reserva")}
+              >
+                <div className="na-tipo-ico-wrap">
+                  <UserIcon color={tempTipo === 'reserva' ? "#854F0B" : "#666666"} />
+                </div>
+                <div className="na-tipo-text">
+                  <div className="na-tipo-title">Reserva directa</div>
+                  <div className="na-tipo-desc">Reserva un espacio de forma manual</div>
+                </div>
+              </button>
+            </div>
           )}
 
           {/* ── CONEXION CON FORMULARIO CLASE ── */}
@@ -596,7 +616,16 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
                 </button>
               </>
             ) : (
-              <button className="na-btn-cancel" onClick={onClose}>Cancelar</button>
+              <>
+                <button className="na-btn-cancel" onClick={onClose}>Cancelar</button>
+                <button 
+                  className="na-btn-save" 
+                  onClick={() => { if (tempTipo) handleTipo(tempTipo as any); }} 
+                  disabled={!tempTipo}
+                >
+                  Continuar
+                </button>
+              </>
             )}
           </div>
         </div>
