@@ -40,11 +40,6 @@ export const MainLayout = () => {
       <Sidebar
         isOpen={isSidebarOpen}
         onToggle={toggleSidebar}
-        userName={
-          user
-            ? `${user.nombres} ${user.apellidos}`
-            : 'Usuario'
-        }
         userRole={user?.rol || 'Rol Desconocido'}
       />
 
