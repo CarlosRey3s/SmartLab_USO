@@ -8,7 +8,7 @@ import type {
 
 import { BASE_URL } from "../config/api";
 
-const API_URL = `${BASE_URL}/api/estudiante-dashboard`;
+const API_URL = `${BASE_URL}/api/estudiante/dashboard`;
 
 // =====================================================
 // OBTENER TOKEN
