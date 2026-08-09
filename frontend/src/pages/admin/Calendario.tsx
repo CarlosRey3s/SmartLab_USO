@@ -518,7 +518,7 @@ export const CalendarioView = () => {
       return;
     }
 
-    // 1. 🚨 FILTRO PRINCIPAL: Filtrar únicamente los eventos de tipo 'clase'
+    // 1. FILTRO PRINCIPAL: Filtrar únicamente los eventos de tipo 'clase'
     const clases = eventos.filter(evento => evento.tipo === 'clase');
 
     if (clases.length === 0) {

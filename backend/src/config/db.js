@@ -1,4 +1,3 @@
-// Importamos la clase Pool del paquete pg y dotenv para las variables de entorno
 const { Pool } = require('pg');
 require('dotenv').config();
 
@@ -13,12 +12,12 @@ const pool = new Pool({
 
 // Evento para verificar que la conexión fue exitosa al arrancar
 pool.on('connect', () => {
-    console.log('✅ Conexión establecida con éxito a PostgreSQL (smartlabs_db)');
+    console.log('Conexión establecida con éxito a PostgreSQL (smartlabs_db)');
 });
 
 // Evento para capturar errores inesperados y que el servidor no se caiga
 pool.on('error', (err) => {
-    console.error('❌ Error inesperado en el cliente de PostgreSQL:', err.message);
+    console.error('Error inesperado en el cliente de PostgreSQL:', err.message);
     process.exit(-1);
 });
 

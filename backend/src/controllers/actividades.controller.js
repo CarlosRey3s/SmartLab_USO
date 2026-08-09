@@ -1,11 +1,8 @@
 const actividadesService = require('../services/actividades.service');
 
-
-
 const crearActividad = async (req, res) => {
     try {
         // 1. Extraer el usuario que viene del middleware 'verificarToken'
-        // Si no viniera (ej. en pruebas sin token), dejamos un fallback temporal para no romper nada
         const usuarioLogueado = req.usuario || {
             id: req.body.usuario_id || 1,
             rol: req.body.rol || 'estudiante'
@@ -63,7 +60,7 @@ const actualizarActividad = async (req, res) => {
 
 const eliminarActividad = async (req, res) => {
     try {
-        const idactividad = req.params.id; // extraer el id de la URL
+        const idactividad = req.params.id; s
         const resultado = await actividadesService.eliminarActividad(idactividad);
 
         res.status(200).json({
@@ -73,7 +70,6 @@ const eliminarActividad = async (req, res) => {
         });
     } catch (error) {
         console.error('Error al eliminar la actividad:', error);
-        // si el error es porque no existi, mandamos un 404, sino un 500
         const statusCode = error.message.includes('no existe') ? 404 : 500;
         res.status(statusCode).json({
             success: false,
@@ -84,7 +80,6 @@ const eliminarActividad = async (req, res) => {
 
 };
 
-// Añade esta función:
 const consultarDisponibilidad = async (req, res) => {
     try {
         const { laboratorio_id, fecha, hora_inicio, hora_fin, exclude_id } = req.query;
@@ -95,7 +90,7 @@ const consultarDisponibilidad = async (req, res) => {
         const inicioDatetime = new Date(`${fecha}T${hora_inicio}`);
         const finDatetime = new Date(`${fecha}T${hora_fin}`);
 
-        // Importante: Asegurar que actividadesService.obtenerDisponibilidad existe, o usar la ruta correcta
+        // Importante: Asegurar que actividadesService.obtenerDisponibilidad existe,
         const disponibilidad = await actividadesService.obtenerDisponibilidad(
             laboratorio_id, inicioDatetime, finDatetime, exclude_id
         );
@@ -118,14 +113,6 @@ const obtenerActividades = async (req, res) => {
         const usuarioId = req.usuario.id;
         const rol = req.usuario.rol;
 
-
-
-        // 🚀 AGREGA ESTA LÍNEA AQUÍ:
-        console.log("=== DEBUG SEGURIDAD ===");
-        console.log("ID del usuario:", usuarioId);
-        console.log("Rol detectado:", rol);
-        console.log("=======================");
-
         // 2. Validamos que el frontend sí nos esté mandando ese rango
         if (!start || !end) {
             return res.status(400).json({
@@ -135,7 +122,7 @@ const obtenerActividades = async (req, res) => {
         }
 
         // 3. Delegamos el trabajo a nuestra nueva súper función del servicio
-        // NUEVO: Ahora pasamos los 4 parámetros (fechas + credenciales de privacidad)
+        // Ahora pasamos los 4 parámetros (fechas + credenciales de privacidad)
         const actividadesExpandidas = await actividadesService.obtenerActividadesExpandidas(start, end, usuarioId, rol);
 
         // 4. Devolvemos el arreglo listo para que React lo dibuje y lea los modales

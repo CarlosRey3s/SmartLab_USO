@@ -1,9 +1,13 @@
 /* src/index.css */
 
 :root {
-  --sans: 'Plus Jakarta Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: 'Plus Jakarta Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 24px;
+  --text-xl: 32px;
 }
 
 * {
@@ -13,7 +17,8 @@
 }
 
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
   background-color: #ebebeb;
   /* Fondo gris súper claro */
   color: #1f2937;
@@ -40,35 +45,25 @@ body {
   /* 24px */
 }
 
-/* =======================================================
-   Siderbar (Estilo Teams / Corporativo)
-   ======================================================= */
-   /* ══════════════════════════════════════════
-   SIDEBAR — Paleta USO
-   #22806B  Verde principal
-   #FACB4B  Amarillo activo
-   #FFFFFF  Fondo
-   #AD868A  Mauve / accents suaves
-══════════════════════════════════════════ */
 
 /* ── Variables ── */
 .sb {
-  --sb-verde:        #22806B;
-  --sb-verde-dark:   #1a6356;
-  --sb-verde-light:  #eaf4f1;
-  --sb-amarillo:     #FACB4B;
-  --sb-amarillo-bg:  #fff9e6;
+  --sb-verde: #22806B;
+  --sb-verde-dark: #1a6356;
+  --sb-verde-light: #eaf4f1;
+  --sb-amarillo: #FACB4B;
+  --sb-amarillo-bg: #fff9e6;
   --sb-amarillo-txt: #7a5c00;
-  --sb-mauve:        #AD868A;
-  --sb-blanco:       #FFFFFF;
-  --sb-gray-100:     #f7f8fa;
-  --sb-gray-200:     #eef0f3;
-  --sb-gray-400:     #b0b8c4;
-  --sb-gray-600:     #6b7280;
-  --sb-text:         #1a2e2a;
-  --sb-width:        240px;
-  --sb-radius:       12px;
-  --sb-transition:   0.28s ease;
+  --sb-mauve: #AD868A;
+  --sb-blanco: #FFFFFF;
+  --sb-gray-100: #f7f8fa;
+  --sb-gray-200: #eef0f3;
+  --sb-gray-400: #b0b8c4;
+  --sb-gray-600: #6b7280;
+  --sb-text: #1a2e2a;
+  --sb-width: 240px;
+  --sb-radius: 12px;
+  --sb-transition: 0.28s ease;
 }
 
 /* ── Base ── */
@@ -181,13 +176,11 @@ body {
 .sb__divider {
   height: 1px;
   margin: 0 1.25rem;
-  background: linear-gradient(
-    to right,
-    transparent,
-    var(--sb-gray-200) 30%,
-    var(--sb-gray-200) 70%,
-    transparent
-  );
+  background: linear-gradient(to right,
+      transparent,
+      var(--sb-gray-200) 30%,
+      var(--sb-gray-200) 70%,
+      transparent);
 }
 
 /* ══════════════════════════════════════
@@ -388,18 +381,19 @@ body {
   background: rgba(173, 134, 138, 0.15);
   color: var(--sb-mauve);
 }
+
 /* =======================================================
    NAVBAR (Estilo Teams / Corporativo)
    ======================================================= */
 .navbar {
-  height: 56px; 
+  height: 56px;
   background-color: #ffffff;
   border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
   justify-content: space-between;
   /* Aumentamos un poco el padding horizontal para despegarlo del borde de la pantalla */
-  padding: 0 1.5rem; 
+  padding: 0 1.5rem;
   flex-shrink: 0;
   z-index: 100;
 }
@@ -408,8 +402,8 @@ body {
   display: flex;
   align-items: center;
   /* Reducimos el gap para que el icono y el título se vean como un grupo unido */
-  gap: 0.75rem; 
-  flex: 1; 
+  gap: 0.75rem;
+  flex: 1;
 }
 
 .icon-button {
@@ -420,14 +414,15 @@ body {
   /* En lugar de padding, le damos dimensiones fijas para un hover perfecto */
   width: 60px;
   height: 36px;
-  border-radius: 8px; /* Bordes un poco más suaves */
+  border-radius: 8px;
+  /* Bordes un poco más suaves */
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s, color 0.2s;
-  position: relative; 
+  position: relative;
   /* Evitamos el contorno azul por defecto de los navegadores al hacer clic */
-  outline: none; 
+  outline: none;
 }
 
 .icon-button:hover {
@@ -436,16 +431,19 @@ body {
 }
 
 .navbar-title {
-  font-size: 1.125rem; 
+  font-size: 1.125rem;
   font-weight: 600;
   color: #1f2937;
   margin: 0;
   /* Un pequeño ajuste para alinear visualmente el texto con el icono */
-  line-height: 1; 
-}/* --- Buscador Central (El Protagonista) --- */
+  line-height: 1;
+}
+
+/* --- Buscador Central (El Protagonista) --- */
 
 .navbar-center {
-  flex: 1.5; /* Ocupa más espacio que los lados */
+  flex: 1.5;
+  /* Ocupa más espacio que los lados */
   display: flex;
   justify-content: center;
 }
@@ -453,7 +451,8 @@ body {
 .search-container {
   position: relative;
   width: 100%;
-  max-width: 480px; /* Ancho máximo prominente */
+  max-width: 480px;
+  /* Ancho máximo prominente */
   display: flex;
   align-items: center;
 }
@@ -470,7 +469,8 @@ body {
   padding: 0.4rem 1rem 0.4rem 2.25rem;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
-  font-size: 0.875rem; /* 14px */
+  font-size: 0.875rem;
+  /* 14px */
   background-color: #f9fafb;
   color: #1f2937;
   transition: all 0.2s ease;
@@ -479,7 +479,8 @@ body {
 .search-input-navbar:focus {
   outline: none;
   background-color: #ffffff;
-  border-color: #22806B; /* Tu color verde en el foco */
+  border-color: #22806B;
+  /* Tu color verde en el foco */
   box-shadow: 0 0 0 2px rgba(34, 128, 107, 0.1);
 }
 
@@ -499,7 +500,8 @@ body {
 }
 
 .user-greeting {
-  font-size: 0.875rem; /* 14px */
+  font-size: 0.875rem;
+  /* 14px */
   font-weight: 500;
   color: #4b5563;
 }
@@ -507,9 +509,11 @@ body {
 .user-avatar-navbar {
   width: 32px;
   height: 32px;
-  background-color: #FACB4B; /* Tu color amarillo */
+  background-color: #FACB4B;
+  /* Tu color amarillo */
   color: #111827;
-  border-radius: 50%; /* Mantener redondo para avatares es buena UX */
+  border-radius: 50%;
+  /* Mantener redondo para avatares es buena UX */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -524,7 +528,8 @@ body {
   right: 6px;
   width: 8px;
   height: 8px;
-  background-color: #ef4444; /* Rojo de alerta */
+  background-color: #ef4444;
+  /* Rojo de alerta */
   border: 2px solid #ffffff;
   border-radius: 50%;
 }
@@ -554,7 +559,7 @@ body {
     transform: translateX(0);
     transition: transform .3s ease;
 
-    box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
   }
 
   /* Cuando está cerrado simplemente se esconde */
@@ -577,4 +582,3 @@ body {
   }
 
 }
-

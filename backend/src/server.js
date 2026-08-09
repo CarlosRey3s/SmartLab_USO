@@ -15,8 +15,8 @@ app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // ← AQUÍ, antes de cualquier app.use de rutas
 app.use((req, res, next) => {
-    console.log(`${req.method} ${req.url}`);
-    next();
+  console.log(`${req.method} ${req.url}`);
+  next();
 });
 
 
@@ -46,8 +46,8 @@ app.use('/api/actividades', actividadesRoutes); // 2. Montamos las nuevas rutas
 app.use('/api/sugerencias', sugerenciasRoutes);
 app.use('/api/reportes', reportesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/estudiante/dashboard',estudianteDashboardRoutes); // 3. Montamos las rutas del dashboard del estudiante
-app.use('/api/docente/dashboard',docenteDashboardRoutes); // 4. Montamos las rutas del dashboard del docente
+app.use('/api/estudiante/dashboard', estudianteDashboardRoutes); // 3. Montamos las rutas del dashboard del estudiante
+app.use('/api/docente/dashboard', docenteDashboardRoutes); // 4. Montamos las rutas del dashboard del docente
 app.use('/api/alertas', alertasRoutes); // Rutas para incidencias y alertas
 
 app.get('/api/health', async (req, res) => {
@@ -66,13 +66,13 @@ app.get('/api/health', async (req, res) => {
 
 
 app.listen(port, async () => {
-  console.log(`🚀 Servidor backend corriendo en http://localhost:${port}`);
+  console.log(` Servidor backend corriendo en http://localhost:${port}`);
 
   // Probar la conexión a la base de datos al arrancar
   try {
     await db.query('SELECT 1');
-    console.log('✅ Conexión a la base de datos exitosa.');
+    console.log(' Conexión a la base de datos exitosa.');
   } catch (err) {
-    console.error('❌ Error al conectar con la base de datos:', err);
+    console.error(' Error al conectar con la base de datos:', err);
   }
 });

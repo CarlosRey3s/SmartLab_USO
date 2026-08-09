@@ -1,4 +1,3 @@
-// src/services/solicitudes.service.ts
 import axios from 'axios';
 import type { SolicitudesResponse } from '../types/solicitudes.types';
 import { BASE_URL } from "../config/api";

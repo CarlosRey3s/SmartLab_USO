@@ -104,8 +104,8 @@ const crearMovimientoInventario = async (movimientoData) => {
     await client.query(queryActualizarStock, [cantidad, item_id]);
 
     await client.query('COMMIT');
-    
-    // 🔥 LÓGICA DE ALERTAS AUTOMÁTICAS:
+
+    //  LÓGICA DE ALERTAS AUTOMÁTICAS:
     // Hacemos await para asegurar que si se genera alerta, esté lista antes de que el frontend recargue
     try {
       await verificarAlertasAutomaticas(item_id);
@@ -147,8 +147,8 @@ const actualizarItemInventario = async (id, itemData) => {
   ];
 
   const result = await pool.query(query, values);
-  
-  // 🔥 LÓGICA DE ALERTAS AUTOMÁTICAS:
+
+  // LÓGICA DE ALERTAS AUTOMÁTICAS:
   try {
     await verificarAlertasAutomaticas(id);
   } catch (err) {

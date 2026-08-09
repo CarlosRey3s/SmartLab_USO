@@ -23,4 +23,3 @@ msalInstance.initialize().then(() => {
   )
 });
 
-//VITE_API_URL=https://smartlabusobackend-production.up.railway.app

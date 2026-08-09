@@ -18,7 +18,7 @@ const getAlertas = async (req, res) => {
 const createAlerta = async (req, res) => {
   try {
     const { item_id, tipo_problema, descripcion, cantidad_afectada, actividad_id } = req.body;
-    
+
     if (!item_id || !tipo_problema || !descripcion) {
       return res.status(400).json({ status: 'error', message: 'Faltan datos obligatorios (item_id, tipo_problema, descripcion)' });
     }
@@ -56,7 +56,6 @@ const updateAlertaStatus = async (req, res) => {
 
     // Quién resuelve es quien hace la petición
     const resuelto_por_id = req.usuario ? req.usuario.id : null;
-
     const alertaActualizada = await alertasService.actualizarEstadoAlerta(id, estado, resuelto_por_id);
 
     res.json({

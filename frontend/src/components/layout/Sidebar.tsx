@@ -56,9 +56,6 @@ export const Sidebar = ({
     return location.pathname.startsWith(path);
   };
 
-
-
-
   // Cierra automáticamente en dispositivos pequeños
   const handleLinkClick = () => {
     if (window.innerWidth <= 992) {
@@ -81,22 +78,15 @@ export const Sidebar = ({
 
     };
 
-
     document.addEventListener('mousedown', handleClickOutside);
-
-
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-
   }, [isOpen, onToggle]);
-
 
   return (
     <aside ref={sidebarRef} className={`sb${!isOpen ? ' sb--collapsed' : ''}`}>
-
       <div className="sb__header">
-
         <div className="sb__avatar"  > {/* Puedes quitar el color de fondo si el logo ya lo trae */}
           <img
             src={logoUSO}
@@ -109,37 +99,26 @@ export const Sidebar = ({
           <span className="sb__brand-name">
             USO
           </span>
-
           <span className="sb__brand-sub">
             Laboratorios
           </span>
         </div>
-
       </div>
 
 
       <div className="sb__divider" />
-
-
       <nav className="sb__nav" aria-label="Menú principal">
-
         <ul className="sb__list">
-
           {menuItems
             .filter(item => item.roles.includes(userRole.toLowerCase()))
             .map(item => {
-
               const active = isActive(item.path);
               const Icon = item.icon;
-
-
               return (
-
                 <li
                   key={`${item.name}-${item.path}`}
                   className="sb__item"
                 >
-
                   <Link
                     to={item.path}
                     onClick={handleLinkClick}
@@ -150,39 +129,26 @@ export const Sidebar = ({
                     {active && (
                       <span className="sb__indicator" />
                     )}
-
-
                     <span className="sb__icon">
-
                       <Icon
                         size={18}
                         strokeWidth={active ? 2.2 : 1.8}
                       />
-
                     </span>
-
 
                     <span className="sb__label">
                       {item.name}
                     </span>
 
-
                     {active && (
                       <span className="sb__dot" />
                     )}
-
                   </Link>
-
                 </li>
-
               );
-
             })}
-
         </ul>
-
       </nav>
-
     </aside>
   );
 };

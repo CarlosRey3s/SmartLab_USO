@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Users,
-  UserCheck,
-  Plus,
-  Search,
-  Trash2,
-  RefreshCw,
-  Shield,
-  Edit2,
-  X,
-  Filter
+  Users, UserCheck, Plus, Search, Trash2, RefreshCw, Shield, Edit2, X, Filter
 } from 'lucide-react';
 import '../../css/Usuarios.css';
 import { usuariosService } from '../../services/usuarios.service';
@@ -35,7 +26,7 @@ export default function Usuarios() {
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
 
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [confirmModalData, setConfirmModalData] = useState<{title: string, message: string, action: () => void} | null>(null);
+  const [confirmModalData, setConfirmModalData] = useState<{ title: string, message: string, action: () => void } | null>(null);
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
@@ -52,13 +43,13 @@ export default function Usuarios() {
         setIsFilterOpen(false);
       }
     }
-    
+
     if (isFilterOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     } else {
       document.removeEventListener("mousedown", handleClickOutside);
     }
-    
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -79,7 +70,7 @@ export default function Usuarios() {
 
   const handleGuardarUsuario = async () => {
     // Si estamos creando, la contraseña es obligatoria. Si estamos editando, es opcional.
-    if(!formData.nombre || !formData.apellido || !formData.correo || !formData.rol || !formData.expediente || (!editingUserId && !formData.password)) {
+    if (!formData.nombre || !formData.apellido || !formData.correo || !formData.rol || !formData.expediente || (!editingUserId && !formData.password)) {
       customToast.error("Por favor llena todos los campos obligatorios.");
       return;
     }
@@ -92,14 +83,14 @@ export default function Usuarios() {
 
     let dbRole = formData.rol;
     // Mapeo inverso de roles solo si viene del select con los nombres amigables
-    if(formData.rol === 'Admin') dbRole = 'administrador';
-    if(formData.rol === 'Coordinador') dbRole = 'coordinador';
-    if(formData.rol === 'Instructor') dbRole = 'docente';
-    if(formData.rol === 'Estudiante') dbRole = 'estudiante';
-    if(formData.rol === 'Supervisor') dbRole = 'supervisor';
+    if (formData.rol === 'Admin') dbRole = 'administrador';
+    if (formData.rol === 'Coordinador') dbRole = 'coordinador';
+    if (formData.rol === 'Instructor') dbRole = 'docente';
+    if (formData.rol === 'Estudiante') dbRole = 'estudiante';
+    if (formData.rol === 'Supervisor') dbRole = 'supervisor';
 
     const payload = { ...formData, rol: dbRole };
-    
+
     let result;
     if (editingUserId) {
       result = await usuariosService.actualizarUsuario(editingUserId, payload, String(user?.id || 1));
@@ -107,7 +98,7 @@ export default function Usuarios() {
       result = await usuariosService.crearUsuario(payload, String(user?.id || 1));
     }
 
-    if(result.status === 'success') {
+    if (result.status === 'success') {
       customToast.success(`Usuario ${editingUserId ? 'actualizado' : 'creado'} correctamente`);
       setIsAddModalOpen(false);
       setEditingUserId(null);
@@ -138,11 +129,11 @@ export default function Usuarios() {
 
   const handleAbrirEdicion = (user: any) => {
     let selectRole = user.rol;
-    if(user.rol === 'administrador') selectRole = 'Admin';
-    if(user.rol === 'coordinador') selectRole = 'Coordinador';
-    if(user.rol === 'docente') selectRole = 'Instructor';
-    if(user.rol === 'estudiante') selectRole = 'Estudiante';
-    if(user.rol === 'supervisor') selectRole = 'Supervisor';
+    if (user.rol === 'administrador') selectRole = 'Admin';
+    if (user.rol === 'coordinador') selectRole = 'Coordinador';
+    if (user.rol === 'docente') selectRole = 'Instructor';
+    if (user.rol === 'estudiante') selectRole = 'Estudiante';
+    if (user.rol === 'supervisor') selectRole = 'Supervisor';
 
     setFormData({
       nombre: user.nombre,
@@ -183,9 +174,9 @@ export default function Usuarios() {
     const nombreCompleto = `${user.nombre || ''} ${user.apellido || ''}`.toLowerCase();
     const correo = (user.correo || '').toLowerCase();
     const searchLower = searchTerm.toLowerCase();
-    
+
     const matchesSearch = nombreCompleto.includes(searchLower) || correo.includes(searchLower);
-    
+
     if (activeTab === 'Todos') return matchesSearch;
     return matchesSearch && (user.rol || '').toLowerCase() === activeTab.toLowerCase();
   });
@@ -220,8 +211,8 @@ export default function Usuarios() {
 
       <div className="filters-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ position: 'relative' }} ref={filterRef}>
-          <button 
-            className="btn-filter" 
+          <button
+            className="btn-filter"
             style={{ borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', border: '1px solid #e2e8f0', backgroundColor: 'white', cursor: 'pointer' }}
             onClick={() => setIsFilterOpen(!isFilterOpen)}
           >
@@ -233,14 +224,14 @@ export default function Usuarios() {
             <div className="filter-dropdown-menu" style={{ position: 'absolute', top: '100%', left: 0, marginTop: '8px', width: '250px', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', zIndex: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <span style={{ fontWeight: '600', fontSize: '14px', color: '#334155' }}>Filtros</span>
-                <button 
+                <button
                   onClick={() => { setActiveTab('Todos'); setIsFilterOpen(false); }}
                   style={{ fontSize: '12px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                 >
                   Limpiar
                 </button>
               </div>
-              
+
               <div>
                 <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>Por Rol de Usuario</label>
                 <select
@@ -268,9 +259,9 @@ export default function Usuarios() {
 
         <div className="search-container-users">
           <Search size={16} color="#6b7280" />
-          <input 
-            type="text" 
-            placeholder="Buscar usuarios..." 
+          <input
+            type="text"
+            placeholder="Buscar usuarios..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -296,7 +287,7 @@ export default function Usuarios() {
         }}>
           <Trash2 size={14} /> Papelera
         </button>
-        <button 
+        <button
           className={`bulk-btn ${isRoleModalOpen ? 'active' : ''}`}
           onClick={() => setIsRoleModalOpen(!isRoleModalOpen)}
         >
@@ -307,35 +298,35 @@ export default function Usuarios() {
           <div className="role-popover">
             <div className="role-popover-title">Seleccione el nuevo Rol</div>
             <div className="role-options">
-              <div 
+              <div
                 className={`role-option ${selectedNewRole === 'Administrador' ? 'selected' : ''}`}
                 onClick={() => setSelectedNewRole('Administrador')}
               >
                 <Shield size={16} className="role-option-icon" />
                 <span className="role-option-text">Administrador</span>
               </div>
-              <div 
+              <div
                 className={`role-option ${selectedNewRole === 'Coordinador' ? 'selected' : ''}`}
                 onClick={() => setSelectedNewRole('Coordinador')}
               >
                 <Edit2 size={16} className="role-option-icon" />
                 <span className="role-option-text">Coordinador</span>
               </div>
-              <div 
+              <div
                 className={`role-option ${selectedNewRole === 'Instructor' ? 'selected' : ''}`}
                 onClick={() => setSelectedNewRole('Instructor')}
               >
                 <Users size={16} className="role-option-icon" />
                 <span className="role-option-text">Instructor</span>
               </div>
-              <div 
+              <div
                 className={`role-option ${selectedNewRole === 'Estudiante' ? 'selected' : ''}`}
                 onClick={() => setSelectedNewRole('Estudiante')}
               >
                 <UserCheck size={16} className="role-option-icon" />
                 <span className="role-option-text">Estudiante</span>
               </div>
-              <div 
+              <div
                 className={`role-option ${selectedNewRole === 'Supervisor' ? 'selected' : ''}`}
                 onClick={() => setSelectedNewRole('Supervisor')}
               >
@@ -344,16 +335,16 @@ export default function Usuarios() {
               </div>
             </div>
             <div className="role-popover-actions">
-              <button 
+              <button
                 className="role-btn-confirm"
                 onClick={async () => {
                   if (selectedNewRole && selectedUsers.length > 0) {
                     let dbRole = 'estudiante';
-                    if(selectedNewRole === 'Administrador') dbRole = 'administrador';
-                    if(selectedNewRole === 'Coordinador') dbRole = 'coordinador';
-                    if(selectedNewRole === 'Instructor') dbRole = 'docente';
-                    if(selectedNewRole === 'Estudiante') dbRole = 'estudiante';
-                    if(selectedNewRole === 'Supervisor') dbRole = 'supervisor';
+                    if (selectedNewRole === 'Administrador') dbRole = 'administrador';
+                    if (selectedNewRole === 'Coordinador') dbRole = 'coordinador';
+                    if (selectedNewRole === 'Instructor') dbRole = 'docente';
+                    if (selectedNewRole === 'Estudiante') dbRole = 'estudiante';
+                    if (selectedNewRole === 'Supervisor') dbRole = 'supervisor';
 
                     const updatePromises = selectedUsers.map(id => {
                       const userObj = users.find(u => u.id === id);
@@ -373,7 +364,7 @@ export default function Usuarios() {
               >
                 Confirmar
               </button>
-              <button 
+              <button
                 className="role-btn-cancel"
                 onClick={() => setIsRoleModalOpen(false)}
               >
@@ -417,41 +408,41 @@ export default function Usuarios() {
               <tr><td colSpan={7} style={{ textAlign: 'center', padding: '20px' }}>No hay usuarios que coincidan con la búsqueda</td></tr>
             ) : (
               filteredUsers.map(user => (
-              <tr key={user.id}>
-                <td data-label="Seleccionar">
-                  <input
-                    type="checkbox"
-                    checked={selectedUsers.includes(user.id)}
-                    onChange={() => toggleUser(user.id)}
-                  />
-                </td>
-                <td data-label="Nombre">
-                  <div className="name-cell">
-                    <div className="avatar-circle">
-                      {`${(user.nombre || '').charAt(0).toUpperCase()}${(user.apellido || '').charAt(0).toUpperCase()}`}
+                <tr key={user.id}>
+                  <td data-label="Seleccionar">
+                    <input
+                      type="checkbox"
+                      checked={selectedUsers.includes(user.id)}
+                      onChange={() => toggleUser(user.id)}
+                    />
+                  </td>
+                  <td data-label="Nombre">
+                    <div className="name-cell">
+                      <div className="avatar-circle">
+                        {`${(user.nombre || '').charAt(0).toUpperCase()}${(user.apellido || '').charAt(0).toUpperCase()}`}
+                      </div>
+                      <span className="name-text">{user.nombre} {user.apellido}</span>
                     </div>
-                    <span className="name-text">{user.nombre} {user.apellido}</span>
-                  </div>
-                </td>
-                <td data-label="Correo">{user.correo}</td>
-                <td data-label="Rol Actual">{user.rol}</td>
-                <td data-label="Estado">
-                  <span className="status-badge">{user.estado}</span>
-                </td>
-                <td data-label="Ultimo Acceso">{user.fecha_creacion ? new Date(user.fecha_creacion).toLocaleDateString() : 'N/A'}</td>
-                <td data-label="Acciones">
-                  {!readOnly && (
-                  <div className="actions-cell">
-                    <button className="action-icon-btn edit" onClick={() => handleAbrirEdicion(user)}>
-                      <Edit2 size={16} />
-                    </button>
-                    <button className="action-icon-btn delete" onClick={() => handleEliminar(user.id)}>
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                  )}
-                </td>
-              </tr>
+                  </td>
+                  <td data-label="Correo">{user.correo}</td>
+                  <td data-label="Rol Actual">{user.rol}</td>
+                  <td data-label="Estado">
+                    <span className="status-badge">{user.estado}</span>
+                  </td>
+                  <td data-label="Ultimo Acceso">{user.fecha_creacion ? new Date(user.fecha_creacion).toLocaleDateString() : 'N/A'}</td>
+                  <td data-label="Acciones">
+                    {!readOnly && (
+                      <div className="actions-cell">
+                        <button className="action-icon-btn edit" onClick={() => handleAbrirEdicion(user)}>
+                          <Edit2 size={16} />
+                        </button>
+                        <button className="action-icon-btn delete" onClick={() => handleEliminar(user.id)}>
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
               ))
             )}
           </tbody>
@@ -521,58 +512,58 @@ export default function Usuarios() {
             <button className="modal-close-btn" onClick={() => setIsAddModalOpen(false)}>
               <X size={24} />
             </button>
-            
+
             <h2 className="modal-title">{editingUserId ? 'Editar Usuario' : 'Agregar Usuario'}</h2>
             <p className="modal-subtitle">{editingUserId ? 'Modifica la información del Usuario' : 'Ingresa la informacion del Usuario'}</p>
-            
+
             <div className="form-section-title">INFORMACION GENERAL</div>
-            
+
             <div className="form-group">
               <label className="form-label">NOMBRES</label>
-              <input type="text" className="form-input" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} placeholder="Ej. Juan Carlos" />
+              <input type="text" className="form-input" value={formData.nombre} onChange={e => setFormData({ ...formData, nombre: e.target.value })} placeholder="Ej. Juan Carlos" />
             </div>
 
             <div className="form-group">
               <label className="form-label">APELLIDOS</label>
-              <input type="text" className="form-input" value={formData.apellido} onChange={e => setFormData({...formData, apellido: e.target.value})} placeholder="Ej. Pérez Gómez" />
+              <input type="text" className="form-input" value={formData.apellido} onChange={e => setFormData({ ...formData, apellido: e.target.value })} placeholder="Ej. Pérez Gómez" />
             </div>
 
             <div className="form-group">
               <label className="form-label">EXPEDIENTE</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                value={formData.expediente} 
+              <input
+                type="text"
+                className="form-input"
+                value={formData.expediente}
                 onChange={e => {
                   const onlyNums = e.target.value.replace(/[^0-9]/g, '');
-                  setFormData({...formData, expediente: onlyNums});
+                  setFormData({ ...formData, expediente: onlyNums });
                 }}
-                placeholder="Ej. 123456" 
+                placeholder="Ej. 123456"
               />
             </div>
-            
+
             <div className="form-group">
               <label className="form-label">CORREO ELECTRONICO</label>
-              <input type="email" className="form-input" value={formData.correo} onChange={e => setFormData({...formData, correo: e.target.value})} placeholder="Ej. usuario@ejemplo.com" />
+              <input type="email" className="form-input" value={formData.correo} onChange={e => setFormData({ ...formData, correo: e.target.value })} placeholder="Ej. usuario@ejemplo.com" />
             </div>
-            
+
             <div className="form-group">
               <label className="form-label">CONTRASEÑA</label>
-              <input type="password" className="form-input" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} placeholder="Mínimo 8 caracteres" />
+              <input type="password" className="form-input" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} placeholder="Mínimo 8 caracteres" />
             </div>
-            
+
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">ESTADO DE LA CUENTA</label>
-                <select className="form-select" value={formData.estado} onChange={e => setFormData({...formData, estado: e.target.value})}>
+                <select className="form-select" value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })}>
                   <option value="activo">Activo</option>
                   <option value="inactivo">Inactivo</option>
                 </select>
               </div>
-              
+
               <div className="form-group">
                 <label className="form-label">SELECCIONAR ROL</label>
-                <select className="form-select" value={formData.rol} onChange={e => setFormData({...formData, rol: e.target.value})}>
+                <select className="form-select" value={formData.rol} onChange={e => setFormData({ ...formData, rol: e.target.value })}>
                   <option value="" disabled>Seleccione un Rol</option>
                   <option value="Admin">Admin</option>
                   <option value="Coordinador">Coordinador</option>
@@ -582,7 +573,7 @@ export default function Usuarios() {
                 </select>
               </div>
             </div>
-            
+
             <div className="modal-footer">
               <span className="modal-footer-text">Los campos marcados son obligatorios.</span>
               <div className="modal-actions">

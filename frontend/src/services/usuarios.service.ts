@@ -1,4 +1,3 @@
-// src/services/usuarios.service.ts
 import { BASE_URL } from "../config/api";
 
 const API_URL = `${BASE_URL}/api`;

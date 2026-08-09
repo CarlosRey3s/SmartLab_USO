@@ -42,19 +42,14 @@ export const MainLayout = () => {
         onToggle={toggleSidebar}
         userRole={user?.rol || 'Rol Desconocido'}
       />
-
       <div className="main-content">
-
         <Navbar
           onToggleMenu={toggleSidebar}
         />
-
         <main className="page-content">
           <Outlet />
         </main>
-
       </div>
-
     </div>
   );
 };

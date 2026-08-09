@@ -127,14 +127,6 @@ export function useActividadForm({ actividadExistente, onGuardar }: UseActividad
     useEffect(() => {
         if (actividadExistente) {
             console.log('DEBUG actividadExistente:', actividadExistente.laboratorio_id, actividadExistente.id);
-            // const start = new Date(actividadExistente.start);
-            // const end = new Date(actividadExistente.end);
-
-            /*  const fechaLocal = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
-              const desdeLocal = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`;
-              const hastaLocal = `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
-  */
-
             const start = actividadExistente.start instanceof Date
                 ? actividadExistente.start
                 : new Date(actividadExistente.start);
@@ -145,8 +137,6 @@ export function useActividadForm({ actividadExistente, onGuardar }: UseActividad
             const fechaLocal = format(start, 'yyyy-MM-dd');
             const desdeLocal = format(start, 'HH:mm');
             const hastaLocal = format(end, 'HH:mm');
-
-
 
             // --- DECODIFICAR RRULE A ESTADO DEL FORMULARIO ---
             let recurrenciaForm = "No se repite";
@@ -347,7 +337,7 @@ export function useActividadForm({ actividadExistente, onGuardar }: UseActividad
                     const results = await Promise.all(
                         labsDesdeBD.map(lab =>
                             chequearDisponibilidad(lab.id, form.fecha!, form.desde!, form.hasta!, (actividadExistente as any)?.idOriginal || actividadExistente?.id)
-                            .then(res => ({ id: lab.id, result: res }))
+                                .then(res => ({ id: lab.id, result: res }))
                         )
                     );
 

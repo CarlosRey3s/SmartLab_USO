@@ -221,10 +221,10 @@ const programarActividad = async (datosModal, usuarioLogueado) => {
     try {
         await client.query('BEGIN');
 
-        // [VALIDACIÓN CRÍTICA]: Ejecutar el árbol lógico de choques de horarios e infraestructura
+        // VALIDACIÓN: Ejecutar el árbol lógico de choques de horarios e infraestructura
         await verificarChoqueHorario(client, laboratorio, inicioDatetime, finDatetime, tipo, datosModal);
 
-        // [NUEVA VALIDACIÓN CRÍTICA]: Choques de Inventario Proyectado
+        // VALIDACIÓN: Choques de Inventario Proyectado
         if (datosModal.equipos && Array.isArray(datosModal.equipos) && datosModal.equipos.length > 0) {
             await verificarDisponibilidadItems(client, inicioDatetime, finDatetime, datosModal.equipos);
         }
@@ -629,7 +629,7 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usu
                 (a.recurrencia IS NULL AND a.fecha_hora_inicio <= $2 AND a.fecha_hora_fin >= $1)
                 OR (a.recurrencia IS NOT NULL AND a.fecha_hora_inicio <= $2)
             )
-            -- 🚀 MATRIZ DE CONTROL DE ACCESO (RBAC + DOMINIO)
+            -- MATRIZ DE CONTROL DE ACCESO (RBAC + DOMINIO)
             AND (
                 -- 1. administrador: Ve absolutamente todo el campus
                 $4 = 'administrador'
@@ -845,6 +845,7 @@ const obtenerTodasSolicitudes = async (usuarioId, rol, estado = null, page = 1, 
 // ==========================================
 // 2. RESOLVER SOLICITUD (PUT - APROBAR/RECHAZAR)
 // ==========================================
+
 const resolverSolicitud = async (actividadId, accion, resolutorId, motivoResolucion = null) => {
     // 1. Verificar el estado actual de la solicitud
     const estadoQuery = await db.query(
@@ -918,6 +919,7 @@ const resolverSolicitud = async (actividadId, accion, resolutorId, motivoResoluc
 // ==========================================
 // 3. CANCELAR SOLICITUD (PUT - Solo el solicitante)
 // ==========================================
+
 const cancelarSolicitud = async (actividadId, usuarioId) => {
     // 1. Verificar que la solicitud existe
     const estadoQuery = await db.query(
@@ -957,6 +959,7 @@ const cancelarSolicitud = async (actividadId, usuarioId) => {
 // ==========================================
 // 3. ENTREGAR EQUIPOS (Descuenta inventario)
 // ==========================================
+
 const registrarEntregaEquipos = async (actividadId, usuarioId) => {
     // Asegurarnos de que el ENUM tiene 'entregado' ANTES de iniciar la transacción.
     try {
@@ -1022,6 +1025,7 @@ const registrarEntregaEquipos = async (actividadId, usuarioId) => {
 // ==========================================
 // 4. DEVOLVER EQUIPOS (Suma inventario y reporta daños)
 // ==========================================
+
 const registrarDevolucionEquipos = async (actividadId, reporteDano = null, resolutorId) => {
     // Asegurarnos de que el ENUM tiene 'devuelto' ANTES de iniciar la transacción
     try {
@@ -1099,6 +1103,7 @@ const registrarDevolucionEquipos = async (actividadId, reporteDano = null, resol
 // ==========================================
 // REPROGRAMAR SOLICITUD INCOMPLETA
 // ==========================================
+
 const reprogramarSolicitud = async (actividadId, nuevaFecha, nuevaHoraInicio, nuevaHoraFin) => {
     const client = await db.connect();
     try {

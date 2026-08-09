@@ -27,14 +27,14 @@ const obtenerTodasLasAlertas = async () => {
 // Crear una nueva alerta (manual o automática)
 const crearAlerta = async (alertaData) => {
   const {
-    item_id, actividad_id, usuario_reporta_id, 
+    item_id, actividad_id, usuario_reporta_id,
     tipo_problema, descripcion, cantidad_afectada, estado
   } = alertaData;
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    
+
     const insertAlertaQuery = `
       INSERT INTO alertas_inventario (
         item_id, actividad_id, usuario_reporta_id, 
@@ -44,10 +44,10 @@ const crearAlerta = async (alertaData) => {
       RETURNING *;
     `;
     const valoresAlerta = [
-      item_id, actividad_id || null, usuario_reporta_id || null, 
+      item_id, actividad_id || null, usuario_reporta_id || null,
       tipo_problema, descripcion, cantidad_afectada || 1, estado || 'pendiente'
     ];
-    
+
     const resultAlerta = await client.query(insertAlertaQuery, valoresAlerta);
     const nuevaAlerta = resultAlerta.rows[0];
 
@@ -57,8 +57,8 @@ const crearAlerta = async (alertaData) => {
       VALUES ($1, NULL, $2, $3, $4)
     `;
     await client.query(insertHistorialQuery, [
-      nuevaAlerta.id, 
-      nuevaAlerta.estado, 
+      nuevaAlerta.id,
+      nuevaAlerta.estado,
       usuario_reporta_id || null,
       'Creación inicial de la alerta'
     ]);
@@ -76,7 +76,7 @@ const crearAlerta = async (alertaData) => {
 // Actualizar el estado de una alerta
 const actualizarEstadoAlerta = async (id, estado_nuevo, resuelto_por_id = null, comentario = null) => {
   const isResolved = ['resuelto', 'descartado'].includes(estado_nuevo);
-  
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -84,7 +84,7 @@ const actualizarEstadoAlerta = async (id, estado_nuevo, resuelto_por_id = null, 
     // 1. Obtener estado anterior
     const getAlertaQuery = 'SELECT estado FROM alertas_inventario WHERE id = $1';
     const resultGet = await client.query(getAlertaQuery, [id]);
-    
+
     if (resultGet.rows.length === 0) {
       throw new Error('Alerta no encontrada');
     }
@@ -114,9 +114,9 @@ const actualizarEstadoAlerta = async (id, estado_nuevo, resuelto_por_id = null, 
       VALUES ($1, $2, $3, $4, $5)
     `;
     await client.query(insertHistorialQuery, [
-      id, 
-      estado_anterior, 
-      estado_nuevo, 
+      id,
+      estado_anterior,
+      estado_nuevo,
       resuelto_por_id || null,
       comentario || 'Actualización de estado'
     ]);
@@ -132,37 +132,37 @@ const actualizarEstadoAlerta = async (id, estado_nuevo, resuelto_por_id = null, 
 };
 
 // ==========================================
-// 💡 LÓGICA DE ALERTAS AUTOMÁTICAS (SISTEMA)
+// LÓGICA DE ALERTAS AUTOMÁTICAS (SISTEMA)
 // ==========================================
 
 // Verifica el stock de un ítem y decide si crea, actualiza o resuelve una alerta
 const verificarAlertasAutomaticas = async (item_id) => {
   const client = await pool.connect();
-  
+
   try {
     await client.query('BEGIN');
 
     // 1. Obtener la información del ítem (stock actual y mínimo)
     const itemQuery = 'SELECT cantidad_actual, stock_minimo, nombre FROM item_inventario WHERE id = $1';
     const itemResult = await client.query(itemQuery, [item_id]);
-    
+
     if (itemResult.rows.length === 0) {
       await client.query('ROLLBACK');
       return; // El ítem no existe
     }
-    
+
     const { cantidad_actual, stock_minimo, nombre } = itemResult.rows[0];
-    
+
     // 2. Determinar si existe un problema de stock
     let tipo_problema = null;
     let descripcion = null;
-    
+
     if (cantidad_actual <= 0) {
       tipo_problema = 'agotado';
-      descripcion = `🚨 El ítem "${nombre}" se ha quedado sin stock (0 unidades disponibles).`;
+      descripcion = `El ítem "${nombre}" se ha quedado sin stock (0 unidades disponibles).`;
     } else if (cantidad_actual <= stock_minimo) {
       tipo_problema = 'bajo_stock';
-      descripcion = `⚠️ El ítem "${nombre}" ha alcanzado el nivel de bajo stock. Solo quedan ${cantidad_actual} unidades.`;
+      descripcion = `El ítem "${nombre}" ha alcanzado el nivel de bajo stock. Solo quedan ${cantidad_actual} unidades.`;
     }
 
     // 3. Buscar si YA EXISTE una alerta de sistema (agotado o bajo_stock) que NO esté resuelta ni descartada
@@ -181,7 +181,7 @@ const verificarAlertasAutomaticas = async (item_id) => {
 
     if (tipo_problema) {
       // ESTADO CRÍTICO (Agotado o Bajo Stock)
-      
+
       if (!alertaActiva) {
         // CASO A: Hay problema pero NO hay alerta -> ¡CREARLA!
         const insertAlertaQuery = `
@@ -198,7 +198,7 @@ const verificarAlertasAutomaticas = async (item_id) => {
           VALUES ($1, NULL, 'pendiente', NULL, 'Generado automáticamente por el sistema')
         `;
         await client.query(insertHistorial, [nuevaAlerta.id]);
-        
+
       } else if (alertaActiva.tipo_problema !== tipo_problema) {
         // CASO B: Hay alerta, pero el problema cambió (ej: pasó de 'bajo_stock' a 'agotado')
         const updateAlertaQuery = `
@@ -207,14 +207,14 @@ const verificarAlertasAutomaticas = async (item_id) => {
           WHERE id = $3
         `;
         await client.query(updateAlertaQuery, [tipo_problema, descripcion, alertaActiva.id]);
-        
+
         // Guardar historial de esta transición
         const insertHistorial = `
           INSERT INTO historial_alertas (alerta_id, estado_anterior, estado_nuevo, cambiado_por_id, comentario)
           VALUES ($1, $2, $3, NULL, $4)
         `;
         await client.query(insertHistorial, [
-          alertaActiva.id, alertaActiva.estado, alertaActiva.estado, 
+          alertaActiva.id, alertaActiva.estado, alertaActiva.estado,
           `El sistema actualizó el tipo de problema a: ${tipo_problema}`
         ]);
       }
@@ -232,7 +232,7 @@ const verificarAlertasAutomaticas = async (item_id) => {
           RETURNING *;
         `;
         const resultResolve = await client.query(resolveQuery, [alertaActiva.id]);
-        
+
         // Guardar historial
         const insertHistorial = `
           INSERT INTO historial_alertas (alerta_id, estado_anterior, estado_nuevo, cambiado_por_id, comentario)

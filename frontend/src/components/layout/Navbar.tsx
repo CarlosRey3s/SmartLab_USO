@@ -49,10 +49,8 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
 
   return (
     <header className="navbar">
-
       {/* ========= IZQUIERDA ========= */}
       <div className="navbar-left">
-
         <button
           className="icon-button menu-toggle"
           onClick={onToggleMenu}
@@ -60,23 +58,16 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
         >
           <Menu size={20} strokeWidth={2} />
         </button>
-
         <h1 className="navbar-title">
           {getTitle()}
         </h1>
-
       </div>
-
-
       {/* ========= DERECHA ========= */}
       <div className="navbar-right">
-
         <div className="user-info-navbar">
-
           <span className="user-greeting">
             Hola, {fullName}
           </span>
-
           <div
             className="user-avatar-navbar"
             title="Opciones de usuario"
@@ -84,17 +75,12 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
           >
             {initials}
           </div>
-
-
           {showDropdown && (
-
             <div className="navbar-dropdown">
-
               <button className="logout-button" onClick={handleLogout} >
                 <LogOut size={16} />
                 <span>Cerrar sesión</span>
               </button>
-
               <a href="https://tu-enlace-de-documentacion.com" target="_blank" rel="noopener noreferrer" className="documents-button"
                 style={{ textDecoration: 'none' }}
               >
@@ -102,13 +88,9 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
                 <span>Ayuda</span>
               </a>
             </div>
-
           )}
-
         </div>
-
       </div>
-
     </header>
   );
 };

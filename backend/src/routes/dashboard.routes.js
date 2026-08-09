@@ -6,10 +6,7 @@ const dashboardController = require("../controllers/dashboard.controller");
 
 
 // GET /api/dashboard
-router.get(
-    "/",
-    dashboardController.getDashboard
-);
+router.get("/", dashboardController.getDashboard);
 
 
 module.exports = router;
