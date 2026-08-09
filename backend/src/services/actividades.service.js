@@ -1224,6 +1224,26 @@ const marcarAusente = async (actividadId, resolutorId) => {
     return { mensaje: 'La solicitud se marcó como inasistencia y el equipo fue liberado.' };
 };
 
+const marcarAsistencia = async (actividadId, resolutorId) => {
+    const { rows } = await db.query(
+        `SELECT estado_reserva FROM reservas_estudiantes WHERE actividad_id = $1`,
+        [actividadId]
+    );
+
+    if (rows.length === 0) throw { status: 404, message: 'Solicitud no encontrada.' };
+    if (rows[0].estado_reserva !== 'aprobada') throw { status: 400, message: 'Solo las solicitudes aprobadas pueden marcarse como asistidas.' };
+
+    await db.query(
+        `UPDATE reservas_estudiantes 
+         SET estado_reserva = 'completada', 
+             motivo_resolucion = 'Asistencia registrada al espacio'
+         WHERE actividad_id = $1`,
+        [actividadId]
+    );
+
+    return { mensaje: 'Asistencia registrada correctamente.' };
+};
+
 module.exports = {
     programarActividad,
     actualizarActividad,
@@ -1236,5 +1256,6 @@ module.exports = {
     registrarEntregaEquipos,
     registrarDevolucionEquipos,
     reprogramarSolicitud,
-    marcarAusente
+    marcarAusente,
+    marcarAsistencia
 };

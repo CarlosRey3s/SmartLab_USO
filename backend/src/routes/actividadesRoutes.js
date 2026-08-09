@@ -35,6 +35,8 @@ router.put('/solicitudes/:id/cancelar', verificarToken, actividadesController.ca
 router.put('/solicitudes/:id/reprogramar', verificarToken, verificarRol(['administrador', 'coordinador']), actividadesController.reprogramarSolicitud);
 // Marcar Inasistencia de Estudiante Fantasma (Solo administrador y coordinador)
 router.put('/solicitudes/:id/ausente', verificarToken, verificarRol(['administrador', 'coordinador']), actividadesController.marcarAusente);
+// Marcar Asistencia a espacios completos (Solo administrador y coordinador)
+router.put('/solicitudes/:id/asistencia', verificarToken, verificarRol(['administrador', 'coordinador']), actividadesController.marcarAsistencia);
 
 router.post('/', verificarToken, validarActividades, actividadesController.crearActividad);
 router.put('/:id', verificarToken, validarActividades, actividadesController.actualizarActividad);

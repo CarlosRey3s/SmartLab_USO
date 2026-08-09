@@ -265,6 +265,18 @@ const marcarAusente = async (req, res) => {
     }
 };
 
+const marcarAsistencia = async (req, res) => {
+    try {
+        const { id } = req.params; // actividad_id
+        const resolutorId = req.usuario.id;
+        const resultado = await actividadesService.marcarAsistencia(id, resolutorId);
+        res.status(200).json({ success: true, message: resultado.mensaje });
+    } catch (error) {
+        console.error('Error al marcar asistencia:', error);
+        res.status(error.status || 500).json({ success: false, message: error.message || 'Error interno del servidor' });
+    }
+};
+
 // Exportar controladores:
 module.exports = {
     crearActividad,
@@ -278,5 +290,6 @@ module.exports = {
     entregarEquipos,
     devolverEquipos,
     reprogramarSolicitud,
-    marcarAusente
+    marcarAusente,
+    marcarAsistencia
 };

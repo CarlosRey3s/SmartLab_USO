@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Check, X, Clock, MapPin, Monitor, Wrench, User, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RefreshCw, UserX } from 'lucide-react';
+import { Check, X, Clock, MapPin, Monitor, Wrench, User, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RefreshCw, UserX, UserCheck } from 'lucide-react';
 import type { SolicitudPendiente } from '../../types/solicitudes.types';
-import { obtenerTodasSolicitudes, resolverSolicitud, cancelarSolicitud, reprogramarSolicitud, marcarAusente } from '../../services/solicitudes.services';
+import { obtenerTodasSolicitudes, resolverSolicitud, cancelarSolicitud, reprogramarSolicitud, marcarAusente, marcarAsistencia } from '../../services/solicitudes.services';
 import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
 import { customToast } from '../../components/custom-toast/CustomToast';
 import { useAuth } from '../../context/AuthContext';
@@ -29,7 +29,7 @@ const PanelSolicitudes: React.FC = () => {
 
   // ConfirmModal + protección doble clic
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [confirmData, setConfirmData] = useState<{ id: number; accion: 'aprobar' | 'rechazar' | 'cancelar' | 'ausente' } | null>(null);
+  const [confirmData, setConfirmData] = useState<{ id: number; accion: 'aprobar' | 'rechazar' | 'cancelar' | 'ausente' | 'asistencia' } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [motivoRechazo, setMotivoRechazo] = useState('');
 
@@ -62,8 +62,7 @@ const PanelSolicitudes: React.FC = () => {
     cargarSolicitudes(tabActiva, paginaActual);
   }, [tabActiva, paginaActual]);
 
-  // ── Motor de decisión: Aprobar / Rechazar / Cancelar ──
-  const solicitarResolucion = (actividadId: number, accion: 'aprobar' | 'rechazar' | 'cancelar' | 'ausente') => {
+  const solicitarResolucion = (actividadId: number, accion: 'aprobar' | 'rechazar' | 'cancelar' | 'ausente' | 'asistencia') => {
     setConfirmData({ id: actividadId, accion });
     setIsConfirmOpen(true);
   };
@@ -80,6 +79,9 @@ const PanelSolicitudes: React.FC = () => {
       } else if (accion === 'ausente') {
         await marcarAusente(id);
         customToast.success('Estudiante marcado como ausente. Inventario liberado.');
+      } else if (accion === 'asistencia') {
+        await marcarAsistencia(id);
+        customToast.success('Ingreso registrado exitosamente.');
       } else {
         await resolverSolicitud(id, accion, accion === 'rechazar' ? motivoRechazo : undefined);
         customToast.success(`Solicitud ${accion === 'aprobar' ? 'aprobada' : 'rechazada'} exitosamente.`);
@@ -378,6 +380,14 @@ const PanelSolicitudes: React.FC = () => {
 
                   {tabActiva === 'aprobada' && esAutoridad && (
                     <div className="tarjeta-acciones">
+                      {(solicitud.estaciones.length === 0 && solicitud.inventario.length === 0) && (
+                        <button
+                          className="btn-aprobar"
+                          onClick={() => solicitarResolucion(solicitud.actividad_id, 'asistencia')}
+                        >
+                          <UserCheck size={15} /> Registrar Ingreso
+                        </button>
+                      )}
                       <button
                         className="btn-ausente"
                         onClick={() => solicitarResolucion(solicitud.actividad_id, 'ausente')}
@@ -430,6 +440,7 @@ const PanelSolicitudes: React.FC = () => {
           confirmData?.accion === 'aprobar' ? 'Aprobar Solicitud' :
           confirmData?.accion === 'rechazar' ? 'Rechazar Solicitud' :
           confirmData?.accion === 'ausente' ? 'Marcar Inasistencia' :
+          confirmData?.accion === 'asistencia' ? 'Registrar Ingreso' :
           'Cancelar Solicitud'
         }
         message={
@@ -437,6 +448,8 @@ const PanelSolicitudes: React.FC = () => {
             ? 'Procesando...'
             : confirmData?.accion === 'ausente'
             ? '¿Estás seguro de marcar a este estudiante como ausente? Esto liberará el inventario reservado.'
+            : confirmData?.accion === 'asistencia'
+            ? '¿Confirmas que el estudiante ya ingresó al espacio asignado?'
             : `¿Estás seguro de que deseas ${confirmData?.accion} esta solicitud?`
         }
         confirmText={
@@ -444,10 +457,11 @@ const PanelSolicitudes: React.FC = () => {
           confirmData?.accion === 'aprobar' ? 'Aprobar' :
           confirmData?.accion === 'rechazar' ? 'Rechazar' :
           confirmData?.accion === 'ausente' ? 'Confirmar Ausencia' :
+          confirmData?.accion === 'asistencia' ? 'Confirmar Ingreso' :
           'Sí, cancelar'
         }
         cancelText="Volver"
-        type={confirmData?.accion === 'aprobar' ? 'info' : confirmData?.accion === 'ausente' ? 'danger' : 'danger'}
+        type={confirmData?.accion === 'aprobar' ? 'info' : confirmData?.accion === 'asistencia' ? 'info' : 'danger'}
         onConfirm={procesarResolucion}
         onCancel={() => {
           if (!isProcessing) {

@@ -54,3 +54,8 @@ export const marcarAusente = async (actividadId: number) => {
     const response = await axios.put(`${API_URL}/${actividadId}/ausente`, {}, getConfig());
     return response.data;
 };
+
+export const marcarAsistencia = async (actividadId: number) => {
+    const response = await axios.put(`${API_URL}/${actividadId}/asistencia`, {}, getConfig());
+    return response.data;
+};
