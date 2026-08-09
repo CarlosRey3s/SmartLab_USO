@@ -1,65 +1,44 @@
-const estudianteDashboardService =
-require("../services/estudianteDashboard.service");
-
+const estudianteDashboardService = require("../services/estudianteDashboard.service");
 
 class EstudianteDashboardController {
 
-
     async getDashboard(req, res) {
-
 
         try {
 
+            console.log("USUARIO RECIBIDO EN DASHBOARD:", req.usuario);
 
-            /*
-            ==================================================
-            TEMPORAL:
-            Usuario de prueba mientras conectamos login
-            ==================================================
-            */
+            if (!req.usuario || !req.usuario.id) {
 
-            const usuarioId = 1;
+                return res.status(401).json({
+                    success: false,
+                    message: "No se pudo identificar al usuario autenticado."
+                });
 
+            }
 
+            const usuarioId = req.usuario.id;
 
-            const data =
-            await estudianteDashboardService.getDashboard(
-                usuarioId
-            );
+            console.log("ID USADO PARA DASHBOARD:", usuarioId);
 
+            const data = await estudianteDashboardService.getDashboard(usuarioId);
 
+            return res.status(200).json(data);
 
-            res.status(200).json(data);
+        } catch (error) {
 
+            console.error("ERROR DASHBOARD ESTUDIANTE:", error);
 
-
-        } catch(error) {
-
-
-            console.error(
-                "Error dashboard estudiante:",
-                error
-            );
-
-
-
-            res.status(500).json({
-
-                message:
-                "Error cargando dashboard estudiante"
-
+            return res.status(500).json({
+                success: false,
+                message: "Error cargando dashboard estudiante",
+                error: error.message
             });
-
 
         }
 
-
     }
-
 
 }
 
-
-
-module.exports =
-new EstudianteDashboardController();
+module.exports = new EstudianteDashboardController();
