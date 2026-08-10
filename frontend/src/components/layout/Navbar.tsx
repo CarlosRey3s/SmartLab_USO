@@ -81,7 +81,7 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
                 <LogOut size={16} />
                 <span>Cerrar sesión</span>
               </button>
-              <a href="https://tu-enlace-de-documentacion.com" target="_blank" rel="noopener noreferrer" className="documents-button"
+              <a href=" https://carlosrey3s.github.io/SmartLab_USO/" target="_blank" rel="noopener noreferrer" className="documents-button"
                 style={{ textDecoration: 'none' }}
               >
                 <HelpCircle size={16} />
