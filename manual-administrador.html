@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual del Administrador - USO Laboratorios</title>
+  <link rel="stylesheet" href="manual-administrador.css">
+</head>
+<body>
+
+  <header class="cover">
+    <div class="cover-brand">
+      USO <span>Laboratorios</span>
+    </div>
+
+    <div class="cover-content">
+      <div class="eyebrow">DOCUMENTACIÓN DEL SISTEMA</div>
+
+      <h1>
+        Manual del<br>
+        <strong>Administrador</strong>
+      </h1>
+
+      <p class="lead">
+        Guía para la administración y configuración de espacios
+        dentro de la plataforma.
+      </p>
+
+      <div class="cover-line"></div>
+
+      <p class="version">
+        SmartLabs / USO Laboratorios
+      </p>
+    </div>
+  </header>
+
+  <main class="document">
+
+    <!-- INTRODUCCIÓN -->
+    <section class="intro">
+      <span class="section-number">01</span>
+
+      <div>
+        <h2>Introducción</h2>
+
+        <p>
+          Este manual describe las funciones de administración identificadas
+          en la interfaz proporcionada del sistema USO Laboratorios. Está
+          orientado al usuario con rol <strong>Administrador</strong> y explica
+          la navegación, el acceso al módulo de espacios y el registro o
+          actualización de su información.
+        </p>
+
+        <div class="notice">
+          <strong>Importante:</strong>
+          las instrucciones de este documento se basan en las funcionalidades
+          visibles en los componentes proporcionados. Las funciones que no
+          aparecen en dichos componentes no se describen como disponibles.
+        </div>
+      </div>
+    </section>
+
+
+    <!-- NAVEGACIÓN -->
+    <section>
+      <span class="section-number">02</span>
+
+      <h2>Acceso y navegación</h2>
+
+      <h3>Panel lateral</h3>
+
+      <p>
+        El menú lateral presenta las opciones disponibles según el rol
+        del usuario. Para el rol <strong>Administrador</strong> se muestran
+        las siguientes opciones:
+      </p>
+
+      <div class="cards">
+
+        <div class="card">
+          <span class="icon">▣</span>
+          <h4>Dashboard</h4>
+          <p>Acceso al panel administrativo.</p>
+        </div>
+
+        <div class="card">
+          <span class="icon">◷</span>
+          <h4>Calendario</h4>
+          <p>Acceso al calendario del sistema.</p>
+        </div>
+
+        <div class="card">
+          <span class="icon">▤</span>
+          <h4>Inventario</h4>
+          <p>Acceso al módulo de inventario.</p>
+        </div>
+
+        <div class="card">
+          <span class="icon">▦</span>
+          <h4>Espacio</h4>
+          <p>Gestión de espacios.</p>
+        </div>
+
+        <div class="card">
+          <span class="icon">▥</span>
+          <h4>R &amp; E</h4>
+          <p>Acceso a Reportes y Comentarios.</p>
+        </div>
+
+        <div class="card">
+          <span class="icon">♙</span>
+          <h4>Usuarios</h4>
+          <p>Gestión de usuarios.</p>
+        </div>
+
+      </div>
+
+
+      <h3>Barra superior</h3>
+
+      <p>
+        La barra superior muestra el título correspondiente a la sección
+        actual y el nombre del usuario autenticado. También incluye el
+        avatar del usuario, un menú para cerrar sesión y el botón de
+        notificaciones.
+      </p>
+
+
+      <div class="step-box">
+
+        <div class="step">
+          <b>1</b>
+          <span>
+            Utilice el botón de menú para abrir o cerrar el panel lateral.
+          </span>
+        </div>
+
+        <div class="step">
+          <b>2</b>
+          <span>
+            Seleccione una opción del menú para entrar al módulo correspondiente.
+          </span>
+        </div>
+
+        <div class="step">
+          <b>3</b>
+          <span>
+            En pantallas pequeñas, el panel lateral se cierra automáticamente
+            al seleccionar una opción o al hacer clic fuera de él.
+          </span>
+        </div>
+
+      </div>
+
+
+      <div class="info-grid">
+
+        <div>
+          <strong>Nombre mostrado</strong>
+
+          <p>
+            El sistema presenta el saludo con los nombres y apellidos
+            del usuario autenticado.
+          </p>
+        </div>
+
+        <div>
+          <strong>Sesión</strong>
+
+          <p>
+            Desde el avatar del usuario se puede seleccionar
+            <em>Cerrar sesión</em>.
+          </p>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ESPACIOS -->
+    <section>
+
+      <span class="section-number">03</span>
+
+      <h2>Gestión de espacios</h2>
+
+      <p>
+        El módulo <strong>Espacio</strong> permite registrar y modificar
+        la información de los espacios administrados por la institución.
+        El formulario permite definir sus datos generales, modalidad de
+        reserva, capacidad, estado, permisos de visibilidad, estaciones
+        de trabajo y coordinador.
+      </p>
+
+
+      <h3>Agregar un espacio</h3>
+
+      <p>
+        Para registrar un nuevo espacio:
+      </p>
+
+
+      <div class="numbered">
+
+        <div>
+          <b>1</b>
+          <p>
+            Ingrese al módulo <strong>Espacio</strong> desde el menú lateral.
+          </p>
+        </div>
+
+        <div>
+          <b>2</b>
+          <p>
+            Seleccione la opción para agregar un espacio.
+          </p>
+        </div>
+
+        <div>
+          <b>3</b>
+          <p>
+            Complete la información general solicitada.
+          </p>
+        </div>
+
+        <div>
+          <b>4</b>
+          <p>
+            Configure el modo de reserva y las opciones correspondientes.
+          </p>
+        </div>
+
+        <div>
+          <b>5</b>
+          <p>
+            Seleccione el estado y los permisos de visibilidad.
+          </p>
+        </div>
+
+        <div>
+          <b>6</b>
+          <p>
+            Revise la información y presione <strong>Guardar</strong>.
+          </p>
+        </div>
+
+      </div>
+
+
+      <h3>Información general</h3>
+
+
+      <table>
+
+        <thead>
+          <tr>
+            <th>Campo</th>
+            <th>Descripción</th>
+            <th>Obligatorio</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          <tr>
+            <td>Nombre espacio</td>
+            <td>
+              Nombre con el que se identificará el espacio.
+            </td>
+            <td>Sí</td>
+          </tr>
+
+          <tr>
+            <td>Modo de reserva</td>
+            <td>
+              Define si la reserva se realiza por espacio completo
+              o por estación de trabajo.
+            </td>
+            <td>Sí</td>
+          </tr>
+
+          <tr>
+            <td>Edificio</td>
+            <td>
+              Edificio donde se encuentra ubicado el espacio.
+            </td>
+            <td>Sí</td>
+          </tr>
+
+          <tr>
+            <td>Piso</td>
+            <td>
+              Piso en el que se encuentra el espacio.
+            </td>
+            <td>Sí</td>
+          </tr>
+
+          <tr>
+            <td>Aula / número</td>
+            <td>
+              Identificador o número del aula.
+            </td>
+            <td>Sí</td>
+          </tr>
+
+          <tr>
+            <td>Descripción</td>
+            <td>
+              Información adicional sobre el espacio.
+            </td>
+            <td>No</td>
+          </tr>
+
+        </tbody>
+
+      </table>
+
+
+      <div class="notice warning">
+
+        <strong>Validación:</strong>
+
+        el sistema no permite guardar el espacio si faltan
+        Nombre, Edificio, Piso o Aula. Si el modo es
+        “Por Estación de Trabajo”, al crear un espacio también
+        debe existir al menos una estación.
+
+      </div>
+
+    </section>
+
+
+    <!-- MODOS DE RESERVA -->
+    <section>
+
+      <span class="section-number">04</span>
+
+      <h2>Modo de reserva</h2>
+
+
+      <div class="mode-grid">
+
+        <div class="mode">
+
+          <span class="tag green">
+            OPCIÓN 1
+          </span>
+
+          <h3>
+            Espacio Completo
+          </h3>
+
+          <p>
+            El espacio se configura como una unidad completa para la reserva.
+            En esta modalidad se solicita la
+            <strong>capacidad máxima de estudiantes</strong>.
+          </p>
+
+        </div>
+
+
+        <div class="mode">
+
+          <span class="tag gold">
+            OPCIÓN 2
+          </span>
+
+          <h3>
+            Por Estación de Trabajo
+          </h3>
+
+          <p>
+            El espacio se configura mediante estaciones de trabajo.
+            Al crear el espacio, el administrador debe agregar
+            al menos una estación.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <h3>
+        Capacidad del espacio completo
+      </h3>
+
+      <p>
+        Cuando se selecciona <strong>Espacio Completo</strong>,
+        aparece el control <strong>Capacidad máxima de estudiantes</strong>.
+        La capacidad puede incrementarse o reducirse mediante los botones
+        de control o escribiendo directamente el valor.
+      </p>
+
+
+      <h3>
+        Configuración de estaciones
+      </h3>
+
+      <p>
+        En el modo <strong>Por Estación de Trabajo</strong>,
+        se pueden agregar estaciones indicando:
+      </p>
+
+
+      <ul class="checklist">
+
+        <li>
+          Nombre o prefijo de la estación.
+        </li>
+
+        <li>
+          Cantidad de estaciones a crear.
+        </li>
+
+        <li>
+          Capacidad de cada estación.
+        </li>
+
+      </ul>
+
+
+      <div class="example">
+
+        <span class="example-label">
+          EJEMPLO
+        </span>
+
+        <p>
+          Si se utiliza el prefijo <strong>PC</strong> y una cantidad de 3,
+          el sistema genera una vista previa con nombres consecutivos como
+          <strong>PC 1, PC 2 y PC 3</strong>.
+        </p>
+
+      </div>
+
+
+      <p>
+        Las estaciones agregadas aparecen en una lista con su nombre
+        y capacidad. Cada estación puede quitarse antes de guardar
+        utilizando el botón de eliminación.
+      </p>
+
+
+      <div class="notice">
+
+        <strong>Nota:</strong>
+
+        al editar un espacio existente, el selector de modo de reserva
+        aparece deshabilitado. Por ello, el modo configurado no puede
+        cambiarse desde este formulario.
+
+      </div>
+
+    </section>
+
+
+    <!-- COORDINADOR -->
+    <section>
+
+      <span class="section-number">05</span>
+
+      <h2>Asignación de coordinador</h2>
+
+      <p>
+        Para el usuario con rol <strong>Administrador</strong>,
+        el formulario incluye la opción
+        <strong>Asignar coordinador (opcional)</strong>.
+      </p>
+
+
+      <div class="numbered">
+
+        <div>
+          <b>1</b>
+          <p>
+            Ubique el campo
+            <strong>Buscar coordinador...</strong>.
+          </p>
+        </div>
+
+        <div>
+          <b>2</b>
+          <p>
+            Escriba el nombre del coordinador que desea buscar.
+          </p>
+        </div>
+
+        <div>
+          <b>3</b>
+          <p>
+            Seleccione al coordinador de la lista de resultados.
+          </p>
+        </div>
+
+        <div>
+          <b>4</b>
+          <p>
+            Si no desea asignar uno, seleccione
+            <strong>Ninguno</strong>.
+          </p>
+        </div>
+
+      </div>
+
+
+      <p>
+        La lista se filtra utilizando el nombre y apellido de los usuarios
+        cuyo rol es <strong>coordinador</strong>.
+      </p>
+
+    </section>
+
+
+    <!-- ESTADO -->
+    <section>
+
+      <span class="section-number">06</span>
+
+      <h2>Estado del espacio</h2>
+
+      <p>
+        El administrador puede seleccionar uno de los siguientes estados:
+      </p>
+
+
+      <div class="status-grid">
+
+        <div class="status available">
+          <strong>DISPONIBLE</strong>
+          <span>Listo para usar</span>
+        </div>
+
+        <div class="status maintenance">
+          <strong>EN MANTENIMIENTO</strong>
+          <span>En reparación</span>
+        </div>
+
+        <div class="status closed">
+          <strong>CLAUSURADO</strong>
+          <span>Fuera de servicio</span>
+        </div>
+
+      </div>
+
+
+      <p>
+        Seleccione la tarjeta correspondiente al estado que desea
+        asignar al espacio antes de guardar.
+      </p>
+
+    </section>
+
+
+    <!-- VISIBILIDAD -->
+    <section>
+
+      <span class="section-number">07</span>
+
+      <h2>Permisos de visibilidad</h2>
+
+      <p>
+        El formulario permite definir qué roles pueden visualizar
+        el espacio. Las opciones disponibles son:
+      </p>
+
+
+      <div class="role-list">
+
+        <span>Todos</span>
+        <span>Estudiante</span>
+        <span>Docente</span>
+        <span>Coordinador</span>
+        <span>Supervisor</span>
+
+      </div>
+
+
+      <p>
+        Las opciones seleccionadas se muestran visualmente diferenciadas.
+        Puede seleccionar <strong>Todos</strong> o elegir roles específicos.
+      </p>
+
+
+      <div class="notice warning">
+
+        <strong>Recomendación:</strong>
+
+        revise los permisos de visibilidad antes de guardar,
+        especialmente cuando un espacio deba estar disponible
+        solamente para determinados roles.
+
+      </div>
+
+    </section>
+
+
+    <!-- EDITAR -->
+    <section>
+
+      <span class="section-number">08</span>
+
+      <h2>Editar un espacio</h2>
+
+      <p>
+        Cuando se abre un espacio existente para edición, el formulario
+        carga sus datos actuales: nombre, descripción, ubicación,
+        estado, modo de reserva, capacidad, coordinador y permisos
+        de visibilidad.
+      </p>
+
+
+      <div class="numbered">
+
+        <div>
+          <b>1</b>
+          <p>
+            Abra el espacio que desea modificar.
+          </p>
+        </div>
+
+        <div>
+          <b>2</b>
+          <p>
+            Actualice los campos permitidos.
+          </p>
+        </div>
+
+        <div>
+          <b>3</b>
+          <p>
+            Presione <strong>Guardar</strong>.
+          </p>
+        </div>
+
+        <div>
+          <b>4</b>
+          <p>
+            El sistema muestra una ventana de confirmación con el mensaje
+            “¿Estás seguro que deseas actualizar esta información?”.
+          </p>
+        </div>
+
+        <div>
+          <b>5</b>
+          <p>
+            Seleccione <strong>Actualizar</strong> para confirmar o
+            <strong>Cancelar</strong> para regresar al formulario.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="notice">
+
+        <strong>Importante:</strong>
+
+        durante la edición, el modo de reserva permanece deshabilitado
+        y las estaciones no se agregan mediante este formulario de edición.
+
+      </div>
+
+    </section>
+
+
+    <!-- GUARDAR -->
+    <section>
+
+      <span class="section-number">09</span>
+
+      <h2>Guardar y cancelar</h2>
+
+
+      <div class="action-grid">
+
+        <div class="action save">
+
+          <h3>Guardar</h3>
+
+          <p>
+            Registra el nuevo espacio o guarda las modificaciones
+            realizadas.
+          </p>
+
+        </div>
+
+
+        <div class="action cancel">
+
+          <h3>Cancelar</h3>
+
+          <p>
+            Cierra el formulario sin continuar con la operación.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <p>
+        Mientras se procesa el guardado, el botón cambia a
+        <strong>“Guardando...”</strong> y las acciones de cierre
+        permanecen deshabilitadas mientras corresponde.
+      </p>
+
+    </section>
+
+
+    <!-- MENSAJES -->
+    <section>
+
+      <span class="section-number">10</span>
+
+      <h2>Mensajes y confirmaciones</h2>
+
+
+      <h3>
+        Confirmación de actualización
+      </h3>
+
+      <p>
+        Al modificar un espacio, el sistema solicita confirmación
+        antes de aplicar los cambios. La ventana presenta los botones
+        <strong>Actualizar</strong> y <strong>Cancelar</strong>.
+      </p>
+
+
+      <h3>
+        Errores del formulario
+      </h3>
+
+      <p>
+        Si no se completan los campos obligatorios, el sistema muestra
+        un mensaje indicando qué información debe completarse.
+        Si el modo por estación no tiene estaciones al crear el espacio,
+        también se muestra una advertencia.
+      </p>
+
+
+      <h3>
+        Cierre de ventanas
+      </h3>
+
+      <p>
+        Las ventanas de confirmación pueden cancelarse mediante su
+        acción de cancelar. La interfaz también incorpora comportamiento
+        de cierre mediante la tecla <strong>Escape</strong> en el
+        componente de confirmación.
+      </p>
+
+    </section>
+
+
+    <!-- CIERRE DE SESIÓN -->
+    <section>
+
+      <span class="section-number">11</span>
+
+      <h2>Cierre de sesión</h2>
+
+      <p>
+        Para finalizar la sesión, haga clic sobre el avatar situado
+        en la parte superior derecha. Se desplegará la opción
+        <strong>Cerrar sesión</strong>. Selecciónela para salir de la cuenta.
+      </p>
+
+
+      <div class="step-box compact">
+
+        <div class="step">
+          <b>1</b>
+          <span>
+            Haga clic en el avatar.
+          </span>
+        </div>
+
+        <div class="step">
+          <b>2</b>
+          <span>
+            Seleccione “Cerrar sesión”.
+          </span>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- REFERENCIA RÁPIDA -->
+    <section class="quick-reference">
+
+      <span class="section-number">12</span>
+
+      <h2>
+        Referencia rápida del administrador
+      </h2>
+
+
+      <table>
+
+        <thead>
+          <tr>
+            <th>Necesidad</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          <tr>
+            <td>Crear un espacio</td>
+            <td>
+              Espacio → Agregar → completar datos → Guardar.
+            </td>
+          </tr>
+
+          <tr>
+            <td>Configurar capacidad</td>
+            <td>
+              Seleccionar “Espacio Completo” y definir capacidad máxima.
+            </td>
+          </tr>
+
+          <tr>
+            <td>Crear estaciones</td>
+            <td>
+              Seleccionar “Por Estación de Trabajo” y agregar
+              prefijo, cantidad y capacidad.
+            </td>
+          </tr>
+
+          <tr>
+            <td>Cambiar estado</td>
+            <td>
+              Seleccionar Disponible, En mantenimiento o Clausurado.
+            </td>
+          </tr>
+
+          <tr>
+            <td>Controlar visibilidad</td>
+            <td>
+              Seleccionar los roles permitidos.
+            </td>
+          </tr>
+
+          <tr>
+            <td>Asignar coordinador</td>
+            <td>
+              Buscar y seleccionar un coordinador.
+            </td>
+          </tr>
+
+          <tr>
+            <td>Editar información</td>
+            <td>
+              Modificar datos → Guardar → Actualizar.
+            </td>
+          </tr>
+
+          <tr>
+            <td>Cerrar sesión</td>
+            <td>
+              Avatar → Cerrar sesión.
+            </td>
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </section>
+
+
+    <!-- FOOTER -->
+    <footer>
+
+      <div class="footer-brand">
+        USO <span>Laboratorios</span>
+      </div>
+
+      <p>
+        Manual del Administrador · Documentación de uso del sistema
+      </p>
+
+    </footer>
+
+  </main>
+
+</body>
+</html>

@@ -1,0 +1,1003 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --verde: #22806B;
+  --verde-oscuro: #1B5E52;
+  --verde-hover: #29967E;
+
+  --dorado: #FACB4B;
+  --rosado: #AD868A;
+
+  --blanco: #FFFFFF;
+
+  --gris: #F4F6F7;
+  --gris-2: #E7ECEA;
+
+  --texto: #24332F;
+  --muted: #66756F;
+
+  --rojo: #C85C64;
+
+  --sombra: 0 10px 30px rgba(27, 94, 82, 0.08);
+}
+
+
+/* =========================================================
+   CONFIGURACIÓN GENERAL
+========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', Arial, sans-serif;
+  color: var(--texto);
+  background: #eef2f1;
+  line-height: 1.65;
+}
+
+strong {
+  color: #254f45;
+}
+
+
+/* =========================================================
+   PORTADA
+========================================================= */
+
+.cover {
+  min-height: 420px;
+
+  padding: 46px 9%;
+
+  color: white;
+
+  background:
+    radial-gradient(
+      circle at 85% 15%,
+      rgba(250, 203, 75, 0.22),
+      transparent 28%
+    ),
+    linear-gradient(
+      135deg,
+      var(--verde-oscuro),
+      var(--verde)
+    );
+
+  position: relative;
+  overflow: hidden;
+}
+
+
+.cover::after {
+  content: "";
+
+  position: absolute;
+
+  width: 420px;
+  height: 420px;
+
+  right: -170px;
+  bottom: -250px;
+
+  border: 90px solid rgba(255, 255, 255, 0.06);
+
+  border-radius: 50%;
+}
+
+
+.cover-brand {
+  position: relative;
+  z-index: 2;
+
+  font-size: 20px;
+  font-weight: 800;
+
+  letter-spacing: 1px;
+}
+
+
+.cover-brand span {
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+
+.cover-content {
+  position: relative;
+  z-index: 2;
+
+  max-width: 850px;
+
+  margin: 70px auto 0;
+}
+
+
+.eyebrow {
+  font-size: 12px;
+
+  letter-spacing: 3px;
+
+  font-weight: 700;
+
+  color: #d9f0e9;
+}
+
+
+h1 {
+  font-size: 58px;
+
+  line-height: 1.05;
+
+  margin: 16px 0 20px;
+
+  font-weight: 400;
+}
+
+
+h1 strong {
+  font-weight: 800;
+
+  color: white;
+}
+
+
+.lead {
+  font-size: 19px;
+
+  max-width: 650px;
+
+  color: #eaf6f2;
+}
+
+
+.cover-line {
+  height: 4px;
+
+  width: 90px;
+
+  background: var(--dorado);
+
+  margin: 30px 0 18px;
+
+  border-radius: 4px;
+}
+
+
+.version {
+  font-size: 13px;
+
+  color: #d7ebe6;
+}
+
+
+/* =========================================================
+   DOCUMENTO
+========================================================= */
+
+.document {
+  width: min(1040px, 92%);
+
+  margin: -35px auto 50px;
+
+  background: #fff;
+
+  position: relative;
+
+  z-index: 3;
+
+  border-radius: 18px;
+
+  box-shadow:
+    0 18px 60px rgba(0, 0, 0, 0.09);
+
+  overflow: hidden;
+}
+
+
+section {
+  padding: 58px 72px;
+
+  border-bottom: 1px solid #edf1ef;
+}
+
+
+section:last-of-type {
+  border-bottom: 0;
+}
+
+
+.section-number {
+  display: block;
+
+  color: var(--verde);
+
+  font-weight: 800;
+
+  font-size: 12px;
+
+  letter-spacing: 2px;
+
+  margin-bottom: 5px;
+}
+
+
+h2 {
+  font-size: 31px;
+
+  line-height: 1.2;
+
+  margin: 0 0 18px;
+
+  color: var(--verde-oscuro);
+}
+
+
+h3 {
+  font-size: 19px;
+
+  margin: 30px 0 10px;
+
+  color: var(--verde-oscuro);
+}
+
+
+h4 {
+  margin: 0 0 5px;
+
+  font-size: 16px;
+}
+
+
+p {
+  margin: 0 0 14px;
+}
+
+
+/* =========================================================
+   INTRODUCCIÓN
+========================================================= */
+
+.intro {
+  display: grid;
+
+  grid-template-columns: 55px 1fr;
+
+  gap: 12px;
+}
+
+
+.intro .section-number {
+  padding-top: 5px;
+}
+
+
+/* =========================================================
+   AVISOS
+========================================================= */
+
+.notice {
+  background: #eef8f4;
+
+  border-left: 4px solid var(--verde);
+
+  padding: 15px 18px;
+
+  margin: 22px 0 5px;
+
+  border-radius: 0 9px 9px 0;
+
+  color: #3d554f;
+}
+
+
+.notice.warning {
+  background: #fff9e8;
+
+  border-color: var(--dorado);
+}
+
+
+/* =========================================================
+   TARJETAS DEL MENÚ
+========================================================= */
+
+.cards {
+  display: grid;
+
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 13px;
+
+  margin: 20px 0 30px;
+}
+
+
+.card {
+  background: #f8faf9;
+
+  border: 1px solid var(--gris-2);
+
+  padding: 18px;
+
+  border-radius: 12px;
+
+  transition: 0.2s;
+}
+
+
+.card:hover {
+  transform: translateY(-2px);
+
+  box-shadow: var(--sombra);
+}
+
+
+.card .icon {
+  display: block;
+
+  font-size: 22px;
+
+  color: var(--verde);
+
+  margin-bottom: 9px;
+}
+
+
+.card p {
+  font-size: 13px;
+
+  color: var(--muted);
+
+  margin: 0;
+}
+
+
+/* =========================================================
+   PASOS
+========================================================= */
+
+.step-box {
+  margin: 24px 0;
+
+  background: #fafcfb;
+
+  border: 1px solid var(--gris-2);
+
+  border-radius: 12px;
+
+  padding: 8px 18px;
+}
+
+
+.step {
+  display: flex;
+
+  gap: 14px;
+
+  align-items: flex-start;
+
+  padding: 12px 0;
+
+  border-bottom: 1px solid #edf1ef;
+}
+
+
+.step:last-child {
+  border-bottom: 0;
+}
+
+
+.step b,
+.numbered b {
+  flex: 0 0 28px;
+
+  height: 28px;
+
+  border-radius: 50%;
+
+  display: grid;
+
+  place-items: center;
+
+  background: var(--verde);
+
+  color: #fff;
+
+  font-size: 13px;
+}
+
+
+.step span {
+  font-size: 14px;
+}
+
+
+.compact {
+  max-width: 650px;
+}
+
+
+/* =========================================================
+   INFORMACIÓN
+========================================================= */
+
+.info-grid {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 16px;
+
+  margin-top: 20px;
+}
+
+
+.info-grid > div {
+  background: var(--gris);
+
+  padding: 18px;
+
+  border-radius: 10px;
+}
+
+
+.info-grid p {
+  font-size: 13px;
+
+  color: var(--muted);
+
+  margin: 5px 0 0;
+}
+
+
+/* =========================================================
+   LISTA NUMERADA
+========================================================= */
+
+.numbered {
+  margin: 22px 0;
+}
+
+
+.numbered > div {
+  display: flex;
+
+  gap: 14px;
+
+  align-items: flex-start;
+
+  margin: 12px 0;
+}
+
+
+.numbered p {
+  padding-top: 2px;
+}
+
+
+/* =========================================================
+   TABLAS
+========================================================= */
+
+table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  margin: 20px 0;
+
+  font-size: 13px;
+}
+
+
+th {
+  text-align: left;
+
+  background: var(--verde-oscuro);
+
+  color: #fff;
+
+  padding: 12px 14px;
+
+  font-weight: 600;
+}
+
+
+td {
+  padding: 12px 14px;
+
+  border-bottom: 1px solid var(--gris-2);
+
+  vertical-align: top;
+}
+
+
+tr:nth-child(even) td {
+  background: #fafcfb;
+}
+
+
+/* =========================================================
+   MODOS DE RESERVA
+========================================================= */
+
+.mode-grid {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 18px;
+
+  margin: 24px 0;
+}
+
+
+.mode {
+  border: 1px solid var(--gris-2);
+
+  border-radius: 14px;
+
+  padding: 23px;
+
+  background: #fbfcfc;
+}
+
+
+.mode h3 {
+  margin: 12px 0 8px;
+}
+
+
+.mode p {
+  font-size: 14px;
+
+  color: var(--muted);
+}
+
+
+.tag {
+  display: inline-block;
+
+  font-size: 10px;
+
+  font-weight: 800;
+
+  letter-spacing: 1px;
+
+  padding: 5px 8px;
+
+  border-radius: 20px;
+}
+
+
+.tag.green {
+  background: #e5f4ee;
+
+  color: var(--verde);
+}
+
+
+.tag.gold {
+  background: #fff5ce;
+
+  color: #896e0b;
+}
+
+
+/* =========================================================
+   LISTAS
+========================================================= */
+
+.checklist {
+  padding-left: 20px;
+}
+
+
+.checklist li {
+  margin: 8px 0;
+}
+
+
+.checklist li::marker {
+  color: var(--verde);
+}
+
+
+/* =========================================================
+   EJEMPLOS
+========================================================= */
+
+.example {
+  background: #f8f7f0;
+
+  border: 1px dashed #d6c46f;
+
+  padding: 17px 20px;
+
+  border-radius: 10px;
+
+  margin: 20px 0;
+}
+
+
+.example-label {
+  font-size: 10px;
+
+  font-weight: 800;
+
+  letter-spacing: 1px;
+
+  color: #897014;
+}
+
+
+.example p {
+  margin: 6px 0 0;
+
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   ESTADOS
+========================================================= */
+
+.status-grid {
+  display: grid;
+
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 14px;
+
+  margin: 25px 0;
+}
+
+
+.status {
+  padding: 20px;
+
+  border-radius: 12px;
+
+  border: 1px solid var(--gris-2);
+
+  display: flex;
+
+  flex-direction: column;
+}
+
+
+.status strong {
+  font-size: 13px;
+}
+
+
+.status span {
+  font-size: 12px;
+
+  margin-top: 3px;
+}
+
+
+.available {
+  background: #eff9f4;
+}
+
+
+.available strong,
+.available span {
+  color: var(--verde);
+}
+
+
+.maintenance {
+  background: #fff9e7;
+}
+
+
+.maintenance strong,
+.maintenance span {
+  color: #a07b00;
+}
+
+
+.closed {
+  background: #fff0f1;
+}
+
+
+.closed strong,
+.closed span {
+  color: var(--rojo);
+}
+
+
+/* =========================================================
+   ROLES
+========================================================= */
+
+.role-list {
+  display: flex;
+
+  gap: 10px;
+
+  flex-wrap: wrap;
+
+  margin: 20px 0;
+}
+
+
+.role-list span {
+  padding: 7px 14px;
+
+  border-radius: 20px;
+
+  background: #e6f4ea;
+
+  color: #32886c;
+
+  border: 1px solid #32886c;
+
+  font-size: 12px;
+
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   ACCIONES
+========================================================= */
+
+.action-grid {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 16px;
+
+  margin: 22px 0;
+}
+
+
+.action {
+  padding: 20px;
+
+  border-radius: 12px;
+}
+
+
+.action h3 {
+  margin: 0 0 5px;
+}
+
+
+.action p {
+  font-size: 13px;
+
+  color: var(--muted);
+}
+
+
+.action.save {
+  background: #eef8f4;
+
+  border: 1px solid #cfe8dd;
+}
+
+
+.action.cancel {
+  background: #faf3f4;
+
+  border: 1px solid #ead8da;
+}
+
+
+.action.cancel h3 {
+  color: var(--rosado);
+}
+
+
+/* =========================================================
+   REFERENCIA RÁPIDA
+========================================================= */
+
+.quick-reference {
+  background: #fbfcfc;
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+footer {
+  padding: 35px 72px;
+
+  background: var(--verde-oscuro);
+
+  color: #dcece8;
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+}
+
+
+.footer-brand {
+  font-weight: 800;
+
+  font-size: 18px;
+}
+
+
+.footer-brand span {
+  font-weight: 400;
+
+  opacity: 0.8;
+}
+
+
+footer p {
+  margin: 0;
+
+  font-size: 12px;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 800px) {
+
+  .cover {
+    padding: 35px 6%;
+
+    min-height: 370px;
+  }
+
+
+  .cover-content {
+    margin-top: 55px;
+  }
+
+
+  h1 {
+    font-size: 42px;
+  }
+
+
+  section {
+    padding: 42px 30px;
+  }
+
+
+  .cards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+
+  .status-grid,
+  .mode-grid,
+  .action-grid,
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+
+  footer {
+    padding: 30px;
+
+    display: block;
+  }
+
+
+  footer p {
+    margin-top: 10px;
+  }
+
+}
+
+
+/* =========================================================
+   MÓVIL
+========================================================= */
+
+@media (max-width: 520px) {
+
+  .document {
+    width: 100%;
+
+    margin: 0;
+
+    border-radius: 0;
+  }
+
+
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+
+  section {
+    padding: 35px 20px;
+  }
+
+
+  table {
+    font-size: 11px;
+  }
+
+
+  th,
+  td {
+    padding: 9px;
+  }
+
+
+  .cover {
+    min-height: 330px;
+  }
+
+
+  h1 {
+    font-size: 36px;
+  }
+
+}
+
+
+/* =========================================================
+   IMPRESIÓN / PDF
+========================================================= */
+
+@media print {
+
+  body {
+    background: #fff;
+  }
+
+
+  .cover {
+    min-height: 280px;
+
+    page-break-after: always;
+  }
+
+
+  .document {
+    width: 100%;
+
+    margin: 0;
+
+    box-shadow: none;
+
+    border-radius: 0;
+  }
+
+
+  section {
+    page-break-inside: avoid;
+  }
+
+
+  .card:hover {
+    transform: none;
+
+    box-shadow: none;
+  }
+
+
+  @page {
+    margin: 12mm;
+  }
+
+}
