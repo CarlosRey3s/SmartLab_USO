@@ -2,31 +2,24 @@
    DASHBOARD DEL ESTUDIANTE - SMARTLABS
    ============================================================ */
 
-
 /* ============================================================
    VARIABLES
    ============================================================ */
 
 :root {
-    --verde: #22806B;
-    --verde-oscuro: #1B5E52;
-    --verde-hover: #29967E;
-
-    --dorado: #FACB4B;
-    --rosado: #AD868A;
-
-    --blanco: #FFFFFF;
-
-    --gris: #F4F6F8;
-    --gris-medio: #E7EBED;
-    --gris-borde: #D8DEDF;
-
+    --verde: #22806b;
+    --verde-oscuro: #1b5e52;
+    --verde-hover: #29967e;
+    --dorado: #facb4b;
+    --rosado: #ad868a;
+    --blanco: #ffffff;
+    --gris: #f4f6f8;
+    --gris-medio: #e7ebed;
+    --gris-borde: #d8dedf;
     --texto: #333333;
     --texto-secundario: #707777;
-
-    --verde-suave: #E8F4F0;
+    --verde-suave: #e8f4f0;
 }
-
 
 /* ============================================================
    CONTENEDOR GENERAL
@@ -34,21 +27,14 @@
 
 .student-dashboard {
     flex: 1;
-
     min-width: 0;
     min-height: 0;
-
     padding: 18px;
-
     background: var(--gris);
-
     font-family: Arial, sans-serif;
-
     box-sizing: border-box;
-
     overflow: hidden;
 }
-
 
 /* ============================================================
    ENCABEZADO
@@ -56,47 +42,34 @@
 
 .student-dashboard-header {
     display: flex;
-
     align-items: center;
     justify-content: space-between;
-
     margin-bottom: 18px;
-
     flex-shrink: 0;
 }
 
 .dashboard-eyebrow {
     display: block;
-
     margin-bottom: 4px;
-
     font-size: 10px;
     font-weight: 700;
-
     letter-spacing: 1.4px;
-
     color: var(--verde);
 }
 
 .section-main-title {
     margin: 0;
-
     font-size: 26px;
     font-weight: 700;
-
     line-height: 1.15;
-
     color: var(--texto);
 }
 
 .dashboard-description {
     margin: 5px 0 0;
-
     font-size: 13px;
-
     color: var(--texto-secundario);
 }
-
 
 /* ============================================================
    RESUMEN / KPI
@@ -104,36 +77,22 @@
 
 .student-dashboard-summary {
     display: grid;
-
-    grid-template-columns:
-        repeat(3, minmax(0, 1fr));
-
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
-
     margin-bottom: 18px;
-
     flex-shrink: 0;
 }
 
 .dashboard-summary-card {
     min-height: 88px;
-
     padding: 15px 18px;
-
     display: flex;
-
     align-items: center;
-
     gap: 13px;
-
     background: var(--blanco);
-
     border: 1px solid var(--gris-borde);
-
     border-radius: 14px;
-
-    box-shadow:
-        0 4px 12px rgba(0, 0, 0, .05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 
     box-sizing: border-box;
 }
@@ -141,41 +100,28 @@
 .summary-card-icon {
     width: 40px;
     height: 40px;
-
     flex-shrink: 0;
-
     display: flex;
-
     align-items: center;
     justify-content: center;
-
     border-radius: 10px;
-
     background: var(--verde-suave);
-
     font-size: 18px;
 }
 
 .summary-card-label {
     display: block;
-
     margin-bottom: 3px;
-
     font-size: 11px;
-
     color: var(--texto-secundario);
 }
 
 .summary-card-number {
     display: block;
-
     font-size: 23px;
-
     line-height: 1;
-
     color: var(--verde-oscuro);
 }
-
 
 /* ============================================================
    CONTENIDO PRINCIPAL
@@ -183,20 +129,13 @@
 
 .student-dashboard-content {
     display: grid;
-
-    grid-template-columns:
-        minmax(0, 1fr) 280px;
-
+    grid-template-columns: minmax(0, 1fr) 280px;
     gap: 18px;
-
     min-width: 0;
     min-height: 0;
-
     flex: 1;
-
     align-items: stretch;
 }
-
 
 /* ============================================================
    PANEL DE RESERVAS
@@ -205,29 +144,17 @@
 .dashboard-reservations-panel {
     min-width: 0;
     min-height: 0;
-
     height: 100%;
-
     padding: 18px;
-
     display: flex;
-
     flex-direction: column;
-
     background: var(--blanco);
-
     border: 1px solid var(--gris-borde);
-
     border-radius: 14px;
-
-    box-shadow:
-        0 4px 12px rgba(0, 0, 0, .05);
-
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     overflow: hidden;
-
     box-sizing: border-box;
 }
-
 
 /* ============================================================
    ENCABEZADO DEL PANEL DE RESERVAS
@@ -235,64 +162,46 @@
 
 .dashboard-panel-header {
     flex-shrink: 0;
-
     display: flex;
-
     align-items: center;
     justify-content: space-between;
-
     margin-bottom: 14px;
 }
 
 .dashboard-panel-eyebrow {
     display: block;
-
     margin-bottom: 3px;
-
     font-size: 9px;
     font-weight: 700;
-
     letter-spacing: 1.2px;
-
     color: var(--verde);
 }
 
 .dashboard-panel-header h2 {
     margin: 0;
-
     font-size: 17px;
     font-weight: 600;
-
     color: var(--texto);
 }
 
 .dashboard-panel-header p {
     margin: 4px 0 0;
-
     font-size: 11px;
-
     color: var(--texto-secundario);
 }
 
 .dashboard-panel-count {
     min-width: 34px;
     height: 34px;
-
     display: flex;
-
     align-items: center;
     justify-content: center;
-
     border-radius: 9px;
-
     background: var(--verde-suave);
-
     color: var(--verde-oscuro);
-
     font-size: 13px;
     font-weight: 700;
 }
-
 
 /* ============================================================
    LISTA DE RESERVAS
@@ -301,24 +210,15 @@
 
 .dashboard-reservation-list {
     flex: 1;
-
     min-height: 0;
-
     display: flex;
-
     flex-direction: column;
-
     gap: 9px;
-
     overflow-y: auto;
     overflow-x: hidden;
-
     padding-right: 6px;
-
     scrollbar-width: thin;
-
-    scrollbar-color:
-        #D1D5DB transparent;
+    scrollbar-color: #d1d5db transparent;
 }
 
 .dashboard-reservation-list::-webkit-scrollbar {
@@ -330,11 +230,10 @@
 }
 
 .dashboard-reservation-list::-webkit-scrollbar-thumb {
-    background: #D1D5DB;
+    background: #d1d5db;
 
     border-radius: 10px;
 }
-
 
 /* ============================================================
    RESERVA
@@ -342,39 +241,25 @@
 
 .dashboard-reservation {
     flex-shrink: 0;
-
     display: grid;
-
-    grid-template-columns:
-        55px minmax(0, 1fr) auto;
-
+    grid-template-columns: 55px minmax(0, 1fr) auto;
     align-items: center;
-
     gap: 13px;
-
     padding: 12px;
-
     border: 1px solid var(--gris-borde);
-
     border-radius: 11px;
-
     box-sizing: border-box;
-
     transition:
-        border-color .2s ease,
-        box-shadow .2s ease,
-        transform .2s ease;
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
 }
 
 .dashboard-reservation:hover {
-    border-color: #B8CCCA;
-
-    box-shadow:
-        0 4px 12px rgba(0, 0, 0, .04);
-
+    border-color: #b8ccca;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
     transform: translateY(-1px);
 }
-
 
 /* ============================================================
    FECHA
@@ -382,43 +267,29 @@
 
 .dashboard-reservation-date {
     width: 52px;
-
     min-height: 54px;
-
     display: flex;
-
     flex-direction: column;
-
     align-items: center;
     justify-content: center;
-
     border-radius: 9px;
-
     background: var(--verde-suave);
 }
 
 .dashboard-date-day {
     font-size: 20px;
-
     line-height: 1;
-
     font-weight: 700;
-
     color: var(--verde-oscuro);
 }
 
 .dashboard-date-month {
     margin-top: 4px;
-
     font-size: 8px;
-
     font-weight: 700;
-
-    letter-spacing: .7px;
-
+    letter-spacing: 0.7px;
     color: var(--verde);
 }
-
 
 /* ============================================================
    INFORMACIÓN DE RESERVA
@@ -430,61 +301,41 @@
 
 .dashboard-reservation-top {
     display: flex;
-
     align-items: center;
-
     flex-wrap: wrap;
-
     gap: 7px;
-
     margin-bottom: 3px;
 }
 
 .dashboard-reservation-type {
     font-size: 8px;
-
     font-weight: 700;
-
     letter-spacing: 1px;
-
     color: var(--rosado);
 }
 
 .dashboard-reservation-info h3 {
     margin: 0;
-
     font-size: 14px;
-
     font-weight: 600;
-
     color: var(--texto);
-
     white-space: nowrap;
-
     overflow: hidden;
-
     text-overflow: ellipsis;
 }
 
 .dashboard-reservation-meta {
     display: flex;
-
     flex-wrap: wrap;
-
     gap: 10px;
-
     margin-top: 5px;
-
     font-size: 10px;
-
     color: var(--texto-secundario);
 }
 
 .dashboard-reservation-reason {
     margin: 5px 0 0;
-
     font-size: 10px;
-
     color: var(--texto-secundario);
 }
 
@@ -492,51 +343,44 @@
     color: var(--texto);
 }
 
-
 /* ============================================================
    ESTADOS
    ============================================================ */
 
 .dashboard-status {
     display: inline-flex;
-
     align-items: center;
     justify-content: center;
-
     padding: 3px 8px;
-
     border-radius: 20px;
-
     font-size: 9px;
-
     font-weight: 700;
 }
 
 .dashboard-status-approved {
-    background: #E7F4EF;
+    background: #e7f4ef;
     color: var(--verde-oscuro);
 }
 
 .dashboard-status-pending {
-    background: #FFF5D8;
-    color: #8A6A00;
+    background: #fff5d8;
+    color: #8a6a00;
 }
 
 .dashboard-status-cancelled {
-    background: #F3E9EA;
-    color: #7A5055;
+    background: #f3e9ea;
+    color: #7a5055;
 }
 
 .dashboard-status-completed {
-    background: #E8F0F4;
-    color: #496B7A;
+    background: #e8f0f4;
+    color: #496b7a;
 }
 
 .dashboard-status-rejected {
-    background: #F7E4E4;
-    color: #8A3E3E;
+    background: #f7e4e4;
+    color: #8a3e3e;
 }
-
 
 /* ============================================================
    ESTACIONES
@@ -544,18 +388,12 @@
 
 .dashboard-reservation-stations {
     min-width: 62px;
-
     padding: 7px 9px;
-
     display: flex;
-
     flex-direction: column;
-
     align-items: center;
     justify-content: center;
-
     border-radius: 8px;
-
     background: var(--gris);
 }
 
@@ -565,18 +403,14 @@
 
 .dashboard-reservation-stations strong {
     margin-top: 1px;
-
     font-size: 12px;
-
     color: var(--texto);
 }
 
 .dashboard-reservation-stations small {
     font-size: 8px;
-
     color: var(--texto-secundario);
 }
-
 
 /* ============================================================
    SIN RESERVAS
@@ -584,57 +418,39 @@
 
 .dashboard-no-reservations {
     flex: 1;
-
     min-height: 0;
-
     display: flex;
-
     flex-direction: column;
-
     align-items: center;
     justify-content: center;
-
     text-align: center;
-
     border: 1px dashed var(--gris-borde);
-
     border-radius: 11px;
 }
 
 .empty-icon {
     width: 46px;
     height: 46px;
-
     display: flex;
-
     align-items: center;
     justify-content: center;
-
     margin-bottom: 8px;
-
     border-radius: 50%;
-
     background: var(--verde-suave);
-
     font-size: 20px;
 }
 
 .dashboard-no-reservations h3 {
     margin: 0;
-
     font-size: 14px;
-
     color: var(--texto);
 }
 
 .dashboard-no-reservations p {
     margin: 5px 0 0;
-
     font-size: 11px;
-
     color: var(--texto-secundario);
 }
-
 
 /* ============================================================
    PANEL LATERAL
@@ -643,18 +459,12 @@
 .dashboard-side-panel {
     min-width: 0;
     min-height: 0;
-
     height: 100%;
-
     display: flex;
-
     flex-direction: column;
-
     gap: 10px;
-
     overflow: hidden;
 }
-
 
 /* ============================================================
    ESTADO DE RESERVAS
@@ -664,10 +474,8 @@
 
 .dashboard-side-panel .dashboard-side-card:first-child {
     flex: 1;
-
     min-height: 0;
 }
-
 
 /* ============================================================
    TARJETAS LATERALES
@@ -675,19 +483,12 @@
 
 .dashboard-side-card {
     padding: 17px;
-
     background: var(--blanco);
-
     border: 1px solid var(--gris-borde);
-
     border-radius: 14px;
-
-    box-shadow:
-        0 4px 12px rgba(0, 0, 0, .05);
-
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     box-sizing: border-box;
 }
-
 
 /* ============================================================
    ENCABEZADO TARJETA LATERAL
@@ -695,58 +496,39 @@
 
 .dashboard-side-card-header {
     display: flex;
-
     align-items: center;
-
     gap: 10px;
-
     padding-bottom: 12px;
-
     border-bottom: 1px solid var(--gris-medio);
 }
 
 .side-card-icon {
     width: 36px;
     height: 36px;
-
     flex-shrink: 0;
-
     display: flex;
-
     align-items: center;
     justify-content: center;
-
     border-radius: 9px;
-
     background: var(--verde-suave);
-
     font-size: 16px;
 }
 
 .dashboard-side-card-header span {
     display: block;
-
     margin-bottom: 3px;
-
     font-size: 9px;
-
     font-weight: 700;
-
     letter-spacing: 1px;
-
     color: var(--verde);
 }
 
 .dashboard-side-card-header h3 {
     margin: 0;
-
     font-size: 16px;
-
     font-weight: 600;
-
     color: var(--texto);
 }
-
 
 /* ============================================================
    RESUMEN DE ESTADOS
@@ -754,22 +536,16 @@
 
 .dashboard-status-summary {
     padding-top: 4px;
-
     max-width: 100%;
 }
 
 .status-summary-row {
     display: flex;
-
     align-items: center;
     justify-content: space-between;
-
     padding: 11px 2px;
-
     font-size: 13px;
-
     color: var(--texto);
-
     border-bottom: 1px solid var(--gris);
 }
 
@@ -779,33 +555,26 @@
 
 .status-summary-row>div {
     display: flex;
-
     align-items: center;
-
     gap: 9px;
 }
 
 .status-summary-row strong {
     font-size: 16px;
-
     font-weight: 700;
-
     color: var(--verde-oscuro);
 }
 
 .status-dot {
     width: 8px;
     height: 8px;
-
     flex-shrink: 0;
-
     display: inline-block;
-
     border-radius: 50%;
 }
 
 .status-dot.pending {
-    background: #D9A900;
+    background: #d9a900;
 }
 
 .status-dot.approved {
@@ -813,13 +582,12 @@
 }
 
 .status-dot.completed {
-    background: #6B8C9B;
+    background: #6b8c9b;
 }
 
 .status-dot.cancelled {
     background: var(--rosado);
 }
-
 
 /* ============================================================
    TARJETA RECUERDA
@@ -828,41 +596,30 @@
 
 .dashboard-info-card {
     flex-shrink: 0;
-
     padding: 14px 17px;
-
     background: var(--verde-suave);
-
     border-color: transparent;
 }
 
 .dashboard-info-card .side-card-icon {
     width: 32px;
     height: 32px;
-
     margin-bottom: 7px;
-
     font-size: 14px;
 }
 
 .dashboard-info-card h3 {
     margin: 0 0 5px;
-
     font-size: 14px;
-
     color: var(--verde-oscuro);
 }
 
 .dashboard-info-card p {
     margin: 0;
-
     font-size: 10px;
-
     line-height: 1.4;
-
     color: var(--texto-secundario);
 }
-
 
 /* ============================================================
    CARGANDO
@@ -870,39 +627,29 @@
 
 .student-dashboard-loading {
     min-height: 300px;
-
     display: flex;
-
     flex-direction: column;
-
     align-items: center;
     justify-content: center;
-
     text-align: center;
 }
 
 .loading-icon {
     margin-bottom: 10px;
-
     font-size: 26px;
 }
 
 .student-dashboard-loading h2 {
     margin: 0;
-
     font-size: 17px;
-
     color: var(--texto);
 }
 
 .student-dashboard-loading p {
     margin: 6px 0 0;
-
     font-size: 12px;
-
     color: var(--texto-secundario);
 }
-
 
 /* ============================================================
    ERROR
@@ -910,39 +657,27 @@
 
 .student-dashboard-empty {
     min-height: 300px;
-
     display: flex;
-
     flex-direction: column;
-
     align-items: center;
     justify-content: center;
-
     text-align: center;
-
     background: var(--blanco);
-
     border: 1px dashed var(--gris-borde);
-
     border-radius: 14px;
 }
 
 .student-dashboard-empty h2 {
     margin: 0;
-
     font-size: 17px;
-
     color: var(--texto);
 }
 
 .student-dashboard-empty p {
     margin: 6px 0 0;
-
     font-size: 12px;
-
     color: var(--texto-secundario);
 }
-
 
 /* ============================================================
    ESCRITORIO / LAPTOP
@@ -951,98 +686,72 @@
    ============================================================ */
 
 @media (min-width: 1001px) {
-
     .student-dashboard {
         height: 100%;
-
         max-height: 100%;
-
         min-height: 0;
-
         display: flex;
-
         flex-direction: column;
-
         overflow: hidden;
     }
 
     .student-dashboard-content {
         flex: 1;
-
         min-height: 0;
-
         height: auto;
     }
 
     .dashboard-reservations-panel {
         height: 100%;
-
         min-height: 0;
-
         overflow: hidden;
     }
 
     .dashboard-reservation-list {
         flex: 1;
-
         min-height: 0;
-
         max-height: none;
-
         overflow-y: auto;
-
         overflow-x: hidden;
     }
 
     .dashboard-side-panel {
         height: 100%;
-
         min-height: 0;
-
         overflow: hidden;
     }
 }
-
 
 /* ============================================================
    TABLET
    ============================================================ */
 
 @media (max-width: 1000px) {
-
     .student-dashboard {
         height: auto;
-
         min-height: calc(100vh - 20px);
-
         overflow: visible;
     }
 
     .student-dashboard-content {
         height: auto;
-
         min-height: 0;
-
         grid-template-columns: 1fr;
     }
 
     .dashboard-reservations-panel {
         height: auto;
-
         overflow: visible;
     }
 
     .dashboard-reservation-list {
         max-height: 500px;
-
         overflow-y: auto;
-
         overflow-x: hidden;
     }
 
     .dashboard-side-panel {
         height: auto;
-
         overflow: visible;
     }
 
@@ -1051,13 +760,11 @@
     }
 }
 
-
 /* ============================================================
    MÓVIL
    ============================================================ */
 
 @media (max-width: 700px) {
-
     .student-dashboard {
         padding: 14px;
     }
@@ -1076,9 +783,7 @@
 
     .student-dashboard-summary {
         grid-template-columns: 1fr;
-
         gap: 10px;
-
         margin-bottom: 14px;
     }
 
@@ -1092,35 +797,27 @@
 
     .dashboard-side-panel {
         display: grid;
-
         grid-template-columns: 1fr;
-
         gap: 10px;
     }
 
     .dashboard-reservation {
-        grid-template-columns:
-            52px minmax(0, 1fr);
+        grid-template-columns: 52px minmax(0, 1fr);
     }
 
     .dashboard-reservation-stations {
         grid-column: 2;
-
         justify-self: start;
-
         flex-direction: row;
-
         gap: 5px;
     }
 }
-
 
 /* ============================================================
    MÓVIL PEQUEÑO
    ============================================================ */
 
 @media (max-width: 500px) {
-
     .student-dashboard {
         padding: 12px;
     }
@@ -1135,15 +832,12 @@
 
     .dashboard-reservation-top {
         align-items: flex-start;
-
         flex-direction: column;
-
         gap: 4px;
     }
 
     .dashboard-reservation-meta {
         flex-direction: column;
-
         gap: 3px;
     }
 
