@@ -13,7 +13,7 @@ CREATE TYPE estado_lab_enum AS ENUM ('disponible', 'en_mantenimiento', 'clausura
 CREATE TYPE modo_reserva_enum AS ENUM ('por_estacion', 'espacio_completo');
 CREATE TYPE estado_estacion_enum AS ENUM ('disponible', 'no_disponible'); 
 CREATE TYPE tipo_actividad_enum AS ENUM ('clase', 'reserva', 'mantenimiento');
-CREATE TYPE estado_reserva_enum AS ENUM ('pendiente', 'aprobada', 'cancelada', 'completada','rechazada');
+CREATE TYPE estado_reserva_enum AS ENUM ('pendiente', 'aprobada', 'cancelada', 'completada', 'rechazada', 'incompleto', 'ausente', 'entregado', 'devuelto');
 CREATE TYPE tipo_movimiento_enum AS ENUM ('ingreso', 'egreso', 'ajuste');
 CREATE TYPE estado_sugerencia_enum AS ENUM ('pendiente', 'en_revisión', 'atendida', 'archivada');
 CREATE TYPE tipo_alerta_enum AS ENUM ('daño', 'bajo_stock', 'agotado', 'extravio', 'otro');
