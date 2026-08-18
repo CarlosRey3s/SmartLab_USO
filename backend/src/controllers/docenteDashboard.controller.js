@@ -4,8 +4,8 @@ const docenteDashboardService =
 class DocenteDashboardController {
     async getDashboard(req, res) {
         try {
-            // TEMPORAL PARA PRUEBA HASTA CONECTAR AUTH
-            const docenteId = 1;
+            // Se obtiene el ID del docente autenticado desde el JWT
+            const docenteId = req.usuario.id;
             const data =
                 await docenteDashboardService.getDashboard(
                     docenteId

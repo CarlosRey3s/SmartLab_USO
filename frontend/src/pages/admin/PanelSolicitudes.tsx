@@ -191,7 +191,7 @@ const PanelSolicitudes: React.FC = () => {
 
       {/* ── Tabs ── */}
       <div className="ps-tabs">
-        {(['pendiente', 'aprobada', 'rechazada', 'cancelada', 'incompleto', 'ausente'] as TabType[]).map((tab) => (
+        {((esAutoridad ? ['pendiente', 'aprobada', 'rechazada', 'cancelada', 'incompleto', 'ausente'] : ['pendiente', 'aprobada', 'rechazada', 'cancelada']) as TabType[]).map((tab) => (
           <button
             key={tab}
             className={`ps-tab${tabActiva === tab ? ' ps-tab--activa' : ''}${tab === 'incompleto' ? ' ps-tab--incompleto' : ''}${tab === 'ausente' ? ' ps-tab--ausente' : ''}`}
@@ -438,27 +438,27 @@ const PanelSolicitudes: React.FC = () => {
         isOpen={isConfirmOpen}
         title={
           confirmData?.accion === 'aprobar' ? 'Aprobar Solicitud' :
-          confirmData?.accion === 'rechazar' ? 'Rechazar Solicitud' :
-          confirmData?.accion === 'ausente' ? 'Marcar Inasistencia' :
-          confirmData?.accion === 'asistencia' ? 'Registrar Ingreso' :
-          'Cancelar Solicitud'
+            confirmData?.accion === 'rechazar' ? 'Rechazar Solicitud' :
+              confirmData?.accion === 'ausente' ? 'Marcar Inasistencia' :
+                confirmData?.accion === 'asistencia' ? 'Registrar Ingreso' :
+                  'Cancelar Solicitud'
         }
         message={
           isProcessing
             ? 'Procesando...'
             : confirmData?.accion === 'ausente'
-            ? '¿Estás seguro de marcar a este estudiante como ausente? Esto liberará el inventario reservado.'
-            : confirmData?.accion === 'asistencia'
-            ? '¿Confirmas que el estudiante ya ingresó al espacio asignado?'
-            : `¿Estás seguro de que deseas ${confirmData?.accion} esta solicitud?`
+              ? '¿Estás seguro de marcar a este estudiante como ausente? Esto liberará el inventario reservado.'
+              : confirmData?.accion === 'asistencia'
+                ? '¿Confirmas que el estudiante ya ingresó al espacio asignado?'
+                : `¿Estás seguro de que deseas ${confirmData?.accion} esta solicitud?`
         }
         confirmText={
           isProcessing ? 'Procesando...' :
-          confirmData?.accion === 'aprobar' ? 'Aprobar' :
-          confirmData?.accion === 'rechazar' ? 'Rechazar' :
-          confirmData?.accion === 'ausente' ? 'Confirmar Ausencia' :
-          confirmData?.accion === 'asistencia' ? 'Confirmar Ingreso' :
-          'Sí, cancelar'
+            confirmData?.accion === 'aprobar' ? 'Aprobar' :
+              confirmData?.accion === 'rechazar' ? 'Rechazar' :
+                confirmData?.accion === 'ausente' ? 'Confirmar Ausencia' :
+                  confirmData?.accion === 'asistencia' ? 'Confirmar Ingreso' :
+                    'Sí, cancelar'
         }
         cancelText="Volver"
         type={confirmData?.accion === 'aprobar' ? 'info' : confirmData?.accion === 'asistencia' ? 'info' : 'danger'}

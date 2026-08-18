@@ -41,11 +41,16 @@ export const BuzonSugerencias: React.FC = () => {
 
   const fetchSugerencias = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/api/sugerencias`);
+      const token = localStorage.getItem('uso_token');
+      const res = await fetch(`${BASE_URL}/api/sugerencias`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       const data = await res.json();
       if (data.status === 'success') {
-        const mySugerencias = data.data.filter((sug: Sugerencia) => sug.usuario_id === parseInt(user?.id || '0'));
-        setSugerencias(mySugerencias);
+        // El backend ya filtra por usuario si es estudiante/docente
+        setSugerencias(data.data);
       }
     } catch (error) {
       console.error("Error cargando sugerencias", error);
@@ -84,9 +89,13 @@ export const BuzonSugerencias: React.FC = () => {
     };
 
     try {
+      const token = localStorage.getItem('uso_token');
       const res = await fetch(`${BASE_URL}/api/sugerencias`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(payload)
       });
       const data = await res.json();

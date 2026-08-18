@@ -26,6 +26,10 @@ const obtenerSugerencias = async (usuario_id, rol) => {
   if (rol === 'coordinador' && usuario_id) {
     query += ` WHERE l.coordinador_id = $1`;
     values.push(usuario_id);
+  } else if ((rol === 'docente' || rol === 'estudiante') && usuario_id) {
+    // Si es estudiante o docente, solo ven sus propias sugerencias
+    query += ` WHERE bs.usuario_id = $1`;
+    values.push(usuario_id);
   }
 
   query += ` ORDER BY bs.fecha_envio DESC`;

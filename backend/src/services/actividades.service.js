@@ -634,7 +634,7 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usu
                 -- 1. administrador: Ve absolutamente todo el campus
                 $4 = 'administrador'
                 
-                -- 2. coordinador / docente: Solo ve laboratorios a su cargo o sus propias clases
+                -- 2. coordinador: Solo ve laboratorios a su cargo o sus propias clases
                 OR (
                     $4 = 'coordinador' AND (
                         l.coordinador_id = $3 
@@ -642,7 +642,32 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usu
                     )
                 )
                 
-                -- 3. estudiante: Ve sus clases, mantenimientos y únicamente sus reservas
+                -- 3. docente: Ve sus clases, mantenimientos y reservas SOLO en sus laboratorios asignados (o sus propias reservas aprobadas)
+                OR (
+                    $4 = 'docente' AND (
+                        (a.tipo = 'clase' AND ca.docente_id = $3)
+                        OR (
+                            a.tipo = 'mantenimiento' AND a.laboratorio_id IN (
+                                SELECT DISTINCT a2.laboratorio_id 
+                                FROM actividades a2 
+                                JOIN clases_academicas ca2 ON a2.id = ca2.actividad_id 
+                                WHERE ca2.docente_id = $3
+                            )
+                        )
+                        OR (
+                            a.tipo = 'reserva' AND re.estado_reserva = 'aprobada' AND (
+                                re.usuario_id = $3 OR a.laboratorio_id IN (
+                                    SELECT DISTINCT a2.laboratorio_id 
+                                    FROM actividades a2 
+                                    JOIN clases_academicas ca2 ON a2.id = ca2.actividad_id 
+                                    WHERE ca2.docente_id = $3
+                                )
+                            )
+                        )
+                    )
+                )
+                
+                -- 4. estudiante: Ve clases, mantenimientos y únicamente sus reservas
                 OR (
                     $4 = 'estudiante' AND (
                         a.tipo = 'clase'

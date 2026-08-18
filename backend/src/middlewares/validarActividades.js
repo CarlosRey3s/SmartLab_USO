@@ -48,7 +48,7 @@ const validarActividades = async (req, res, next) => {
 
     // ── REGLAS DE ROLES Y PROPIEDAD DEL LABORATORIO ──
     try {
-        const userId = usuario_id || "1"; // Fallback por si no llega en desarrollo
+        const userId = req.usuario?.id || usuario_id; // Priorizar el ID validado del token JWT
 
         // Consultamos la BD para saber el rol del usuario y el coordinador del laboratorio
         const userQuery = await pool.query('SELECT rol FROM usuarios WHERE id = $1', [userId]);

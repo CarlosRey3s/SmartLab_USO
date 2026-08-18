@@ -2,7 +2,8 @@ const sugerenciaService = require('../services/sugerencia.service');
 
 const getSugerencias = async (req, res) => {
   try {
-    const { usuario_id, rol } = req.query;
+    const usuario_id = req.usuario?.id || req.query.usuario_id;
+    const rol = req.usuario?.rol || req.query.rol;
     const sugerencias = await sugerenciaService.obtenerSugerencias(usuario_id, rol);
     res.json({
       status: 'success',

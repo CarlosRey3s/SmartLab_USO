@@ -15,11 +15,11 @@ export const canViewAdminPages = (role: UserRole): boolean => {
 
 /**
  * Validar si el usuario puede crear actividades de tipo "Clase" o "Mantenimiento".
- * Reglas: Estudiantes solo pueden crear "Reservas". 
- * Coordinadores, Administradores y Docentes pueden crear clases/mantenimiento.
+ * Reglas: Estudiantes y Docentes solo pueden crear "Reservas". 
+ * Coordinadores y Administradores pueden crear clases/mantenimiento.
  */
 export const canCreateClassesOrMaintenance = (role: UserRole): boolean => {
-  return ['administrador', 'coordinador', 'docente'].includes(role);
+  return ['administrador', 'coordinador'].includes(role);
 };
 
 /**

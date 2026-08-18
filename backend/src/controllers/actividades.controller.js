@@ -36,7 +36,7 @@ const actualizarActividad = async (req, res) => {
 
         const idactividad = req.params.id; // extraer el id de la URL
         const datosModal = req.body; // extraer los datos del cuerpo de la solicitud
-        const idAdminLogueado = datosModal.usuario_id || "1"; // Cambiar cuando se tenga el middleware de autenticación implementado
+        const idAdminLogueado = req.usuario?.id || datosModal.usuario_id;
 
         // Llamar al servicio para actualizar la actividad
         const resultado = await actividadesService.actualizarActividad(idactividad, datosModal, idAdminLogueado);
@@ -60,7 +60,7 @@ const actualizarActividad = async (req, res) => {
 
 const eliminarActividad = async (req, res) => {
     try {
-        const idactividad = req.params.id; s
+        const idactividad = req.params.id;
         const resultado = await actividadesService.eliminarActividad(idactividad);
 
         res.status(200).json({

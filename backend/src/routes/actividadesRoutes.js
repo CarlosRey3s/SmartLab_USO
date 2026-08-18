@@ -24,10 +24,10 @@ router.get('/solicitudes/todas', verificarToken, actividadesController.obtenerTo
 router.put('/solicitudes/:id/resolver', verificarToken, verificarRol(['administrador', 'coordinador']), actividadesController.resolverSolicitud);
 
 // Entregar Equipos (pasa a entregado y descuenta inventario)
-router.put('/solicitudes/:id/entregar', verificarToken, actividadesController.entregarEquipos);
+router.put('/solicitudes/:id/entregar', verificarToken, verificarRol(['administrador', 'coordinador']), actividadesController.entregarEquipos);
 
 // Devolver Equipos (pasa a devuelto, suma inventario y reporta daños)
-router.put('/solicitudes/:id/devolver', verificarToken, actividadesController.devolverEquipos);
+router.put('/solicitudes/:id/devolver', verificarToken, verificarRol(['administrador', 'coordinador']), actividadesController.devolverEquipos);
 
 router.get('/disponibilidad', verificarToken, actividadesController.consultarDisponibilidad);
 router.put('/solicitudes/:id/cancelar', verificarToken, actividadesController.cancelarReserva);
