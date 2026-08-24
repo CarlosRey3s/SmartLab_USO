@@ -109,8 +109,7 @@ const CustomEvent = ({ event }: any) => {
 const eventStyleGetter = (event: EventoLaboratorio) => {
   let className = 'evento-base';
   if (event.tipo === 'mantenimiento') className += ' evento-mantenimiento';
-  else if (event.laboratorio_nombre === 'Lab de Redes') className += ' evento-sistema-teal';
-  else if (event.laboratorio_nombre === 'Lab de Computo') className += ' evento-sistema-amarillo';
+  else if (event.tipo === 'reserva') className += ' evento-sistema-amarillo';
   else className += ' evento-sistema-teal';
   return { className };
 };
