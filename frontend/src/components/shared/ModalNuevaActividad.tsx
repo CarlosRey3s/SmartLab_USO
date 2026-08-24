@@ -604,9 +604,15 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
           <div className="na-footer-btns">
             {tipo ? (
               <>
-                <button className="na-btn-cancel" onClick={handleAtras}>
-                  {stepIndex === 0 ? "Cambiar tipo" : "Atrás"}
-                </button>
+                {actividadExistente && stepIndex === 0 ? (
+                  <button className="na-btn-cancel" onClick={onClose}>
+                    Cancelar
+                  </button>
+                ) : (
+                  <button className="na-btn-cancel" onClick={handleAtras}>
+                    {stepIndex === 0 ? "Cambiar tipo" : "Atrás"}
+                  </button>
+                )}
                 <button
                   className={`na-btn-save ${tipo === "mantenimiento" ? "na-btn-save-mant" : ""}`}
                   onClick={handleSiguiente}

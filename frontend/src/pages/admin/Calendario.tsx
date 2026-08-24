@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { Search, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, Printer, X, User, Users, Wrench, FileText, Edit2, Trash2, Filter, Info } from 'lucide-react';
+import { Search, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, Printer, X, User, Users, Wrench, FileText, Edit2, Trash2, Filter, Info, Monitor, Beaker } from 'lucide-react';
 import { Calendar, dateFnsLocalizer, type ToolbarProps, type View } from 'react-big-calendar';
 import { es } from 'date-fns/locale/es';
 import { PanelSolicitudes } from './PanelSolicitudes.tsx';
@@ -11,6 +11,7 @@ import { customToast } from '../../components/custom-toast/CustomToast.tsx';
 import { useAuth } from '../../context/AuthContext';
 import { isReadOnlyView } from '../../utils/roleGuard';
 import { format, parse, startOfWeek, getDay, isToday, startOfMonth, endOfMonth, parseISO } from 'date-fns';
+import { ConfirmModal } from '../../components/confirm-modal/ConfirmModal';
 
 
 // ── 1. CONFIGURACIÓN DE FECHAS E IDIOMA ──
@@ -319,6 +320,10 @@ export const CalendarioView = () => {
   const [popoverTouchStartY, setPopoverTouchStartY] = useState<number | null>(null);
   const [isClosingPopover, setIsClosingPopover] = useState(false);
 
+  // ESTADO NUEVO: Para ConfirmModal
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [eventoAEliminar, setEventoAEliminar] = useState<EventoLaboratorio | null>(null);
+
   const cerrarPopover = () => {
     setIsClosingPopover(true);
     setTimeout(() => {
@@ -428,10 +433,18 @@ export const CalendarioView = () => {
     let y = evt.clientY;
 
     const popoverWidth = 320;
-    const popoverHeight = 200;
-    if (x + popoverWidth > window.innerWidth) x = x - popoverWidth - 20;
-    else x = x + 20;
-    if (y + popoverHeight > window.innerHeight) y = y - popoverHeight;
+    const maxPopoverHeight = 450; // Aumentado para acomodar reservas grandes
+
+    if (x + popoverWidth > window.innerWidth) {
+      x = x - popoverWidth - 20;
+    } else {
+      x = x + 20;
+    }
+
+    // Si al dibujarlo hacia abajo se sale de la pantalla, lo limitamos al borde inferior
+    if (y + maxPopoverHeight > window.innerHeight) {
+      y = Math.max(20, window.innerHeight - maxPopoverHeight - 20);
+    }
 
     setPopoverPos({ x, y });
     setEventoSeleccionado(evento);
@@ -452,24 +465,31 @@ export const CalendarioView = () => {
     setModalAbierto(true);
   };
 
-  const handleEliminarEvento = async () => {
+  const handleEliminarEvento = () => {
     if (!eventoSeleccionado) return;
+    setEventoAEliminar(eventoSeleccionado);
+    setIsConfirmModalOpen(true);
+    cerrarPopover();
+  };
 
-    const confirmar = window.confirm(`¿Estás seguro de que deseas eliminar la actividad "${eventoSeleccionado.title}"?\nEsta acción no se puede deshacer.`);
-    if (confirmar) {
-      try {
-        // Enviar el ID original de la base de datos (no la instancia clonada)
-        const idAEliminar = (eventoSeleccionado as any).idOriginal || eventoSeleccionado.id;
-        const resultado = await eliminarActividad(idAEliminar);
+  const ejecutarEliminacion = async () => {
+    if (!eventoAEliminar) return;
 
-        customToast.success('¡Eliminado!', resultado?.message || resultado?.mensaje || 'Actividad eliminada exitosamente');
-        setEventoSeleccionado(null);
-        await cargarDatos();
+    try {
+      // Enviar el ID original de la base de datos (no la instancia clonada)
+      const idAEliminar = (eventoAEliminar as any).idOriginal || eventoAEliminar.id;
+      const resultado = await eliminarActividad(idAEliminar);
 
-      } catch (error: any) {
-        console.error("Error al eliminar:", error);
-        customToast.error('Error', error.message || 'No se pudo eliminar la actividad');
-      }
+      customToast.success('¡Eliminado!', resultado?.message || resultado?.mensaje || 'Actividad eliminada exitosamente');
+      setIsConfirmModalOpen(false);
+      setEventoAEliminar(null);
+      await cargarDatos();
+
+    } catch (error: any) {
+      console.error("Error al eliminar:", error);
+      customToast.error('Error', error.message || 'No se pudo eliminar la actividad');
+      setIsConfirmModalOpen(false);
+      setEventoAEliminar(null);
     }
   };
 
@@ -645,118 +665,134 @@ export const CalendarioView = () => {
               <div className="popover-drag-handle"><div className="drag-bar" /></div>
 
               <div className="popover-header">
-                <div className="popover-actions">
-                  {(() => {
-                    if (!user) return false;
-                    if (user.rol === 'administrador') return true;
-                    if (user.rol === 'coordinador') {
-                      return !eventoSeleccionado.coordinador_id || String(eventoSeleccionado.coordinador_id) === String(user.id);
-                    }
-                    if (user.rol === 'docente') {
-                      return eventoSeleccionado.tipo === 'reserva' && String(eventoSeleccionado.usuario_id) === String(user.id);
-                    }
-                    return false;
-                  })() && (
-                      <>
-                        <button className="btn-popover-action" onClick={handleEditarEvento} title="Editar">
-                          <Edit2 size={16} />
-                        </button>
-                        <button className="btn-popover-action btn-delete" onClick={handleEliminarEvento} title="Eliminar">
-                          <Trash2 size={16} />
-                        </button>
-                      </>
-                    )}
-                  <button className="btn-popover-action" onClick={() => cerrarPopover()} title="Cerrar">
-                    <X size={18} />
-                  </button>
+                <div className="popover-header-top">
+                  <span className="popover-type-label">
+                    {eventoSeleccionado.tipo === 'reserva' ? 'RESERVA DE LABORATORIO' : 
+                     eventoSeleccionado.tipo === 'mantenimiento' ? 'MANTENIMIENTO' : 'CLASE ACADÉMICA'}
+                  </span>
+                  <div className="popover-actions">
+                    {(() => {
+                      if (!user) return false;
+                      if (user.rol === 'administrador') return true;
+                      if (user.rol === 'coordinador') {
+                        return !eventoSeleccionado.coordinador_id || String(eventoSeleccionado.coordinador_id) === String(user.id);
+                      }
+                      if (user.rol === 'docente') {
+                        return eventoSeleccionado.tipo === 'reserva' && String(eventoSeleccionado.usuario_id) === String(user.id);
+                      }
+                      return false;
+                    })() && (
+                        <>
+                          <button className="btn-popover-action" onClick={handleEditarEvento} title="Editar">
+                            <Edit2 size={16} />
+                          </button>
+                          <button className="btn-popover-action btn-delete" onClick={handleEliminarEvento} title="Eliminar">
+                            <Trash2 size={16} />
+                          </button>
+                        </>
+                      )}
+                    <button className="btn-popover-action" onClick={() => cerrarPopover()} title="Cerrar">
+                      <X size={16} />
+                    </button>
+                  </div>
                 </div>
 
                 <h3 className="popover-title">{eventoSeleccionado.title}</h3>
-                <p className="popover-time">
+                <div className="popover-time">
+                  <CalendarIcon size={14} className="mr-1 inline" />
                   {format(eventoSeleccionado.start, "EEEE d 'de' MMMM • h:mm a", { locale: es })} - {format(eventoSeleccionado.end, 'h:mm a')}
-                </p>
+                </div>
+                
+                {eventoSeleccionado.estado_reserva && (
+                  <div className="mt-2">
+                    <span className={`estado-badge estado-${eventoSeleccionado.estado_reserva.toLowerCase()}`}>
+                      {eventoSeleccionado.estado_reserva.charAt(0).toUpperCase() + eventoSeleccionado.estado_reserva.slice(1).toLowerCase()}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="popover-body">
-                <div className="popover-row">
-                  <CalendarIcon size={16} className="popover-icon" />
-                  <span>{eventoSeleccionado.laboratorio_nombre}</span>
-                </div>
+                <div className="popover-section-main">
+                  <div className="popover-row">
+                    <Beaker size={16} className="popover-icon" />
+                    <span>{eventoSeleccionado.laboratorio_nombre}</span>
+                  </div>
 
-                {eventoSeleccionado.tipo === 'clase' && (
-                  <>
-                    <div className="popover-row"><FileText size={16} className="popover-icon" /> <span>Materia: {eventoSeleccionado.materia}</span></div>
-                    <div className="popover-row"><User size={16} className="popover-icon" /> <span>Docente: {eventoSeleccionado.docente_nombre || 'No asignado'}</span></div>
-                    {eventoSeleccionado.clase_estudiantes != null && (
-                      <div className="popover-row"><Users size={16} className="popover-icon" /> <span>Estudiantes: {eventoSeleccionado.clase_estudiantes}</span></div>
-                    )}
-                  </>
-                )}
-
-                {eventoSeleccionado.tipo === 'mantenimiento' && (
-                  <>
-                    <div className="popover-row"><Wrench size={16} className="popover-icon text-red" /> <span>Técnico: {eventoSeleccionado.tecnico_nombre || 'No asignado'}</span></div>
-                    <div className="popover-row"><FileText size={16} className="popover-icon" /> <span className="text-sm">{eventoSeleccionado.mant_descripcion}</span></div>
-                  </>
-                )}
-
-                {eventoSeleccionado.tipo === 'reserva' && (
-                  <>
-                    {eventoSeleccionado.reserva_solicitante_nombre && (
+                  {eventoSeleccionado.tipo === 'clase' && (
+                    <>
+                      <div className="popover-row"><FileText size={16} className="popover-icon" /> <span>Materia: {eventoSeleccionado.materia}</span></div>
                       <div className="popover-row">
                         <User size={16} className="popover-icon" />
-                        <span>Reservado por: {eventoSeleccionado.reserva_solicitante_nombre} {eventoSeleccionado.reserva_solicitante_apellido} ({eventoSeleccionado.reserva_solicitante_expediente})</span>
-                      </div>
-                    )}
-                    {eventoSeleccionado.reserva_nota && (
-                      <div className="popover-row"><FileText size={16} className="popover-icon" /> <span className="text-sm">Nota: {eventoSeleccionado.reserva_nota}</span></div>
-                    )}
-                    {eventoSeleccionado.estado_reserva && (
-                      <div className="popover-row">
-                        <Info size={16} className="popover-icon" />
-                        <span>
-                          Estado:{' '}
-                          <span className={`estado-badge estado-${eventoSeleccionado.estado_reserva.toLowerCase()}`}>
-                            {eventoSeleccionado.estado_reserva.toUpperCase()}
-                          </span>
-                        </span>
-                      </div>
-                    )}
-
-                    {eventoSeleccionado.estaciones && eventoSeleccionado.estaciones.length > 0 && (
-                      <div className="popover-section">
-                        <div className="flex justify-between items-center mb-1">
-                          <p className="popover-section-title mb-0">
-                            🖥️ ESTACIONES RESERVADAS:
-                          </p>
-                          <span className="text-xs font-bold text-gray-500">Total: {eventoSeleccionado.estaciones.length}</span>
-                        </div>
-                        <div className="estaciones-grid mt-1">
-                          {eventoSeleccionado.estaciones.map((est: number) => (
-                            <div key={est} className="estacion-badge">
-                              {est}
-                            </div>
-                          ))}
+                        <div className="flex flex-col">
+                          <span>{eventoSeleccionado.docente_nombre || 'No asignado'}</span>
+                          <span className="text-xs text-gray-500">Docente</span>
                         </div>
                       </div>
-                    )}
+                      {eventoSeleccionado.clase_estudiantes != null && (
+                        <div className="popover-row"><Users size={16} className="popover-icon" /> <span>Estudiantes: {eventoSeleccionado.clase_estudiantes}</span></div>
+                      )}
+                    </>
+                  )}
 
-                    {eventoSeleccionado.equipos && eventoSeleccionado.equipos.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-gray-200">
-                        <p className="text-xs font-semibold text-gray-500 mb-1">
-                          📦 MATERIALES SOLICITADOS:
-                        </p>
-                        <ul className="space-y-1">
-                          {eventoSeleccionado.equipos.map((equipo: any) => (
-                            <li key={equipo.id} className="text-sm text-gray-700 flex justify-between bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
-                              <span>• {equipo.nombre}</span>
-                              <strong className="text-indigo-600">Cant: {equipo.cantidad}</strong>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </>
+                  {eventoSeleccionado.tipo === 'mantenimiento' && (
+                    <>
+                      <div className="popover-row"><Wrench size={16} className="popover-icon text-red" /> <span>Técnico: {eventoSeleccionado.tecnico_nombre || 'No asignado'}</span></div>
+                      <div className="popover-row"><FileText size={16} className="popover-icon" /> <span>{eventoSeleccionado.mant_descripcion}</span></div>
+                    </>
+                  )}
+
+                  {eventoSeleccionado.tipo === 'reserva' && (
+                    <>
+                      {eventoSeleccionado.reserva_solicitante_nombre && (
+                        <div className="popover-row">
+                          <User size={16} className="popover-icon" />
+                          <div className="flex flex-col">
+                            <span>{eventoSeleccionado.reserva_solicitante_nombre} {eventoSeleccionado.reserva_solicitante_apellido}</span>
+                            {eventoSeleccionado.reserva_solicitante_expediente && (
+                              <span className="text-xs text-gray-400">{eventoSeleccionado.reserva_solicitante_expediente}</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {eventoSeleccionado.reserva_nota && (
+                        <div className="popover-row"><FileText size={16} className="popover-icon" /> <span>{eventoSeleccionado.reserva_nota}</span></div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {eventoSeleccionado.tipo === 'reserva' && eventoSeleccionado.estaciones && eventoSeleccionado.estaciones.length > 0 && (
+                  <div className="popover-divider-section">
+                    <div className="flex items-center gap-2 mb-2 text-gray-400">
+                      <Monitor size={16} className="popover-icon" />
+                      <span className="text-sm font-semibold">Estaciones reservadas • {eventoSeleccionado.estaciones.length}</span>
+                    </div>
+                    <div className="estaciones-grid">
+                      {eventoSeleccionado.estaciones.map((est: number) => (
+                        <div key={est} className="estacion-badge-dark">
+                          {est}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {eventoSeleccionado.tipo === 'reserva' && eventoSeleccionado.equipos && eventoSeleccionado.equipos.length > 0 && (
+                  <div className="popover-divider-section">
+                    <div className="flex items-center gap-2 mb-2 text-gray-400">
+                      <Beaker size={16} className="popover-icon" />
+                      <span className="text-sm font-semibold">Materiales solicitados</span>
+                    </div>
+                    <ul className="materiales-list">
+                      {eventoSeleccionado.equipos.map((equipo: any) => (
+                        <li key={equipo.id} className="material-item">
+                          <span>{equipo.nombre}</span>
+                          <span className="material-cant">Cant. {equipo.cantidad}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
             </div>
@@ -767,6 +803,18 @@ export const CalendarioView = () => {
             onClose={() => { setModalAbierto(false); setActividadAEditar(null); }}
             onGuardar={handleGuardarActividad}
             actividadExistente={actividadAEditar}
+          />
+        )}
+        {isConfirmModalOpen && eventoAEliminar && (
+          <ConfirmModal
+            isOpen={isConfirmModalOpen}
+            title="Eliminar Actividad"
+            message={`¿Estás seguro de que deseas eliminar la actividad "${eventoAEliminar.title}"?\nEsta acción no se puede deshacer.`}
+            onConfirm={ejecutarEliminacion}
+            onCancel={() => {
+              setIsConfirmModalOpen(false);
+              setEventoAEliminar(null);
+            }}
           />
         )}
         <div

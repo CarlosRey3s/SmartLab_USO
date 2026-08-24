@@ -334,7 +334,21 @@
 .calendar-page-wrapper .rbc-event:focus,
 .calendar-page-wrapper .rbc-event.rbc-selected {
   outline: none !important;
-  box-shadow: 0 0 0 2px rgba(15, 118, 110, .5) !important;
+}
+
+.calendar-page-wrapper .evento-mantenimiento:focus,
+.calendar-page-wrapper .evento-mantenimiento.rbc-selected {
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.5) !important;
+}
+
+.calendar-page-wrapper .evento-sistema-teal:focus,
+.calendar-page-wrapper .evento-sistema-teal.rbc-selected {
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.5) !important;
+}
+
+.calendar-page-wrapper .evento-sistema-amarillo:focus,
+.calendar-page-wrapper .evento-sistema-amarillo.rbc-selected {
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.5) !important;
 }
 
 .calendar-page-wrapper .custom-event-content {
@@ -521,8 +535,8 @@
 .calendar-page-wrapper .event-popover-container {
   position: fixed;
   background: white;
-  width: 320px;
-  border-radius: 8px;
+  width: 340px;
+  border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, .15);
   z-index: 999999;
   display: flex;
@@ -530,6 +544,7 @@
   overflow: hidden;
   border: 1px solid #e5e7eb;
   animation: calendarPopover .2s ease;
+  color: #374151;
 }
 
 @keyframes calendarPopover {
@@ -545,9 +560,23 @@
 }
 
 .calendar-page-wrapper .popover-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid #f3f4f6;
+  padding: 16px;
   position: relative;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.calendar-page-wrapper .popover-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.calendar-page-wrapper .popover-type-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #6b7280;
+  letter-spacing: 0.05em;
 }
 
 /* Ocultar elementos de bottom-sheet en desktop */
@@ -561,51 +590,63 @@
 
 .popover-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 4px;
-  margin-bottom: 4px;
+  gap: 8px;
 }
 
 .btn-popover-action {
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   color: #4b5563;
   cursor: pointer;
   padding: 6px;
-  border-radius: 50%;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color .2s, color .2s;
+  transition: all .2s;
 }
 
 .btn-popover-action:hover {
   background-color: #f3f4f6;
   color: #111827;
+  border-color: #e5e7eb;
 }
 
 .btn-delete:hover {
   background-color: #fee2e2;
   color: #dc2626;
+  border-color: #fecaca;
 }
 
 .calendar-page-wrapper .popover-title {
-  margin: 0 0 4px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+  font-weight: 700;
   color: #1f2937;
 }
 
 .calendar-page-wrapper .popover-time {
+  display: flex;
+  align-items: center;
   font-size: .85rem;
   color: #6b7280;
 }
 
 .calendar-page-wrapper .popover-body {
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.calendar-page-wrapper .popover-section-main {
+  padding: 0 16px 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.calendar-page-wrapper .popover-divider-section {
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
 }
 
 .calendar-page-wrapper .popover-row {
@@ -627,12 +668,11 @@
 }
 
 .estado-badge {
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 600;
   display: inline-block;
-  margin-left: 4px;
 }
 
 .estado-aprobada {
@@ -641,7 +681,8 @@
   border: 1px solid #10b981;
 }
 
-.estado-rechazada {
+.estado-rechazada,
+.estado-ausente {
   background-color: #fee2e2;
   color: #991b1b;
   border: 1px solid #ef4444;
@@ -653,36 +694,49 @@
   border: 1px solid #f59e0b;
 }
 
-.popover-section {
-  margin-top: 8px;
-  padding-top: 12px;
-  border-top: 2px dashed #d4b8bc;
-}
-
-.popover-section-title {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #6b7280;
-  margin-bottom: 8px;
-  margin-top: 0;
-}
-
 .estaciones-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
-.estacion-badge {
-  background-color: #e8d8da;
-  color: #7a3e48;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: 1px solid #d4b8bc;
-  min-width: 28px;
+.estacion-badge-dark {
+  background-color: #e0e7ff;
+  color: #4338ca;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 6px;
+  min-width: 32px;
   text-align: center;
+  border: 1px solid #c7d2fe;
+}
+
+.materiales-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.material-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f9fafb;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #374151;
+  font-weight: 500;
+  border: 1px solid #e5e7eb;
+}
+
+.material-cant {
+  color: #6b7280;
+  font-size: 0.8rem;
 }
 
 /* =========================================================
