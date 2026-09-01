@@ -1,8 +1,10 @@
 const { pool } = require('../config/db');
 
-// Obtener todos los laboratorios
+// Obtener todos los laboratorios (filtrados por permisos de espacio)
 const getAllLaboratorios = async (req, res) => {
     try {
+        const rol = req.usuario?.rol || '';
+
         const result = await pool.query(`
             SELECT 
                 l.id, l.nombre, l.descripcion, l.edificio, l.piso, l.aula, l.estado, 
@@ -34,8 +36,15 @@ const getAllLaboratorios = async (req, res) => {
                 ) as estaciones_disponibles
             FROM laboratorios l
             LEFT JOIN usuarios u ON l.coordinador_id = u.id
+            -- Filtro de espacio restringido por rol
+            WHERE (
+                LOWER($1) = 'administrador'
+                OR LOWER($1) = 'coordinador'
+                OR l.roles_permitidos ? 'todos'
+                OR l.roles_permitidos ? LOWER($1)
+            )
             ORDER BY l.nombre ASC
-        `);
+        `, [rol]);
         res.json({ status: 'success', data: result.rows });
     } catch (error) {
         console.error('Error al obtener laboratorios:', error);

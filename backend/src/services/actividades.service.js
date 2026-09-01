@@ -65,8 +65,8 @@ const verificarChoqueHorario = async (client, laboratorio_id, inicioDatetime, fi
         WHERE a.laboratorio_id = $1
           AND a.fecha_hora_inicio < $2 
           AND a.fecha_hora_fin > $3
-          -- Solo evaluamos conflicto si es Clase, Mantenimiento o una Reserva 'aprobada'
-          AND (a.tipo IN ('clase', 'mantenimiento') OR re.estado_reserva = 'aprobada')`;
+          -- Evaluamos conflicto si es Clase, Mantenimiento o una Reserva 'aprobada' o 'pendiente'
+          AND (a.tipo IN ('clase', 'mantenimiento') OR re.estado_reserva IN ('aprobada', 'pendiente'))`;
     const parametros = [laboratorio_id, finDatetime, inicioDatetime];
 
     if (idActividadExcluir) {
@@ -558,7 +558,11 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usu
                 CASE 
                     WHEN a.tipo = 'clase' THEN ca.materia
                     WHEN a.tipo = 'mantenimiento' THEN 'Laboratorio en Mantenimiento'
-                    WHEN a.tipo = 'reserva' THEN re.titulo
+                    WHEN a.tipo = 'reserva' THEN 
+                        CASE 
+                            WHEN $4 IN ('estudiante', 'docente') AND re.usuario_id != $3 THEN 'Ocupado'
+                            ELSE re.titulo
+                        END
                     ELSE 'Actividad'
                 END AS title, 
                 
@@ -584,13 +588,37 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usu
                 m.descripcion_ti AS mant_descripcion,
                 
                 -- Datos de Reserva Estudiantil
-                re.titulo AS reserva_titulo,
-                re.nota_adicional AS reserva_nota,
+                CASE 
+                    WHEN $4 IN ('estudiante', 'docente') AND re.usuario_id != $3 THEN 'Ocupado'
+                    ELSE re.titulo 
+                END AS reserva_titulo,
+                
+                CASE 
+                    WHEN $4 IN ('estudiante', 'docente') AND re.usuario_id != $3 THEN NULL
+                    ELSE re.nota_adicional 
+                END AS reserva_nota,
+                
                 re.estado_reserva,
-                re.usuario_id AS reserva_usuario_id,
-                u_reserva.nombre AS reserva_solicitante_nombre,
-                u_reserva.apellido AS reserva_solicitante_apellido,
-                u_reserva.expediente AS reserva_solicitante_expediente,
+                
+                CASE 
+                    WHEN $4 IN ('estudiante', 'docente') AND re.usuario_id != $3 THEN NULL
+                    ELSE re.usuario_id 
+                END AS reserva_usuario_id,
+                
+                CASE 
+                    WHEN $4 IN ('estudiante', 'docente') AND re.usuario_id != $3 THEN NULL
+                    ELSE u_reserva.nombre 
+                END AS reserva_solicitante_nombre,
+                
+                CASE 
+                    WHEN $4 IN ('estudiante', 'docente') AND re.usuario_id != $3 THEN NULL
+                    ELSE u_reserva.apellido 
+                END AS reserva_solicitante_apellido,
+                
+                CASE 
+                    WHEN $4 IN ('estudiante', 'docente') AND re.usuario_id != $3 THEN NULL
+                    ELSE u_reserva.expediente 
+                END AS reserva_solicitante_expediente,
                 
                 -- Subconsulta para estaciones
                 (
@@ -642,39 +670,21 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usu
                     )
                 )
                 
-                -- 3. docente: Ve sus clases, mantenimientos y reservas SOLO en sus laboratorios asignados (o sus propias reservas aprobadas)
+                -- 3 y 4. docente y estudiante: Ven clases, mantenimientos en todo el campus, y todas las reservas aprobadas
                 OR (
-                    $4 = 'docente' AND (
-                        (a.tipo = 'clase' AND ca.docente_id = $3)
-                        OR (
-                            a.tipo = 'mantenimiento' AND a.laboratorio_id IN (
-                                SELECT DISTINCT a2.laboratorio_id 
-                                FROM actividades a2 
-                                JOIN clases_academicas ca2 ON a2.id = ca2.actividad_id 
-                                WHERE ca2.docente_id = $3
-                            )
-                        )
-                        OR (
-                            a.tipo = 'reserva' AND re.estado_reserva = 'aprobada' AND (
-                                re.usuario_id = $3 OR a.laboratorio_id IN (
-                                    SELECT DISTINCT a2.laboratorio_id 
-                                    FROM actividades a2 
-                                    JOIN clases_academicas ca2 ON a2.id = ca2.actividad_id 
-                                    WHERE ca2.docente_id = $3
-                                )
-                            )
-                        )
-                    )
-                )
-                
-                -- 4. estudiante: Ve clases, mantenimientos y únicamente sus reservas
-                OR (
-                    $4 = 'estudiante' AND (
+                    $4 IN ('docente', 'estudiante') AND (
                         a.tipo = 'clase'
                         OR a.tipo = 'mantenimiento'
-                        OR (a.tipo = 'reserva' AND re.usuario_id = $3 AND re.estado_reserva = 'aprobada')
+                        OR (a.tipo = 'reserva' AND re.estado_reserva = 'aprobada')
                     )
                 )
+            )
+            -- NUEVO: Bloqueo absoluto por permisos de espacio
+            AND (
+                LOWER($4) = 'administrador'        -- Autoridad máxima: ignora restricciones
+                OR LOWER($4) = 'coordinador'        -- El coordinador también tiene pase libre
+                OR l.roles_permitidos ? 'todos'     -- Si el laboratorio es público, pasa
+                OR l.roles_permitidos ? LOWER($4)   -- Si el JSONB incluye el rol actual, pasa
             );
         `;
 

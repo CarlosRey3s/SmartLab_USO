@@ -42,7 +42,12 @@ body {
   flex: 1;
   overflow-y: auto;
   padding: 1.5rem;
-  /* 24px */
+  /* Hide scrollbar to prevent layout shift */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.page-content::-webkit-scrollbar {
+  display: none;
 }
 
 

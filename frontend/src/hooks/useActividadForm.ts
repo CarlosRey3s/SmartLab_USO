@@ -210,7 +210,12 @@ export function useActividadForm({ actividadExistente, onGuardar }: UseActividad
     useEffect(() => {
         const fetchlaboratorios = async () => {
             try {
-                const response = await fetch(`${BASE_URL}/api/laboratorios`);
+                const token = localStorage.getItem('uso_token');
+                const response = await fetch(`${BASE_URL}/api/laboratorios`, {
+                    headers: {
+                        ...(token ? { Authorization: `Bearer ${token}` } : {})
+                    }
+                });
                 const result = await response.json();
                 if (result.success || result.data) setLabsDesdeBD(result.data || result);
                 else if (Array.isArray(result)) setLabsDesdeBD(result);

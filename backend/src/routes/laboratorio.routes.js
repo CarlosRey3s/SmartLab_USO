@@ -1,16 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const { getAllLaboratorios, createLaboratorio, updateLaboratorio, deleteLaboratorio, getEstaciones, addEstaciones, deleteEstacion, updateEstacion } = require('../controllers/laboratorio.controller');
-const { verificarRol } = require('../middlewares/verificarRol');
+const { verificarToken, verificarRol } = require('../middlewares/auth.middleware');
 
 // Permitir modificación solo a administradores y coordinadores
-const soloAdminOCoordinador = verificarRol(['administrador', 'coordinador']);
+const soloAdminOCoordinador = [verificarToken, verificarRol(['administrador', 'coordinador'])];
 
 // RUTAS CRUD DE LABORATORIOS
 // /api/laboratorios
 
-// Obtener todos los laboratorios (GET libre para todos)
-router.get('/', getAllLaboratorios);
+// Obtener todos los laboratorios (Filtrado por permisos de espacio)
+router.get('/', verificarToken, getAllLaboratorios);
 
 // Crear un nuevo laboratorio
 router.post('/', soloAdminOCoordinador, createLaboratorio);
