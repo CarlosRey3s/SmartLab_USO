@@ -30,28 +30,59 @@
 }
 
 
+/* =========================================================
+   CONTROL GENERAL DE ALTURA
+   Evita el scroll externo en PC
+========================================================= */
+
+html,
+body,
+#root {
+
+    height:100%;
+
+    margin:0;
+
+}
+
+
+body {
+
+    overflow:hidden;
+
+}
+
 
 /* =========================
    CONTENEDOR GENERAL
 ========================= */
 
-
 .content {
 
     flex:1;
+
+    min-height:0;
+
+    height:100%;
 
     padding:18px;
 
     background:var(--gris);
 
-}
+    overflow:hidden;
 
+    box-sizing:border-box;
+
+    display:flex;
+
+    flex-direction:column;
+
+}
 
 
 /* =========================
    LOADING
 ========================= */
-
 
 .dashboard-loading {
 
@@ -72,11 +103,9 @@
 }
 
 
-
 /* =========================
    KPI SUPERIORES
 ========================= */
-
 
 .main {
 
@@ -89,9 +118,14 @@
 
     margin-bottom:22px;
 
+    flex-shrink:0;
+
 }
 
 
+/* =========================
+   PANELES
+========================= */
 
 .panel {
 
@@ -114,8 +148,9 @@
 
     transition:.25s ease;
 
-}
+    box-sizing:border-box;
 
+}
 
 
 .panel:hover {
@@ -123,7 +158,6 @@
     transform:translateY(-3px);
 
 }
-
 
 
 /* =========================
@@ -144,7 +178,6 @@
 }
 
 
-
 /* Stock */
 
 .panel.alertas {
@@ -158,7 +191,6 @@
 }
 
 
-
 /* Actividades */
 
 .panel.actividades {
@@ -170,7 +202,6 @@
     border:1px solid #b2dfdb;
 
 }
-
 
 
 /* Espacios */
@@ -197,7 +228,6 @@
 }
 
 
-
 .counter {
 
     font-size:32px;
@@ -207,7 +237,6 @@
     line-height:1;
 
 }
-
 
 
 .panel-sub {
@@ -221,11 +250,9 @@
 }
 
 
-
 /* =========================
    CONTENIDO INFERIOR
 ========================= */
-
 
 .dashboard-bottom {
 
@@ -235,26 +262,16 @@
 
     gap:20px;
 
-}
+    flex:1;
 
-
-
-@media(max-width:900px){
-
-    .dashboard-bottom{
-
-        grid-template-columns:1fr;
-
-    }
+    min-height:0;
 
 }
-
 
 
 /* =========================
    TARJETAS PRINCIPALES
 ========================= */
-
 
 .card {
 
@@ -270,10 +287,25 @@
 
     0 4px 12px rgba(0,0,0,.05);
 
+    /*
+       Permite que los elementos internos
+       controlen su propio scroll.
+    */
     overflow:hidden;
 
-}
+    min-height:0;
 
+    box-sizing:border-box;
+
+    /*
+       Importante para distribuir
+       correctamente el contenido.
+    */
+    display:flex;
+
+    flex-direction:column;
+
+}
 
 
 .card h3 {
@@ -286,13 +318,20 @@
 
     color:#444;
 
+    flex-shrink:0;
+
 }
 
 
-
-/* =========================
+/* =========================================================
    GRAFICO RESERVAS
-========================= */
+========================================================= */
+
+.chart-container {
+
+    flex-shrink:0;
+
+}
 
 
 .chart-legend {
@@ -308,7 +347,6 @@
 }
 
 
-
 .legend-item {
 
     display:flex;
@@ -318,7 +356,6 @@
     gap:8px;
 
 }
-
 
 
 .bullet {
@@ -332,7 +369,6 @@
 }
 
 
-
 .bullet.reservas {
 
     background:var(--verde);
@@ -340,13 +376,11 @@
 }
 
 
-
 .bullet.completadas {
 
     background:var(--dorado);
 
 }
-
 
 
 .bars-wrapper {
@@ -364,7 +398,6 @@
 }
 
 
-
 .day-column {
 
     display:flex;
@@ -374,7 +407,6 @@
     align-items:center;
 
 }
-
 
 
 .bar-pair {
@@ -390,7 +422,6 @@
 }
 
 
-
 .v-bar {
 
     width:14px;
@@ -400,7 +431,6 @@
 }
 
 
-
 .v-bar.res {
 
     background:var(--verde);
@@ -408,13 +438,11 @@
 }
 
 
-
 .v-bar.comp {
 
     background:var(--dorado);
 
 }
-
 
 
 .day-label {
@@ -428,11 +456,9 @@
 }
 
 
-
-/* =========================
+/* =========================================================
    ALERTAS
-========================= */
-
+========================================================= */
 
 .alerts-list {
 
@@ -442,8 +468,21 @@
 
     gap:12px;
 
-}
+    /*
+       El listado ocupa el espacio
+       restante de la tarjeta.
+    */
+    flex:1;
 
+    min-height:0;
+
+    overflow-y:auto;
+
+    overflow-x:hidden;
+
+    padding-right:4px;
+
+}
 
 
 .alert-item {
@@ -462,8 +501,13 @@
 
     border:1px solid #eeeeee;
 
-}
+    /*
+       Evita que los elementos
+       sean comprimidos.
+    */
+    flex-shrink:0;
 
+}
 
 
 .status-dot {
@@ -476,8 +520,9 @@
 
     margin-top:4px;
 
-}
+    flex-shrink:0;
 
+}
 
 
 .status-dot.red {
@@ -508,6 +553,12 @@
 }
 
 
+.alert-text {
+
+    min-width:0;
+
+}
+
 
 .alert-text h4 {
 
@@ -516,7 +567,6 @@
     font-size:14px;
 
 }
-
 
 
 .alert-text span {
@@ -528,11 +578,9 @@
 }
 
 
-
-/* =========================
+/* =========================================================
    AGENDA
-========================= */
-
+========================================================= */
 
 .agenda-list {
 
@@ -542,8 +590,21 @@
 
     gap:12px;
 
-}
+    /*
+       Cada agenda puede utilizar
+       el espacio disponible.
+    */
+    flex:1;
 
+    min-height:0;
+
+    overflow-y:auto;
+
+    overflow-x:hidden;
+
+    padding-right:4px;
+
+}
 
 
 .agenda-item {
@@ -560,8 +621,13 @@
 
     border-left:4px solid var(--verde);
 
-}
+    /*
+       Cada elemento conserva
+       su tamaño.
+    */
+    flex-shrink:0;
 
+}
 
 
 .agenda-time {
@@ -574,8 +640,16 @@
 
     font-size:13px;
 
+    flex-shrink:0;
+
 }
 
+
+.agenda-details {
+
+    min-width:0;
+
+}
 
 
 .agenda-details h4 {
@@ -587,7 +661,6 @@
 }
 
 
-
 .agenda-details span {
 
     font-size:12px;
@@ -597,22 +670,9 @@
 }
 
 
-
-/* =========================
-   SCROLL
-========================= */
-
-
-.alerts-list,
-.agenda-list {
-
-    max-height:260px;
-
-    overflow-y:auto;
-
-}
-
-
+/* =========================================================
+   SCROLLBAR
+========================================================= */
 
 .alerts-list::-webkit-scrollbar,
 .agenda-list::-webkit-scrollbar {
@@ -621,6 +681,13 @@
 
 }
 
+
+.alerts-list::-webkit-scrollbar-track,
+.agenda-list::-webkit-scrollbar-track {
+
+    background:transparent;
+
+}
 
 
 .alerts-list::-webkit-scrollbar-thumb,
@@ -631,3 +698,142 @@
     border-radius:10px;
 
 }
+
+
+.alerts-list::-webkit-scrollbar-thumb:hover,
+.agenda-list::-webkit-scrollbar-thumb:hover {
+
+    background:#b8bec6;
+
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media(max-width:900px){
+
+    html,
+    body,
+    #root {
+
+        height:auto;
+
+        min-height:100%;
+
+    }
+
+
+    body {
+
+        overflow:auto;
+
+    }
+
+
+    .content {
+
+        height:auto;
+
+        min-height:100vh;
+
+        overflow:visible;
+
+    }
+
+
+    .dashboard-bottom {
+
+        grid-template-columns:1fr;
+
+        flex:none;
+
+    }
+
+
+    /*
+       En pantallas pequeñas las tarjetas
+       vuelven a crecer naturalmente.
+    */
+
+    .card {
+
+        height:auto;
+
+        min-height:0;
+
+    }
+
+
+    /*
+       Las listas mantienen un scroll
+       interno cuando tienen demasiados
+       elementos.
+    */
+
+    .alerts-list,
+    .agenda-list {
+
+        flex:none;
+
+        max-height:260px;
+
+        min-height:0;
+
+        overflow-y:auto;
+
+    }
+
+}
+
+
+/* =========================================================
+   CELULAR
+========================================================= */
+
+@media(max-width:600px){
+
+    .content {
+
+        padding:12px;
+
+    }
+
+
+    .main {
+
+        grid-template-columns:1fr;
+
+    }
+
+
+    .dashboard-bottom {
+
+        gap:15px;
+
+    }
+
+
+    .card {
+
+        padding:16px;
+
+    }
+
+
+    .bars-wrapper {
+
+        height:140px;
+
+    }
+
+
+    .bar-pair {
+
+        height:105px;
+
+    }
+
+}
+

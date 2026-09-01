@@ -1,17 +1,52 @@
-/* src/css/Usuarios.css */
+/* =========================================================
+   USUARIOS SMARTLABS
+   Estilos generales + SCROLL CORREGIDO
+========================================================= */
+
+
+/* =========================================================
+   CONTENEDOR PRINCIPAL
+========================================================= */
 
 .usuarios-container {
   padding: 1.5rem;
   background-color: #f8f9fa;
-  min-height: 100vh;
+
+  /*
+     IMPORTANTE:
+     El contenedor ocupa solamente el espacio disponible
+     dentro del layout principal.
+  */
+  height: 100%;
+  min-height: 0;
+
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+
+  /*
+     EN PC:
+     NO debe existir scroll externo.
+     El scroll estará en .table-container
+  */
+  overflow: hidden;
+
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-/* Tarjetas Superiores */
+
+/* =========================================================
+   TARJETAS SUPERIORES
+========================================================= */
+
 .top-cards-wrapper {
   display: flex;
   gap: 1.5rem;
   margin-bottom: 2rem;
   align-items: flex-start;
+
+  flex-shrink: 0;
 }
 
 .metric-card {
@@ -86,6 +121,11 @@
   color: #1a2e2a;
 }
 
+
+/* =========================================================
+   BOTÓN AGREGAR
+========================================================= */
+
 .add-user-btn {
   margin-left: auto;
   background-color: #FACB4B;
@@ -106,7 +146,11 @@
   opacity: 0.9;
 }
 
-/* Filtros y Búsqueda */
+
+/* =========================================================
+   FILTROS Y BÚSQUEDA
+========================================================= */
+
 .filters-section {
   display: flex;
   justify-content: space-between;
@@ -114,6 +158,12 @@
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
   gap: 1rem;
+
+  /*
+     Evita que esta sección se comprima
+     cuando la tabla necesite hacer scroll.
+  */
+  flex-shrink: 0;
 }
 
 .tabs-container {
@@ -167,7 +217,11 @@
   color: #1f2937;
 }
 
-/* Acciones en lote */
+
+/* =========================================================
+   ACCIONES EN LOTE
+========================================================= */
+
 .bulk-actions-bar {
   display: flex;
   align-items: center;
@@ -175,6 +229,8 @@
   margin-bottom: 1rem;
   position: relative;
   flex-wrap: wrap;
+
+  flex-shrink: 0;
 }
 
 .bulk-btn {
@@ -201,14 +257,23 @@
   color: #fff;
 }
 
-/* Popover de Cambiar Rol */
+.selected-info {
+  margin-left: auto;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+
+/* =========================================================
+   POPOVER CAMBIAR ROL
+========================================================= */
+
 .role-popover {
   position: absolute;
   top: calc(100% + 8px);
   left: 105px;
-  /* Ajustar según posición del botón */
   background: #eedddd;
-  /* Color mauve muy claro según diseño */
   border-radius: 12px;
   width: 260px;
   padding: 1rem;
@@ -288,26 +353,52 @@
   cursor: pointer;
 }
 
-.selected-info {
-  margin-left: auto;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #1f2937;
-}
 
-/* Tabla de Usuarios */
+/* =========================================================
+   TABLA
+========================================================= */
+
 .table-container {
   display: block;
   width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
+
+  /*
+     ESTA ES LA CORRECCIÓN PRINCIPAL.
+
+     La tabla ocupa TODO el espacio que queda
+     después de las métricas, filtros, etc.
+  */
+  flex: 1;
+  min-height: 0;
+
+  box-sizing: border-box;
+
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, .04);
+
+  /*
+     SCROLL INTERNO.
+  */
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+
+  /*
+     Espacio inferior para que la última fila
+     nunca quede pegada al borde.
+  */
+  padding-bottom: 10px;
 }
 
+
+/*
+   La tabla conserva un ancho mínimo.
+   Así, si la pantalla es pequeña,
+   aparece scroll horizontal INTERNO.
+*/
 .users-table {
   width: 100%;
+  min-width: 900px;
   border-collapse: collapse;
 }
 
@@ -328,7 +419,11 @@
   color: #4b5563;
 }
 
-/* Checkbox estilización */
+
+/* =========================================================
+   CHECKBOX
+========================================================= */
+
 .checkbox-cell {
   width: 40px;
 }
@@ -340,7 +435,11 @@
   cursor: pointer;
 }
 
-/* Columna de nombre y avatar */
+
+/* =========================================================
+   NOMBRE / AVATAR
+========================================================= */
+
 .name-cell {
   display: flex;
   align-items: center;
@@ -357,6 +456,7 @@
   justify-content: center;
   color: #6b7280;
   font-size: 1rem;
+  flex-shrink: 0;
 }
 
 .name-text {
@@ -364,7 +464,11 @@
   color: #1f2937;
 }
 
-/* Etiqueta de estado */
+
+/* =========================================================
+   ESTADO
+========================================================= */
+
 .status-badge {
   background-color: #22806B;
   color: #fff;
@@ -374,7 +478,11 @@
   font-weight: 500;
 }
 
-/* Botones de acción (editar, eliminar) */
+
+/* =========================================================
+   ACCIONES
+========================================================= */
+
 .actions-cell {
   display: flex;
   gap: 0.75rem;
@@ -403,19 +511,55 @@
   color: #fca5a5;
 }
 
-/* Modal Agregar Usuario */
+
+/* =========================================================
+   SCROLLBAR TABLA
+========================================================= */
+
+.table-container::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 10px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #b8bec6;
+}
+
+.table-container {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+
+/* =========================================================
+   MODAL
+========================================================= */
+
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+
   background: rgba(34, 128, 107, 0.15);
+
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   z-index: 1000;
 }
 
@@ -454,8 +598,8 @@
 
 .modal-content .form-section-title {
   font-size: 0.85rem;
-  color: #4b5563; /* Gris más oscuro para que resalte */
-  font-weight: 700; /* Más negrita */
+  color: #4b5563;
+  font-weight: 700;
   text-transform: uppercase;
   margin-bottom: 1rem;
   letter-spacing: 0.05em;
@@ -469,7 +613,7 @@
 
 .modal-content .form-label {
   font-size: 0.8rem;
-  color: #111827; /* Casi negro para mejor lectura */
+  color: #111827;
   font-weight: 700;
   text-transform: uppercase;
   margin-bottom: 0.5rem;
@@ -538,11 +682,18 @@
   cursor: pointer;
 }
 
-/* ===========================
-   RESPONSIVE
-=========================== */
 
-@media (max-width:1200px) {
+/* =========================================================
+   RESPONSIVE TABLET
+========================================================= */
+
+@media (max-width: 1200px) {
+
+  .usuarios-container {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
 
   .top-cards-wrapper {
     flex-wrap: wrap;
@@ -557,12 +708,49 @@
     margin-left: 0;
   }
 
+  /*
+     En tablet seguimos usando la tabla
+     pero con scroll INTERNO.
+  */
+  .table-container {
+    flex: 1;
+    min-height: 0;
+
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+  }
+
+  .users-table {
+    min-width: 900px;
+  }
 }
 
-@media (max-width:992px) {
+
+/* =========================================================
+   VISIBILIDAD TABLA / TARJETAS
+========================================================= */
+
+.mobile-only {
+  display: none !important;
+}
+
+.desktop-only {
+  display: block;
+}
+
+
+/* =========================================================
+   TABLET PEQUEÑA
+========================================================= */
+
+@media (max-width: 992px) {
 
   .usuarios-container {
     padding: 1rem;
+
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .top-cards-wrapper {
@@ -571,7 +759,7 @@
     gap: 1rem;
     align-items: stretch;
   }
-  
+
   .add-user-btn {
     grid-column: 1 / -1;
   }
@@ -606,31 +794,59 @@
     width: 100%;
   }
 
+  /*
+     Scroll interno de tabla.
+  */
   .table-container {
-    overflow-x: auto;
+    flex: 1;
+    min-height: 0;
+
+    overflow-y: auto !important;
+    overflow-x: auto !important;
   }
 
   .users-table {
     min-width: 900px;
   }
-
 }
 
-/* Visibilidad responsive de la tabla/tarjetas de usuarios */
-.mobile-only {
-  display: none !important;
-}
 
-.desktop-only {
-  display: block;
-}
+/* =========================================================
+   MÓVIL
+========================================================= */
 
-@media (max-width:768px) {
+@media (max-width: 768px) {
 
+  /*
+     AQUÍ SÍ permitimos scroll externo.
+
+     En móvil ya no dependemos de la tabla:
+     se muestran las tarjetas.
+  */
+  .usuarios-container {
+    padding: .75rem;
+
+    height: auto;
+    min-height: 100vh;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    display: block;
+  }
+
+
+  /*
+     Ocultar tabla.
+  */
   .desktop-only {
     display: none !important;
   }
 
+
+  /*
+     Mostrar tarjetas.
+  */
   .mobile-only {
     display: flex !important;
     flex-direction: column;
@@ -639,18 +855,24 @@
     margin-top: 1rem;
   }
 
+
   .user-card-mobile {
     background: #ffffff;
     border: 1px solid #e5e7eb;
     border-radius: 14px;
     padding: 16px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
     display: flex;
     flex-direction: column;
     gap: 12px;
+
     width: 100%;
     box-sizing: border-box;
+
+    flex-shrink: 0;
   }
+
 
   .user-card-header {
     display: flex;
@@ -660,12 +882,14 @@
     padding-bottom: 10px;
   }
 
+
   .user-card-info {
     display: flex;
     align-items: center;
     gap: 10px;
     min-width: 0;
   }
+
 
   .user-card-name {
     font-weight: 600;
@@ -674,17 +898,20 @@
     word-break: break-word;
   }
 
+
   .user-card-email {
     font-size: 13px;
     color: #64748b;
     word-break: break-word;
   }
 
+
   .user-card-body {
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
+
 
   .user-card-row {
     display: flex;
@@ -693,10 +920,12 @@
     font-size: 13px;
   }
 
+
   .user-card-label {
     font-weight: 600;
     color: #64748b;
   }
+
 
   .user-card-val {
     color: #334155;
@@ -704,14 +933,17 @@
     word-break: break-word;
   }
 
+
   .user-card-actions {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
+
     border-top: 1px solid #f1f5f9;
     padding-top: 10px;
     margin-top: 4px;
   }
+
 
   .user-card-actions .action-icon-btn {
     display: flex;
@@ -723,62 +955,105 @@
     border-radius: 8px;
   }
 
+
   .user-card-actions .action-icon-btn.edit {
     color: #2563eb;
     background: #eff6ff;
   }
 
+
   .user-card-actions .action-icon-btn.delete {
     color: #dc2626;
     background: #fef2f2;
   }
-  /* --- FIN TABLE TO CARDS --- */
-  .usuarios-container {
-    padding: .75rem;
+
+
+  /* -----------------------------------------
+     MÉTRICAS
+  ----------------------------------------- */
+
+  .top-cards-wrapper {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+
+    flex-shrink: 0;
   }
+
 
   .metric-card {
     padding: 1rem;
   }
 
+
   .card-number {
     font-size: 1.45rem;
   }
+
 
   .card-icon-container {
     width: 42px;
     height: 42px;
   }
 
+
   .card-icon-container svg {
     width: 26px;
     height: 26px;
   }
+
+
+  /* -----------------------------------------
+     FILTROS
+  ----------------------------------------- */
+
+  .filters-section {
+    flex-direction: column;
+    align-items: stretch;
+
+    flex-shrink: 0;
+  }
+
 
   .tabs-container {
     width: 100%;
     justify-content: center;
   }
 
+
   .tab-btn {
     flex: 1;
     text-align: center;
   }
+
+
+  .search-container-users {
+    width: 100%;
+    max-width: none;
+  }
+
 
   .bulk-actions-bar {
     flex-direction: column;
     align-items: stretch;
   }
 
+
   .bulk-btn {
     justify-content: center;
   }
+
+
+  /* -----------------------------------------
+     MODAL
+  ----------------------------------------- */
 
   .modal-overlay {
     align-items: flex-start;
     overflow-y: auto;
     padding: 1rem;
   }
+
 
   .modal-content {
     width: 100%;
@@ -788,10 +1063,12 @@
     overflow-y: visible;
   }
 
+
   .form-row {
     flex-direction: column;
     gap: 0;
   }
+
 
   .modal-footer {
     flex-direction: column;
@@ -799,27 +1076,41 @@
     align-items: stretch;
   }
 
+
   .modal-actions {
     width: 100%;
   }
+
 
   .btn-modal-save,
   .btn-modal-cancel {
     flex: 1;
   }
-
 }
 
-@media (max-width:480px) {
+
+/* =========================================================
+   MÓVIL PEQUEÑO
+========================================================= */
+
+@media (max-width: 480px) {
 
   .usuarios-container {
     padding: .5rem;
+
+    height: auto;
+    min-height: 100vh;
+
+    overflow-y: auto;
+    overflow-x: hidden;
   }
+
 
   .top-cards-wrapper {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
   }
+
 
   .metric-card {
     flex-direction: column;
@@ -829,17 +1120,21 @@
     gap: 0.5rem;
   }
 
+
   .card-text {
     align-items: center;
   }
+
 
   .card-title {
     font-size: 0.75rem;
   }
 
+
   .card-number {
     font-size: 1.15rem;
   }
+
 
   .card-icon-container {
     width: 32px;
@@ -847,37 +1142,123 @@
     margin: 0 auto;
   }
 
+
   .card-icon-container svg {
     width: 18px;
     height: 18px;
   }
 
+
   .tabs-container {
     flex-direction: row;
     flex-wrap: nowrap;
+
     overflow-x: auto;
+
     -webkit-overflow-scrolling: touch;
+
     justify-content: flex-start;
+
     padding-bottom: 5px;
   }
+
 
   .tab-btn {
     flex: 0 0 auto;
     width: auto;
   }
 
+
   .search-container-users {
     width: 100%;
   }
+
 
   .modal-content {
     border-radius: 16px;
     padding: 1rem;
   }
 
+
   .btn-modal-save,
   .btn-modal-cancel {
     width: 100%;
   }
+}
 
+
+/* =========================================================
+   CORRECCIÓN FINAL — PC
+========================================================= */
+
+/*
+   SOLO DESKTOP:
+   La pantalla NO tiene scroll.
+   El scroll pertenece exclusivamente
+   al contenedor de la tabla.
+*/
+
+@media (min-width: 1201px) {
+
+  .usuarios-container {
+    height: 100%;
+    min-height: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+  }
+
+
+  .top-cards-wrapper,
+  .filters-section,
+  .bulk-actions-bar {
+    flex-shrink: 0;
+  }
+
+
+  .table-container {
+    flex: 1;
+    min-height: 0;
+
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+
+    box-sizing: border-box;
+  }
+
+
+  .users-table {
+    min-width: 900px;
+  }
+}
+
+
+/* =========================================================
+   CORRECCIÓN FINAL — TABLET
+========================================================= */
+
+@media (min-width: 769px) and (max-width: 1200px) {
+
+  .usuarios-container {
+    height: 100%;
+    min-height: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+  }
+
+
+  .table-container {
+    flex: 1;
+    min-height: 0;
+
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+
+    box-sizing: border-box;
+  }
 }
