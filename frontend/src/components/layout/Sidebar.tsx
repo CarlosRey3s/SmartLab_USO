@@ -100,7 +100,7 @@ export const Sidebar = ({
             USO
           </span>
           <span className="sb__brand-sub">
-            Laboratorios
+            Espacios
           </span>
         </div>
       </div>

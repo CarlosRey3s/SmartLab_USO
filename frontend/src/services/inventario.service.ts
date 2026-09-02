@@ -2,6 +2,11 @@ import { BASE_URL } from "../config/api";
 
 const API_URL = `${BASE_URL}/api`;
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('uso_token');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
+
 export const inventarioService = {
   /**
    * Crea un nuevo ítem en el inventario.
@@ -11,8 +16,9 @@ export const inventarioService = {
       const isFormData = itemData instanceof FormData;
       const response = await fetch(`${API_URL}/inventario`, {
         method: "POST",
-        headers: isFormData ? {} : {
+        headers: isFormData ? { ...getAuthHeaders() } : {
           "Content-Type": "application/json",
+          ...getAuthHeaders()
         },
         body: isFormData ? itemData : JSON.stringify(itemData),
       });
@@ -35,7 +41,9 @@ export const inventarioService = {
    */
   getInventario: async (): Promise<any> => {
     try {
-      const response = await fetch(`${API_URL}/inventario`);
+      const response = await fetch(`${API_URL}/inventario`, {
+        headers: { ...getAuthHeaders() }
+      });
       const data = await response.json();
 
       if (!response.ok) {
@@ -57,8 +65,9 @@ export const inventarioService = {
       const isFormData = itemData instanceof FormData;
       const response = await fetch(`${API_URL}/inventario/${id}`, {
         method: "PUT",
-        headers: isFormData ? {} : {
+        headers: isFormData ? { ...getAuthHeaders() } : {
           "Content-Type": "application/json",
+          ...getAuthHeaders()
         },
         body: isFormData ? itemData : JSON.stringify(itemData),
       });
@@ -83,6 +92,7 @@ export const inventarioService = {
     try {
       const response = await fetch(`${API_URL}/inventario/${id}`, {
         method: "DELETE",
+        headers: { ...getAuthHeaders() }
       });
 
       const data = await response.json();

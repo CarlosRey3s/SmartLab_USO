@@ -2,12 +2,18 @@ import { BASE_URL } from "../config/api";
 
 const API_URL = `${BASE_URL}/api`;
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('uso_token');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
+
 export const usuariosService = {
   getUsuarios: async (usuarioId: string = '1') => {
     try {
       const response = await fetch(`${API_URL}/usuarios`, {
         headers: {
-          'usuario-id': usuarioId
+          'usuario-id': usuarioId,
+          ...getAuthHeaders()
         }
       });
       const data = await response.json();
@@ -24,7 +30,8 @@ export const usuariosService = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'usuario-id': usuarioId
+          'usuario-id': usuarioId,
+          ...getAuthHeaders()
         },
         body: JSON.stringify(userData)
       });
@@ -42,7 +49,8 @@ export const usuariosService = {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'usuario-id': usuarioId
+          'usuario-id': usuarioId,
+          ...getAuthHeaders()
         },
         body: JSON.stringify(userData)
       });
@@ -59,7 +67,8 @@ export const usuariosService = {
       const response = await fetch(`${API_URL}/usuarios/${id}`, {
         method: 'DELETE',
         headers: {
-          'usuario-id': usuarioId
+          'usuario-id': usuarioId,
+          ...getAuthHeaders()
         }
       });
       const data = await response.json();
