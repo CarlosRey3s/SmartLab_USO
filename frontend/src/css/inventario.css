@@ -1,14 +1,43 @@
-/* Estilos Base del Contenedor Principal */
+/* =========================================================
+   INVENTARIO SMARTLABS
+   Estilos generales + scroll corregido
+========================================================= */
+
+
+/* =========================================================
+   CONTENEDOR PRINCIPAL
+========================================================= */
+
 .inventario-container {
   padding: 24px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
+  /*
+     IMPORTANTE:
+     Permite que el contenido interno pueda calcular
+     correctamente el espacio disponible.
+  */
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
 }
 
-/* HEADER Y PESTAÑAS (TABS) */
-.inventario-header {
+
+/* =========================================================
+   HEADER Y PESTAÑAS
+========================================================= */
+
+.inventario-header,
+.reports-header {
   border-bottom: 1px solid #e0e0e0;
   margin-bottom: 24px;
   display: flex;
+  flex-shrink: 0;
 }
 
 .tabs {
@@ -29,7 +58,7 @@
 }
 
 .tab.active {
-  color: #b18888; /* Tono rosado/marrón suave de la app */
+  color: #b18888;
   font-weight: 600;
 }
 
@@ -44,13 +73,19 @@
   border-radius: 2px;
 }
 
-/* SECCIÓN CONTROLES (BÚSQUEDA Y BOTONES) */
+
+/* =========================================================
+   CONTROLES
+========================================================= */
+
 .inventario-controls {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 24px;
+
+  flex-shrink: 0;
 }
 
 .search-inventory {
@@ -66,6 +101,7 @@
   background-color: #f1f1f1;
   font-size: 14px;
   outline: none;
+  box-sizing: border-box;
 }
 
 .search-inventory-icon {
@@ -76,7 +112,11 @@
   color: #777;
 }
 
-/* Botón Filtros (Amarillo) */
+
+/* =========================================================
+   BOTÓN FILTROS
+========================================================= */
+
 .btn-filter {
   display: flex;
   align-items: center;
@@ -89,16 +129,20 @@
   font-weight: 500;
   font-size: 14px;
   cursor: pointer;
-  margin-left: auto; /* Empuja Filtros + (Item o Select) juntos hacia la derecha */
+  margin-left: auto;
 }
 
-/* Botón Agregar Item (Verde Azulado) */
+
+/* =========================================================
+   BOTÓN AGREGAR
+========================================================= */
+
 .btn-add-item {
   display: flex;
   align-items: center;
   gap: 4px;
   padding: 8px 18px;
-  background-color: #219653; /* Verde esmeralda suave */
+  background-color: #219653;
   color: white;
   border: none;
   border-radius: 20px;
@@ -107,7 +151,11 @@
   cursor: pointer;
 }
 
-/* Selector de estados (Pestaña Reportes) */
+
+/* =========================================================
+   SELECTOR ESTADO
+========================================================= */
+
 .select-report-status {
   padding: 8px 16px;
   border-radius: 20px;
@@ -124,12 +172,46 @@
   border-color: #b18888;
 }
 
-/* TABLA ESTILO LIMPIO */
+
+/* =========================================================
+   TABLA
+========================================================= */
+
 .inventory-table-container {
-  background: #f1f1f1; /* Fondo grisáceo del contenedor general */
+  background: #f1f1f1;
   border-radius: 16px;
   padding: 24px;
-  min-height: 450px;
+
+  /*
+     El contenedor ocupa el espacio restante.
+  */
+  flex: 1;
+  min-height: 0;
+
+  box-sizing: border-box;
+
+  /*
+     IMPORTANTE:
+     El JSX tiene overflow: visible inline.
+     !important permite que la tabla tenga
+     su propio scroll.
+  */
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+
+  padding-bottom: 24px;
+}
+
+
+/*
+   La tabla conserva un ancho mínimo
+   para evitar que las columnas se aplasten.
+*/
+.inventory-table-container table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  text-align: left;
 }
 
 .inventory-table {
@@ -158,7 +240,11 @@
   font-weight: 500;
 }
 
-/* MENÚ ACCIONES */
+
+/* =========================================================
+   MENÚ ACCIONES
+========================================================= */
+
 .action-menu-container {
   position: relative;
 }
@@ -180,7 +266,7 @@
   background: white;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 10;
   min-width: 110px;
 }
@@ -212,7 +298,11 @@
   color: #c62828;
 }
 
-/* Celda centralizada para cuando no hay datos */
+
+/* =========================================================
+   SIN DATOS
+========================================================= */
+
 .no-reports-cell {
   text-align: center;
   padding: 60px 0 !important;
@@ -222,7 +312,11 @@
   background-color: transparent;
 }
 
-/* ================= MODAL AGREGAR ITEM ================= */
+
+/* =========================================================
+   MODAL AGREGAR ITEM
+========================================================= */
+
 .add-item-modal {
   width: 100%;
   max-width: 650px;
@@ -234,13 +328,13 @@
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  /* Ocultar barra de desplazamiento manteniendo funcionalidad */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .add-item-modal::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
+  display: none;
 }
 
 .add-item-title {
@@ -412,15 +506,20 @@
   background-color: #1e874b;
 }
 
-/*=========================
-TARJETAS RESPONSIVE
-=========================*/
 
-.inventory-cards{
-    display:none !important;
+/* =========================================================
+   TARJETAS RESPONSIVE
+========================================================= */
+
+.inventory-cards {
+  display: none !important;
 }
 
-/* Badges de estado en reservas y tarjetas */
+
+/* =========================================================
+   BADGES
+========================================================= */
+
 .status-badge {
   padding: 4px 10px !important;
   border-radius: 12px !important;
@@ -471,105 +570,110 @@ TARJETAS RESPONSIVE
   border: 1px solid #ffeeba !important;
 }
 
-.inventory-card{
-    background:#fff;
-    border-radius:16px;
-    padding:18px;
-    margin-bottom:18px;
-    box-shadow:0 2px 10px rgba(0,0,0,.08);
-    position:relative;
+
+/* =========================================================
+   TARJETA INVENTARIO
+========================================================= */
+
+.inventory-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
+  position: relative;
+
+  flex-shrink: 0;
 }
 
-.inventory-card.empty{
-    text-align:center;
-    padding:40px;
+.inventory-card.empty {
+  text-align: center;
+  padding: 40px;
 }
 
-.card-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-start;
-    margin-bottom:18px;
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 18px;
 }
 
-.card-header h3{
-    margin:0;
-    font-size:18px;
-    color:#333;
+.card-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
 }
 
-.card-header span{
-    color:#777;
-    font-size:13px;
+.card-header span {
+  color: #777;
+  font-size: 13px;
 }
 
-.card-info{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:16px;
+.card-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
 }
 
-.card-info div{
-    display:flex;
-    flex-direction:column;
+.card-info div {
+  display: flex;
+  flex-direction: column;
 }
 
-.card-info span{
-    font-size:12px;
-    color:#888;
-    margin-bottom:4px;
+.card-info span {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 4px;
 }
 
-.card-info strong{
-    font-size:14px;
-    color:#333;
-    font-weight:600;
+.card-info strong {
+  font-size: 14px;
+  color: #333;
+  font-weight: 600;
 }
 
-.estado-item strong{
-    color:#219653;
+.estado-item strong {
+  color: #219653;
 }
 
-/*=========================
-MÓVIL
-=========================*/
 
-@media(max-width:768px){
+/* =========================================================
+   SCROLLBAR
+========================================================= */
 
-    .table-container,
-    .inventory-table-container{
-        display:none !important;
-    }
-
-    .inventory-cards{
-        display:block !important;
-    }
-
-    .inventario-controls{
-        flex-direction:column;
-        align-items:stretch;
-    }
-
-    .search-inventory{
-        width:100%;
-    }
-
-    .btn-filter,
-    .btn-add-item,
-    .select-report-status{
-        width:100%;
-        justify-content:center;
-    }
-
-    .card-info{
-        grid-template-columns:1fr;
-    }
-
+.inventory-table-container::-webkit-scrollbar,
+.inventory-cards::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
 }
 
-/*=========================================
-MENÚ DE FILTROS DESPLEGABLE
-=========================================*/
+.inventory-table-container::-webkit-scrollbar-track,
+.inventory-cards::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.inventory-table-container::-webkit-scrollbar-thumb,
+.inventory-cards::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 10px;
+}
+
+.inventory-table-container::-webkit-scrollbar-thumb:hover,
+.inventory-cards::-webkit-scrollbar-thumb:hover {
+  background: #b8bec6;
+}
+
+.inventory-table-container,
+.inventory-cards {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+
+/* =========================================================
+   MENÚ DE FILTROS
+========================================================= */
+
 .filter-dropdown-menu {
   position: absolute;
   top: 100%;
@@ -579,7 +683,9 @@ MENÚ DE FILTROS DESPLEGABLE
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 16px;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
   z-index: 50;
   width: 320px;
   display: flex;
@@ -587,50 +693,11 @@ MENÚ DE FILTROS DESPLEGABLE
   gap: 16px;
 }
 
-/*=========================================
-TABLET Y MÓVIL
-=========================================*/
 
-@media (max-width:1200px){
+/* =========================================================
+   TOOLTIP DE IMAGEN
+========================================================= */
 
-    /* Oculta las tablas de inventario, reservas y alertas */
-    .inventory-table-container,
-    .table-container {
-        display: none !important;
-    }
-
-    /* Muestra las tarjetas */
-    .inventory-cards{
-        display:grid !important;
-        grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
-        gap:20px;
-    }
-
-    /* Controles */
-    .inventario-controls{
-        flex-wrap:wrap;
-        gap:12px;
-    }
-
-    /* Tarjetas inventario */
-    .item-card-title h3 {
-        font-size: 16px;
-    }
-
-    .search-inventory{
-        flex:1;
-        min-width:260px;
-    }
-
-    .btn-filter{
-        margin-left:0;
-    }
-
-}
-
-/* =========================================
-   TOOLTIP DE IMAGEN (VISTA PREVIA)
-========================================= */
 .item-thumbnail-container {
   position: relative;
   display: inline-block;
@@ -669,7 +736,6 @@ TABLET Y MÓVIL
   display: block;
 }
 
-/* Flechita del tooltip */
 .item-image-preview-tooltip::before {
   content: '';
   position: absolute;
@@ -679,7 +745,7 @@ TABLET Y MÓVIL
   border-width: 8px 8px 8px 0;
   border-style: solid;
   border-color: transparent #fff transparent transparent;
-  filter: drop-shadow(-2px 0 2px rgba(0,0,0,0.05));
+  filter: drop-shadow(-2px 0 2px rgba(0, 0, 0, 0.05));
 }
 
 .item-thumbnail-container:hover .item-image-preview-tooltip {
@@ -688,99 +754,217 @@ TABLET Y MÓVIL
 }
 
 @keyframes fadeInTooltip {
-  from { opacity: 0; transform: translateY(-50%) translateX(-10px); }
-  to { opacity: 1; transform: translateY(-50%) translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
 }
 
-/* Ocultar en dispositivos móviles */
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1200px) {
+
+  .inventario-container {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /*
+     Ocultar tablas.
+  */
+  .inventory-table-container,
+  .table-container {
+    display: none !important;
+  }
+
+  /*
+     Mostrar tarjetas.
+  */
+  .inventory-cards {
+    display: grid !important;
+
+    grid-template-columns:
+      repeat(auto-fit, minmax(320px, 1fr));
+
+    gap: 20px;
+
+    flex: 1;
+    min-height: 0;
+
+    overflow-y: auto !important;
+    overflow-x: hidden;
+
+    align-content: start;
+
+    padding-right: 5px;
+    padding-bottom: 20px;
+  }
+
+  .inventario-controls {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .item-card-title h3 {
+    font-size: 16px;
+  }
+
+  .search-inventory {
+    flex: 1;
+    min-width: 260px;
+  }
+
+  .btn-filter {
+    margin-left: 0;
+  }
+}
+
+
+/* =========================================================
+   OCULTAR TOOLTIP EN DISPOSITIVOS
+========================================================= */
+
 @media (max-width: 1024px) {
+
   .item-image-preview-tooltip {
     display: none !important;
   }
 }
 
-/*=========================================
-CELULARES
-=========================================*/
 
-@media (max-width:768px){
-
-    .inventario-container{
-        padding:16px;
-    }
-
-    .inventario-controls{
-        flex-direction:column;
-        align-items:stretch;
-    }
-
-    .search-inventory{
-        width:100%;
-        min-width:unset;
-    }
-
-    .btn-filter,
-    .btn-add-item,
-    .select-report-status{
-        width:100%;
-        justify-content:center;
-    }
-
-    .inventory-cards{
-        display:flex;
-        flex-direction:column;
-        gap:16px;
-    }
-
-    .card-info{
-        grid-template-columns:1fr;
-    }
-
-    /* Modal Responsive */
-    .add-item-modal {
-        padding: 24px 20px;
-        max-height: 95vh;
-        margin: 10px;
-    }
-
-    .type-selector-container {
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .form-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
-    }
-
-    .form-grid.cols-3 {
-        grid-template-columns: 1fr;
-    }
-
-    .actions-footer {
-        flex-direction: column-reverse;
-        gap: 12px;
-    }
-
-    .btn-cancel-modal,
-    .btn-save-modal {
-        width: 100%;
-        justify-content: center;
-    }
-}
+/* =========================================================
+   MÓVIL
+========================================================= */
 
 @media (max-width: 768px) {
+
+  .inventario-container {
+    padding: 16px;
+
+    height: 100%;
+    min-height: 0;
+
+    /*
+       En móvil permitimos que toda la pantalla
+       pueda desplazarse naturalmente.
+    */
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+
+  .inventario-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+
+  .search-inventory {
+    width: 100%;
+    min-width: unset;
+  }
+
+
+  .btn-filter,
+  .btn-add-item,
+  .select-report-status {
+    width: 100%;
+    justify-content: center;
+  }
+
+
+  /*
+     Las tarjetas se muestran como una sola columna.
+  */
+  .inventory-cards {
+    display: flex !important;
+
+    flex-direction: column;
+    gap: 16px;
+
+    flex: none;
+    min-height: 0;
+
+    overflow: visible !important;
+
+    padding-right: 0;
+    padding-bottom: 20px;
+  }
+
+
+  .card-info {
+    grid-template-columns: 1fr;
+  }
+
+
+  /* Modal responsive */
+  .add-item-modal {
+    padding: 24px 20px;
+    max-height: 95vh;
+    margin: 10px;
+  }
+
+
+  .type-selector-container {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+
+  .form-grid.cols-3 {
+    grid-template-columns: 1fr;
+  }
+
+
+  .actions-footer {
+    flex-direction: column-reverse;
+    gap: 12px;
+  }
+
+
+  .btn-cancel-modal,
+  .btn-save-modal {
+    width: 100%;
+    justify-content: center;
+  }
+
+
+  /*
+     Filtros en móvil.
+  */
   .filter-dropdown-menu {
     position: fixed;
+
     top: 50%;
     left: 50%;
+
     transform: translate(-50%, -50%);
+
     width: 90%;
     max-width: 320px;
+
     margin-top: 0;
+
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+
     z-index: 1050;
   }
+
 
   .date-filter-group {
     width: 100%;
@@ -789,6 +973,7 @@ CELULARES
     gap: 8px;
   }
 
+
   .date-filter-group input[type="date"],
   .date-filter-group select,
   .date-filter-group button {
@@ -796,10 +981,16 @@ CELULARES
     justify-content: center;
   }
 
+
   .date-filter-group span {
     display: none;
   }
 }
+
+
+/* =========================================================
+   FILTROS POR FECHA
+========================================================= */
 
 .date-filter-group {
   display: flex;
@@ -808,19 +999,97 @@ CELULARES
   flex-wrap: wrap;
 }
 
-/* Modal Overlay con desenfoque verde */
+
+/* =========================================================
+   MODAL OVERLAY
+========================================================= */
+
 .modal-overlay {
   position: fixed;
+
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+
   background: rgba(34, 128, 107, 0.15);
+
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   z-index: 1000;
 }
-
+
+
+/* =========================================================
+   CORRECCIÓN FINAL DE SCROLL EN ESCRITORIO
+========================================================= */
+
+/*
+   Este bloque debe quedar al final para que
+   tenga prioridad sobre los estilos anteriores.
+*/
+
+@media (min-width: 1201px) {
+
+  .inventario-container {
+    height: 100%;
+    min-height: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+  }
+
+
+  .inventory-table-container {
+    flex: 1;
+    min-height: 0;
+
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+
+    box-sizing: border-box;
+  }
+
+
+  .inventory-cards {
+    flex: 1;
+    min-height: 0;
+
+    overflow-y: auto !important;
+    overflow-x: hidden;
+
+    box-sizing: border-box;
+  }
+}
+
+
+/* =========================================================
+   CORRECCIÓN TABLET
+========================================================= */
+
+@media (min-width: 769px) and (max-width: 1200px) {
+
+  .inventario-container {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+
+  .inventory-cards {
+    flex: 1;
+    min-height: 0;
+
+    overflow-y: auto !important;
+    overflow-x: hidden;
+
+    box-sizing: border-box;
+  }
+}
