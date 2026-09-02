@@ -129,6 +129,7 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
   const [MenuFiltroAbierto, setMenuFiltroAbierto] = useState(false);
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [mostrarResultados, setMostrarResultados] = useState(false);
+  const [busquedaLab, setBusquedaLab] = useState('');
   const { irAFecha } = useContext(NavegacionContext);
 
   // Estado local para los filtros antes de aplicarlos
@@ -137,6 +138,7 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
   useEffect(() => {
     if (MenuFiltroAbierto) {
       setFiltrosLocales(toolbar.filtros);
+      setBusquedaLab('');
     }
   }, [MenuFiltroAbierto, toolbar.filtros]);
 
@@ -170,6 +172,14 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
     });
   };
 
+  const seleccionarTodosLabs = () => {
+    setFiltrosLocales((prev: any) => ({ ...prev, laboratorios: [...toolbar.laboratoriosUnicos] }));
+  };
+
+  const limpiarTodosLabs = () => {
+    setFiltrosLocales((prev: any) => ({ ...prev, laboratorios: [] }));
+  };
+
   const aplicarFiltros = () => {
     toolbar.setFiltros(filtrosLocales);
     setMenuFiltroAbierto(false);
@@ -180,6 +190,13 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
     acc[lab] = toolbar.eventos.filter(e => e.laboratorio_nombre === lab).length;
     return acc;
   }, {});
+
+  // Laboratorios filtrados por búsqueda interna
+  const labsFiltrados = toolbar.laboratoriosUnicos.filter(lab =>
+    lab.toLowerCase().includes(busquedaLab.toLowerCase())
+  );
+
+  const labsSeleccionados = (filtrosLocales.laboratorios || []).length;
 
   return (
     <div className="calendar-toolbar-custom">
@@ -231,7 +248,7 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
               <Filter size={16} /> Filtro
             </button>
             {MenuFiltroAbierto && (
-              <div className="filter-dropdown-menu dark-filter">
+              <div className="filter-dropdown-menu dark-filter" onClick={(e) => e.stopPropagation()}>
 
                 <div className="filter-section">
                   <span className="filter-subtitle dark">TIPO DE ACTIVIDAD</span>
@@ -258,20 +275,52 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
                 </div>
 
                 <div className="filter-section">
-                  <span className="filter-subtitle dark">LABORATORIOS</span>
-                  <div className="dark-checkbox-list">
-                    {toolbar.laboratoriosUnicos.map((lab, i) => {
-                      const isActive = (filtrosLocales.laboratorios || []).includes(lab);
-                      return (
-                        <div key={i} className={`dark-checkbox-item ${isActive ? 'selected' : ''}`} onClick={() => toggleLaboratorioLocal(lab)}>
-                          <div className="checkbox-box">
-                            {isActive && <div className="checkbox-check">✓</div>}
+                  <div className="filter-labs-header">
+                    <span className="filter-subtitle dark">LABORATORIOS</span>
+                    {labsSeleccionados > 0 && (
+                      <span className="filter-labs-counter">{labsSeleccionados} de {toolbar.laboratoriosUnicos.length}</span>
+                    )}
+                  </div>
+
+                  <div className="filter-labs-search-wrapper">
+                    <Search size={14} className="filter-labs-search-icon" />
+                    <input
+                      type="text"
+                      className="filter-labs-search"
+                      placeholder="Buscar laboratorio..."
+                      value={busquedaLab}
+                      onChange={(e) => setBusquedaLab(e.target.value)}
+                    />
+                    {busquedaLab && (
+                      <button className="filter-labs-search-clear" onClick={() => setBusquedaLab('')}>
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="filter-labs-quick-actions">
+                    <button className="filter-quick-btn" onClick={seleccionarTodosLabs}>Todos</button>
+                    <span className="filter-quick-divider">•</span>
+                    <button className="filter-quick-btn" onClick={limpiarTodosLabs}>Ninguno</button>
+                  </div>
+
+                  <div className="dark-checkbox-list filter-labs-scrollable">
+                    {labsFiltrados.length > 0 ? (
+                      labsFiltrados.map((lab, i) => {
+                        const isActive = (filtrosLocales.laboratorios || []).includes(lab);
+                        return (
+                          <div key={i} className={`dark-checkbox-item ${isActive ? 'selected' : ''}`} onClick={() => toggleLaboratorioLocal(lab)}>
+                            <div className="checkbox-box">
+                              {isActive && <div className="checkbox-check">✓</div>}
+                            </div>
+                            <span className="checkbox-label">{lab}</span>
+                            <span className="checkbox-badge">{conteoLaboratorios[lab] || 0}</span>
                           </div>
-                          <span className="checkbox-label">{lab}</span>
-                          <span className="checkbox-badge">{conteoLaboratorios[lab] || 0}</span>
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                    ) : (
+                      <div className="filter-labs-empty">No se encontró ningún laboratorio</div>
+                    )}
                   </div>
                 </div>
 

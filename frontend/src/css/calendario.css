@@ -991,6 +991,144 @@
   margin-bottom: 20px;
 }
 
+/* ── Filtro escalable de laboratorios ── */
+
+.filter-labs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.filter-labs-header .filter-subtitle {
+  margin-bottom: 0;
+}
+
+.filter-labs-counter {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #0f766e;
+  background-color: #e6f2f0;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.filter-labs-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.filter-labs-search-icon {
+  position: absolute;
+  left: 10px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.filter-labs-search {
+  width: 100%;
+  padding: 7px 28px 7px 30px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  font-size: 0.8rem;
+  color: #374151;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.filter-labs-search::placeholder {
+  color: #9ca3af;
+}
+
+.filter-labs-search:focus {
+  border-color: #0f766e;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.1);
+  background: #ffffff;
+}
+
+.filter-labs-search-clear {
+  position: absolute;
+  right: 6px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  border-radius: 50%;
+  transition: all 0.15s;
+}
+
+.filter-labs-search-clear:hover {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.filter-labs-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.filter-quick-btn {
+  background: none;
+  border: none;
+  color: #0f766e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.filter-quick-btn:hover {
+  background-color: #e6f2f0;
+  color: #0d524d;
+}
+
+.filter-quick-divider {
+  color: #d1d5db;
+  font-size: 0.6rem;
+}
+
+.filter-labs-scrollable {
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+.filter-labs-scrollable::-webkit-scrollbar {
+  width: 5px;
+}
+
+.filter-labs-scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.filter-labs-scrollable::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+  border-radius: 999px;
+}
+
+.filter-labs-scrollable::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af;
+}
+
+.filter-labs-empty {
+  text-align: center;
+  padding: 16px 8px;
+  color: #9ca3af;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
 .dark-checkbox-item {
   display: flex;
   align-items: center;
