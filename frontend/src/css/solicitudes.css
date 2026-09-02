@@ -1,22 +1,34 @@
 /* =========================================================
    PANEL DE SOLICITUDES — Widget lateral (256 px)
-   Solo la lista de cards hace scroll; header y tabs son fijos.
+   Solo la lista de cards hace scroll en PC.
+   En pantallas pequeñas se permite scroll externo.
    Paleta USO: #22806B verde | #FACB4B dorado | #AD868A rosado
    ========================================================= */
 
-/* ── Contenedor: crece para llenar el espacio disponible del sidebar ── */
+/* ── Contenedor principal ── */
 .panel-solicitudes-container {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+
   flex: 1;
   min-height: 0;
   /* Crucial para que flex-child pueda shrink */
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
+
   background: #ffffff;
   border-radius: 10px;
   border: 1px solid #e5e7eb;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
   padding: 0.9rem 0.85rem 0.75rem;
+
+  box-sizing: border-box;
+  overflow: hidden;
   overflow: hidden;
   /* Evita que desborde hacia fuera */
 }
@@ -27,6 +39,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  flex: 0 0 auto;
   flex-shrink: 0;
   /* No se comprime */
 }
@@ -53,7 +66,9 @@
 .ps-tabs {
   display: flex;
   gap: 0.35rem;
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .ps-tab {
@@ -84,10 +99,14 @@
 
 /* ── Estado vacío / cargando ── */
 .estado-mensaje {
+  flex: 1 1 0;
+  min-height: 0;
+
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
+
   padding: 1.5rem 0.5rem;
   color: #6b7280;
   font-size: 0.8rem;
@@ -104,17 +123,38 @@
   to {
     transform: rotate(360deg);
   }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-/* ── Lista de tarjetas: ÚNICA zona con scroll ── */
+/* ── Lista de tarjetas ── */
+/*
+   En PC esta es la única zona que hace scroll.
+   flex + min-height: 0 evita que la lista haga crecer
+   al contenedor y provoque scroll externo.
+*/
 .lista-solicitudes {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+
   flex: 1;
   min-height: 0;
   /* Permite que el flex-child haga scroll */
   overflow-y: auto;
+  overflow-x: hidden;
+
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+
+  padding-right: 2px;
+
+  box-sizing: border-box;
+  overscroll-behavior: contain;
   padding-right: 2px;
   /* Espacio para la scrollbar */
 }
@@ -124,14 +164,17 @@
   width: 3px;
 }
 
+
 .lista-solicitudes::-webkit-scrollbar-track {
   background: transparent;
 }
+
 
 .lista-solicitudes::-webkit-scrollbar-thumb {
   background-color: #d1d5db;
   border-radius: 4px;
 }
+
 
 .lista-solicitudes::-webkit-scrollbar-thumb:hover {
   background-color: #9ca3af;
@@ -143,8 +186,13 @@
   border-radius: 10px;
   border: 1px solid #e5e7eb;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+
   display: flex;
   flex-direction: column;
+
+  flex: 0 0 auto;
+  min-width: 0;
+
   flex-shrink: 0;
   /* No se comprime dentro del scroll */
   overflow: hidden;
@@ -170,6 +218,7 @@
   color: #1f2937;
   line-height: 1.2;
   flex: 1;
+  min-width: 0;
 }
 
 /* ── Badge de rol ── */
@@ -205,7 +254,7 @@
   color: #166534;
 }
 
-/* ── Info resumida: nombre · fecha y horario ── */
+/* ── Info resumida ── */
 .tarjeta-info-resumida {
   display: flex;
   flex-direction: column;
@@ -244,6 +293,16 @@
 }
 
 @keyframes fadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
   from {
     opacity: 0;
     transform: translateY(-3px);
@@ -304,7 +363,7 @@
   border-radius: 0 5px 5px 0;
 }
 
-/* ── Footer: botones Aprobar/Rechazar + Ver detalle ── */
+/* ── Footer ── */
 .tarjeta-footer {
   display: flex;
   flex-direction: column;
@@ -318,7 +377,7 @@
   gap: 0.45rem;
 }
 
-/* Botones Aprobar / Rechazar */
+/* ── Botones Aprobar / Rechazar ── */
 .btn-aprobar,
 .btn-rechazar {
   flex: 1;
@@ -358,7 +417,7 @@
   box-shadow: 0 2px 6px rgba(173, 134, 138, 0.28);
 }
 
-/* Botón Ver detalle — link verde centrado */
+/* ── Botón Ver detalle ── */
 .btn-ver-detalle {
   display: flex;
   align-items: center;
@@ -380,7 +439,7 @@
   color: #1B5E52;
 }
 
-/* Botón Cancelar — Para el solicitante */
+/* ── Botón Cancelar ── */
 .btn-cancelar {
   display: flex;
   align-items: center;
@@ -407,7 +466,7 @@
   transform: translateY(0);
 }
 
-/* Badge Supervisor — Gris pizarra (observador) */
+/* ── Badge Supervisor ── */
 .badge-rol--supervisor {
   background-color: #f1f5f9;
   color: #475569;
@@ -420,7 +479,7 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 0.5rem 0 0.15rem;
-  flex-shrink: 0;
+  flex: 0 0 auto;
 }
 
 .ps-pagination button {
@@ -451,7 +510,7 @@
   color: #6b7280;
 }
 
-/* Badge "Tu solicitud" — Para coordinadores viendo sus propias */
+/* ── Badge "Tu solicitud" ── */
 .badge-propia {
   font-size: 0.6rem;
   font-weight: 600;
@@ -464,6 +523,17 @@
 }
 
 /* ── Tab Incompleto ── */
+.ps-tab--incompleto:not(.ps-tab--activa) {
+  color: #c2410c;
+  background-color: #fff7ed;
+}
+
+.ps-tab--incompleto:not(.ps-tab--activa):hover {
+  background-color: #ffedd5;
+  color: #9a3412;
+}
+
+/* ── Tab Incompleto ── */
 
 .ps-tab--incompleto.ps-tab--activa {
   background-color: #22806B;
@@ -473,6 +543,7 @@
   box-shadow: 0 2px 8px rgba(34, 128, 107, 0.25);
 }
 
+/* ── Botón Reprogramar ── */
 /* ── Botón Reprogramar — Amarillo pastel ── */
 .btn-reprogramar {
   flex: 1;
@@ -508,7 +579,7 @@
   flex-shrink: 0;
 }
 
-/* ── Formulario de Reprogramación (dentro del modal) ── */
+/* ── Formulario de Reprogramación ── */
 .reprogramar-form {
   display: flex;
   flex-direction: column;
@@ -558,6 +629,17 @@
 }
 
 /* ── Tab Ausente ── */
+.ps-tab--ausente:not(.ps-tab--activa) {
+  color: #5b21b6;
+  background-color: #f5f3ff;
+}
+
+.ps-tab--ausente:not(.ps-tab--activa):hover {
+  background-color: #ede9fe;
+  color: #4c1d95;
+}
+
+/* ── Tab Ausente ── */
 
 .ps-tab--ausente.ps-tab--activa {
   background-color: #22806B;
@@ -567,7 +649,7 @@
   box-shadow: 0 2px 8px rgba(34, 128, 107, 0.25);
 }
 
-/* ── Botón Ausente (Marcar Inasistencia) — Botón Rojo/Gris ── */
+/* ── Botón Ausente ── */
 .btn-ausente {
   flex: 1;
   display: flex;
@@ -598,4 +680,126 @@
 
 .btn-ausente svg {
   flex-shrink: 0;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+/*
+   PC / escritorio:
+   - La página no debe crecer por las solicitudes.
+   - El panel queda limitado al alto disponible.
+   - La lista es la que hace scroll.
+*/
+@media (min-width: 769px) {
+
+  html,
+  body {
+    overflow: hidden;
+  }
+
+  .panel-solicitudes-container {
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  .lista-solicitudes {
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
+
+/*
+   Tablet y móvil:
+   - Permitimos que la página tenga scroll externo.
+   - No forzamos el panel a ocupar exactamente el viewport.
+   - La lista puede seguir teniendo scroll interno si está
+     dentro de un contenedor con altura limitada.
+*/
+@media (max-width: 768px) {
+
+  html,
+  body {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .panel-solicitudes-container {
+    height: auto;
+    max-height: none;
+    min-height: auto;
+    flex: none;
+    overflow: visible;
+  }
+
+  .lista-solicitudes {
+    flex: none;
+    min-height: auto;
+    max-height: 60vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .ps-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+
+  .ps-tab {
+    flex-shrink: 0;
+  }
+
+  .reprogramar-horarios {
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+}
+
+
+/*
+   Pantallas muy pequeñas:
+   dejamos que el contenido respire y que el scroll externo
+   sea responsabilidad de la página.
+*/
+@media (max-width: 480px) {
+  .panel-solicitudes-container {
+    padding: 0.75rem 0.65rem 0.65rem;
+  }
+
+  .tarjeta-header {
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+  }
+
+  .tarjeta-info-resumida {
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+  }
+
+  .tarjeta-footer {
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+  }
+
+  .tarjeta-detalle {
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+  }
+
+  .tarjeta-acciones {
+    flex-direction: column;
+  }
+
+  .btn-aprobar,
+  .btn-rechazar,
+  .btn-reprogramar,
+  .btn-ausente {
+    width: 100%;
+  }
 }
