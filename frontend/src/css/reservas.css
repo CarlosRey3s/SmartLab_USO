@@ -1,3 +1,4 @@
+
 :root {
   --verde: #22806B;
   --verde-oscuro: #1B5E52;
@@ -14,27 +15,36 @@
   box-sizing: border-box;
 }
 
-body, html {
+html,
+body {
   margin: 0;
+  padding: 0;
   font-family: Arial, sans-serif;
   background: var(--gris);
   color: var(--texto);
 }
 
 /* ================= LAYOUT ================= */
+
 .container {
   display: flex;
+  width: 100%;
   height: 100vh;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* ================= SIDEBAR ================= */
+
 .sidebar {
   width: 220px;
+  flex-shrink: 0;
   background: var(--blanco);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   border-right: 1px solid #eee;
+  min-height: 0;
 }
 
 .menu {
@@ -69,17 +79,28 @@ body, html {
 }
 
 /* ================= CONTENT ================= */
+
 .content {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100vh;
+
   display: flex;
   flex-direction: column;
+
   background: transparent;
+  overflow: hidden;
 }
 
 /* ================= NAVBAR ================= */
+
 .navbar {
+  flex-shrink: 0;
+
   background: var(--blanco);
   padding: 12px 20px;
+
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -91,18 +112,33 @@ body, html {
 }
 
 /* ================= MAIN ================= */
+
 .main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+
   display: flex;
   gap: 20px;
+
   padding: 20px;
   background: transparent;
+
+  overflow: hidden;
 }
 
 /* ================= LABS ================= */
+
 .labs {
   flex: 3;
+  min-width: 0;
+  min-height: 0;
+
   background: transparent;
   padding: 0;
+
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .labs h2 {
@@ -111,6 +147,7 @@ body, html {
 }
 
 /* LAB CARD estilo dashboard */
+
 .lab-card {
   display: flex;
   flex-direction: column;
@@ -125,6 +162,8 @@ body, html {
 
   cursor: pointer;
   transition: 0.2s;
+
+  flex-shrink: 0;
 }
 
 .lab-card:hover {
@@ -151,11 +190,18 @@ body, html {
 }
 
 /* ================= RESERVAS ================= */
+
 .reservas-panel {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
+
   display: flex;
   flex-direction: column;
   gap: 12px;
+
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .reserva-card {
@@ -163,8 +209,11 @@ body, html {
   padding: 12px 15px;
   border-radius: 10px;
   border: 1px solid #eee;
+
   transition: 0.2s;
   cursor: pointer;
+
+  flex-shrink: 0;
 }
 
 .reserva-card:hover {
@@ -178,19 +227,29 @@ body, html {
   position: fixed;
   top: 0;
   left: 0;
+
   width: 100%;
   height: 100%;
+
   background: rgba(34, 128, 107, 0.12);
+
   display: flex;
   justify-content: center;
   align-items: center;
+
+  z-index: 1000;
 }
 
 .modal {
   background: #fff;
   padding: 25px;
   border-radius: 15px;
+
   width: 600px;
+  max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 40px);
+
+  overflow-y: auto;
 
   border-top: 5px solid var(--verde);
   border-bottom: 3px solid var(--dorado);
@@ -199,17 +258,20 @@ body, html {
 }
 
 /* TITULO MODAL */
+
 .modal h2 {
   color: #000;
 }
 
 /* FORM */
+
 .modal label {
   color: #000;
   font-size: 13px;
 }
 
 /* INPUTS BLANCOS + TEXTO NEGRO */
+
 .modal input,
 .modal select,
 .modal textarea {
@@ -233,8 +295,10 @@ body, html {
 }
 
 /* BOTONES */
+
 .modal-buttons {
   margin-top: 15px;
+
   display: flex;
   gap: 10px;
 }
@@ -242,17 +306,213 @@ body, html {
 .modal-buttons button:first-child {
   background: var(--verde);
   color: white;
+
   border: none;
   padding: 10px 15px;
   border-radius: 8px;
+
   cursor: pointer;
 }
 
 .modal-buttons button:last-child {
   background: var(--dorado);
   color: #000;
+
   border: none;
   padding: 10px 15px;
   border-radius: 8px;
+
   cursor: pointer;
 }
+
+/* =========================================================
+   PC / DESKTOP
+   Sin scroll externo.
+   Los scrolls quedan dentro de las áreas de contenido.
+   ========================================================= */
+
+@media (min-width: 1025px) {
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .container {
+    width: 100%;
+    height: 100vh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .content {
+    width: 100%;
+    height: 100vh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .main {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .labs {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .reservas-panel {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
+/* =========================================================
+   TABLET
+   Se permite el scroll externo de la página.
+   ========================================================= */
+
+@media (max-width: 1024px) {
+
+  html,
+  body {
+    height: auto;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .container {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .content {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .main {
+    flex-direction: column;
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .labs {
+    width: 100%;
+    height: auto;
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .reservas-panel {
+    width: 100%;
+    height: auto;
+    min-height: auto;
+    overflow: visible;
+  }
+}
+
+/* =========================================================
+   MÓVIL
+   Scroll externo permitido.
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+  .container {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    min-height: auto;
+  }
+
+  .menu {
+    padding: 15px;
+  }
+
+  .content {
+    width: 100%;
+    height: auto;
+    min-height: auto;
+  }
+
+  .navbar {
+    padding: 12px 15px;
+  }
+
+  .main {
+    width: 100%;
+    padding: 15px;
+    gap: 15px;
+    flex-direction: column;
+  }
+
+  .labs,
+  .reservas-panel {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .modal {
+    width: calc(100vw - 30px);
+    max-width: calc(100vw - 30px);
+    max-height: calc(100vh - 30px);
+    padding: 20px;
+  }
+}
+
+/* =========================================================
+   MÓVIL PEQUEÑO
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+  .main {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .navbar {
+    padding: 10px 12px;
+  }
+
+  .lab-card {
+    padding: 12px;
+  }
+
+  .reserva-card {
+    padding: 10px 12px;
+  }
+
+  .modal {
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+    padding: 15px;
+  }
+
+  .modal-buttons {
+    flex-direction: column;
+  }
+
+  .modal-buttons button {
+    width: 100%;
+  }
+}
+
