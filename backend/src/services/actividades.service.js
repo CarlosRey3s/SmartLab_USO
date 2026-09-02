@@ -264,8 +264,11 @@ const programarActividad = async (datosModal, usuarioLogueado) => {
 
         } else if (tipo === 'reserva') {
 
-            // LÓGICA DE ROLES: Dependiendo del rol, pasa a pendiente o aprobada automáticamente
-            const estadoInicial = (rolUsuario === 'administrador' || rolUsuario === 'coordinador') ? 'aprobada' : 'pendiente';
+            // LÓGICA DE ROLES: El middleware 'validarActividades' ya calculó el estado correcto
+            // aplicando la regla de territorio propio/ajeno para coordinadores.
+            // Fallback defensivo: si por alguna razón no viene del middleware, aplicar regla base.
+            const estadoInicial = datosModal.estado_reserva
+                || (rolUsuario === 'administrador' ? 'aprobada' : 'pendiente');
 
             const queryHija = `INSERT INTO reservas_estudiantes (actividad_id, usuario_id, titulo, nota_adicional, estado_reserva) VALUES ($1, $2, $3, $4, $5)`;
             await client.query(queryHija, [idGenerado, idUsuario, datosModal.titulo, datosModal.nota_adicional || null, estadoInicial]);
@@ -295,9 +298,16 @@ const programarActividad = async (datosModal, usuarioLogueado) => {
         await client.query('COMMIT');
 
         // Mensaje dinámico de respuesta al frontend
-        const mensajeRespuesta = (tipo === 'reserva' && (rolUsuario === 'estudiante' || rolUsuario === 'docente'))
-            ? 'Solicitud de reserva enviada exitosamente. Quedará en espera de aprobación por el coordinador.'
-            : 'Actividad programada exitosamente';
+        let mensajeRespuesta = 'Actividad programada exitosamente';
+        if (tipo === 'reserva') {
+            const estadoFinal = datosModal.estado_reserva
+                || (rolUsuario === 'administrador' ? 'aprobada' : 'pendiente');
+            if (estadoFinal === 'pendiente') {
+                mensajeRespuesta = 'Solicitud de reserva enviada exitosamente. Quedará en espera de aprobación por el coordinador del laboratorio.';
+            } else {
+                mensajeRespuesta = 'Reserva aprobada y agendada exitosamente.';
+            }
+        }
 
         return { exito: true, mensaje: mensajeRespuesta, id: idGenerado };
 
@@ -560,7 +570,10 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usu
                     WHEN a.tipo = 'mantenimiento' THEN 'Laboratorio en Mantenimiento'
                     WHEN a.tipo = 'reserva' THEN 
                         CASE 
+                            -- Privacidad: docente/estudiante siempre ven 'Ocupado' en reservas ajenas
+                            -- Coordinador: 'Ocupado' solo en labs que NO son suyos
                             WHEN $4 IN ('estudiante', 'docente') AND re.usuario_id != $3 THEN 'Ocupado'
+                            WHEN $4 = 'coordinador' AND l.coordinador_id != $3 AND re.usuario_id != $3 THEN 'Ocupado'
                             ELSE re.titulo
                         END
                     ELSE 'Actividad'
@@ -588,13 +601,18 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usu
                 m.descripcion_ti AS mant_descripcion,
                 
                 -- Datos de Reserva Estudiantil
+                -- Condición de privacidad compartida:
+                --   docente/estudiante: siempre en reservas ajenas
+                --   coordinador: solo en labs que NO administra
                 CASE 
                     WHEN $4 IN ('estudiante', 'docente') AND re.usuario_id != $3 THEN 'Ocupado'
+                    WHEN $4 = 'coordinador' AND l.coordinador_id != $3 AND re.usuario_id != $3 THEN 'Ocupado'
                     ELSE re.titulo 
                 END AS reserva_titulo,
                 
                 CASE 
                     WHEN $4 IN ('estudiante', 'docente') AND re.usuario_id != $3 THEN NULL
+                    WHEN $4 = 'coordinador' AND l.coordinador_id != $3 AND re.usuario_id != $3 THEN NULL
                     ELSE re.nota_adicional 
                 END AS reserva_nota,
                 
@@ -602,21 +620,25 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usu
                 
                 CASE 
                     WHEN $4 IN ('estudiante', 'docente') AND re.usuario_id != $3 THEN NULL
+                    WHEN $4 = 'coordinador' AND l.coordinador_id != $3 AND re.usuario_id != $3 THEN NULL
                     ELSE re.usuario_id 
                 END AS reserva_usuario_id,
                 
                 CASE 
                     WHEN $4 IN ('estudiante', 'docente') AND re.usuario_id != $3 THEN NULL
+                    WHEN $4 = 'coordinador' AND l.coordinador_id != $3 AND re.usuario_id != $3 THEN NULL
                     ELSE u_reserva.nombre 
                 END AS reserva_solicitante_nombre,
                 
                 CASE 
                     WHEN $4 IN ('estudiante', 'docente') AND re.usuario_id != $3 THEN NULL
+                    WHEN $4 = 'coordinador' AND l.coordinador_id != $3 AND re.usuario_id != $3 THEN NULL
                     ELSE u_reserva.apellido 
                 END AS reserva_solicitante_apellido,
                 
                 CASE 
                     WHEN $4 IN ('estudiante', 'docente') AND re.usuario_id != $3 THEN NULL
+                    WHEN $4 = 'coordinador' AND l.coordinador_id != $3 AND re.usuario_id != $3 THEN NULL
                     ELSE u_reserva.expediente 
                 END AS reserva_solicitante_expediente,
                 
@@ -662,11 +684,21 @@ const obtenerActividadesExpandidas = async (fechaInicioVista, fechaFinVista, usu
                 -- 1. administrador: Ve absolutamente todo el campus
                 $4 = 'administrador'
                 
-                -- 2. coordinador: Solo ve laboratorios a su cargo o sus propias clases
+                -- 2. coordinador: Visión híbrida Smart Campus
+                --    En sus propios labs: ve absolutamente todo (clases, mantenimientos, reservas en cualquier estado)
+                --    En labs ajenos: misma visibilidad que docente (clases, mantenimientos y reservas aprobadas)
                 OR (
                     $4 = 'coordinador' AND (
-                        l.coordinador_id = $3 
-                        OR ca.docente_id = $3
+                        -- Visión total en sus propios laboratorios
+                        l.coordinador_id = $3
+                        -- Visión global (con privacidad) en laboratorios ajenos
+                        OR (
+                            l.coordinador_id != $3 AND (
+                                a.tipo = 'clase'
+                                OR a.tipo = 'mantenimiento'
+                                OR (a.tipo = 'reserva' AND re.estado_reserva = 'aprobada')
+                            )
+                        )
                     )
                 )
                 
