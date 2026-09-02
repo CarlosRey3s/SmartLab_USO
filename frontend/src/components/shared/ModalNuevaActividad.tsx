@@ -28,13 +28,13 @@ const RECURRENCIA_SIMPLE = [
 
 const FOOTER_TIPS: Record<string, string> = {
   clase: "Los campos marcados son obligatorios · La recurrencia aplica a todas las semanas del ciclo",
-  mantenimiento: "El laboratorio quedará bloqueado en ese horario para todos los estudiantes",
+  mantenimiento: "El espacio quedará bloqueado en ese horario para todos los estudiantes",
   reserva: "La reserva directa no requiere aprobación y se confirma inmediatamente",
 };
 
 const HEADER_SUBS: Record<string, string> = {
   clase: "Clase regular con docente y horario asignado",
-  mantenimiento: "Cierre técnico del laboratorio",
+  mantenimiento: "Cierre técnico del espacio",
   reserva: "Reserva directa sin pasar por solicitud",
 };
 
@@ -226,7 +226,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
                     </div>
                     <div className="na-tipo-text">
                       <div className="na-tipo-title">Cierre técnico</div>
-                      <div className="na-tipo-desc">Bloquea el laboratorio por mantenimiento</div>
+                      <div className="na-tipo-desc">Bloquea el espacio por mantenimiento</div>
                     </div>
                   </button>
                 </>
@@ -584,7 +584,7 @@ export function ModalNuevaActividad({ onClose, onGuardar, actividadExistente }: 
           {isLastStep && tipo && (
             <div className="na-resumen-card" style={{ marginTop: '20px' }}>
               <div className="na-resumen-line">
-                {TIPO_LABEL[tipo]} · {laboratorioSeleccionado?.nombre || "sin laboratorio"}
+                {TIPO_LABEL[tipo]} · {laboratorioSeleccionado?.nombre || "sin espacio"}
                 {tipo === "reserva" && modoReserva === "por_estacion"
                   ? ` · ${estacionesSeleccionadas.length} estación${estacionesSeleccionadas.length === 1 ? "" : "es"}`
                   : ""}

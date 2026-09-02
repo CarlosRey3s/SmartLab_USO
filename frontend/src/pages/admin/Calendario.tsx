@@ -276,7 +276,7 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
 
                 <div className="filter-section">
                   <div className="filter-labs-header">
-                    <span className="filter-subtitle dark">LABORATORIOS</span>
+                    <span className="filter-subtitle dark">ESPACIOS</span>
                     {labsSeleccionados > 0 && (
                       <span className="filter-labs-counter">{labsSeleccionados} de {toolbar.laboratoriosUnicos.length}</span>
                     )}
@@ -287,7 +287,7 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
                     <input
                       type="text"
                       className="filter-labs-search"
-                      placeholder="Buscar laboratorio..."
+                      placeholder="Buscar espacio..."
                       value={busquedaLab}
                       onChange={(e) => setBusquedaLab(e.target.value)}
                     />
@@ -319,7 +319,7 @@ const CustomToolbar = (toolbar: CustomToolbarProps) => {
                         );
                       })
                     ) : (
-                      <div className="filter-labs-empty">No se encontró ningún laboratorio</div>
+                      <div className="filter-labs-empty">No se encontró ningún espacio</div>
                     )}
                   </div>
                 </div>
@@ -716,8 +716,8 @@ export const CalendarioView = () => {
               <div className="popover-header">
                 <div className="popover-header-top">
                   <span className="popover-type-label">
-                    {eventoSeleccionado.tipo === 'reserva' ? 'RESERVA DE LABORATORIO' : 
-                     eventoSeleccionado.tipo === 'mantenimiento' ? 'MANTENIMIENTO' : 'CLASE ACADÉMICA'}
+                    {eventoSeleccionado.tipo === 'reserva' ? 'RESERVA DE ESPACIO' :
+                      eventoSeleccionado.tipo === 'mantenimiento' ? 'MANTENIMIENTO' : 'CLASE ACADÉMICA'}
                   </span>
                   <div className="popover-actions">
                     {(() => {
@@ -751,7 +751,7 @@ export const CalendarioView = () => {
                   <CalendarIcon size={14} className="mr-1 inline" />
                   {format(eventoSeleccionado.start, "EEEE d 'de' MMMM • h:mm a", { locale: es })} - {format(eventoSeleccionado.end, 'h:mm a')}
                 </div>
-                
+
                 {eventoSeleccionado.estado_reserva && (
                   <div className="mt-2">
                     <span className={`estado-badge estado-${eventoSeleccionado.estado_reserva.toLowerCase()}`}>
