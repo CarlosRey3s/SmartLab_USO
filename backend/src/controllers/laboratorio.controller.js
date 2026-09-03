@@ -40,8 +40,15 @@ const getAllLaboratorios = async (req, res) => {
             WHERE (
                 LOWER($1) = 'administrador'
                 OR LOWER($1) = 'coordinador'
-                OR l.roles_permitidos ? 'todos'
-                OR l.roles_permitidos ? LOWER($1)
+                OR EXISTS (
+                    SELECT 1 FROM jsonb_array_elements_text(
+                        CASE jsonb_typeof(l.roles_permitidos) 
+                            WHEN 'array' THEN l.roles_permitidos 
+                            ELSE '[]'::jsonb 
+                        END
+                    ) as rol_permitido 
+                    WHERE LOWER(rol_permitido) = 'todos' OR LOWER(rol_permitido) = LOWER($1)
+                )
             )
             ORDER BY l.nombre ASC
         `, [rol]);
