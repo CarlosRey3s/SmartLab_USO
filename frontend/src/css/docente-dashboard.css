@@ -43,30 +43,34 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 18px;
   margin-bottom: 18px;
+  align-items: start;
 }
 
-/* CARD BASE */
+/* CARD BASE Y PANELES */
 .docente-card {
   background: var(--blanco);
   border-radius: 16px;
   padding: 18px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
 }
 
-/* PANELS */
-.panel {
-  min-height: 420px;
+.docente-panel {
+  min-height: auto;
 }
 
-.panel h3 {
+.docente-panel h3 {
   margin: 0 0 16px;
   color: var(--texto);
   font-size: 18px;
   font-weight: 600;
 }
 
-/* ITEMS (NUEVO ESTILO MODERNO) */
-.item {
+/* ITEMS EN DOCENTE DASHBOARD */
+.docente-item {
   padding: 14px;
   border-radius: 12px;
   background: #ffffff;
@@ -77,55 +81,55 @@
   overflow: hidden;
 }
 
-.item:hover {
+.docente-item:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
 
 /* TEXTO */
-.item strong {
+.docente-item strong {
   display: block;
   margin-bottom: 6px;
   color: var(--texto);
 }
 
-.item p {
+.docente-item p {
   margin: 3px 0;
   color: #64748b;
   font-size: 13px;
 }
 
-.item span {
+.docente-item span {
   font-size: 13px;
   color: var(--texto);
 }
 
 /* TIME */
-.time {
+.docente-time {
   display: block;
   font-weight: 700;
   color: var(--verde);
   margin-bottom: 6px;
 }
 
-/* VARIACIONES (FONDO COMPLETO SUAVE) */
-.highlight {
+/* VARIACIONES */
+.docente-highlight {
   background: rgba(34, 128, 107, 0.08);
   border: 1px solid rgba(34, 128, 107, 0.25);
 }
 
-.warning {
+.docente-warning {
   background: rgba(250, 203, 75, 0.12);
   border: 1px solid rgba(250, 203, 75, 0.35);
 }
 
-.info {
+.docente-info {
   background: rgba(173, 134, 138, 0.12);
   border: 1px solid rgba(173, 134, 138, 0.35);
 }
 
-/* OPCIONAL: BARRA LATERAL ULTRA SUAVE (SI QUIERES MÁS PRO) */
-.item::before {
+/* BARRA LATERAL EN ITEMS */
+.docente-item::before {
   content: "";
   position: absolute;
   top: 0;
@@ -136,17 +140,17 @@
   transition: 0.2s;
 }
 
-.highlight::before {
+.docente-highlight::before {
   background: var(--verde);
   opacity: 1;
 }
 
-.warning::before {
+.docente-warning::before {
   background: var(--dorado);
   opacity: 1;
 }
 
-.info::before {
+.docente-info::before {
   background: var(--rosado);
   opacity: 1;
 }
@@ -157,7 +161,7 @@
     grid-template-columns: 1fr;
   }
 
-  .panel {
+  .docente-panel {
     min-height: auto;
   }
 }
@@ -171,4 +175,4 @@
     flex-direction: column;
     gap: 12px;
   }
-}
+}

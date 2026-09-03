@@ -127,7 +127,7 @@ export default function DocenteDashboard(){
 
 
 
-                <div className="docente-card panel">
+                <div className="docente-card docente-panel">
 
 
                     <h3>
@@ -141,7 +141,7 @@ export default function DocenteDashboard(){
 
 
                             <div
-                            className="item highlight"
+                            className="docente-item docente-highlight"
                             key={lab.id}
                             >
 
@@ -191,7 +191,7 @@ export default function DocenteDashboard(){
 
 
 
-                <div className="docente-card panel">
+                <div className="docente-card docente-panel">
 
 
                     <h3>
@@ -205,12 +205,12 @@ export default function DocenteDashboard(){
 
 
                             <div
-                            className="item"
+                            className="docente-item"
                             key={item.id}
                             >
 
 
-                                <span className="time">
+                                <span className="docente-time">
 
                                     {item.inicio}
                                     {" - "}
@@ -258,7 +258,7 @@ export default function DocenteDashboard(){
 
 
 
-                <div className="docente-card panel">
+                <div className="docente-card docente-panel">
 
 
                     <h3>
@@ -283,7 +283,7 @@ export default function DocenteDashboard(){
 
 
                             <div
-                            className="item warning"
+                            className="docente-item docente-warning"
                             key={reserva.actividad_id}
                             >
 

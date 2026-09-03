@@ -39,6 +39,8 @@ export const Navbar = ({ onToggleMenu }: NavbarProps) => {
       return 'Usuarios';
     if (path.includes('/espacio') || path === '/admin/espacio')
       return 'Espacio';
+    if (path.includes('/buzon-sugerencias') || path === '/buzon-sugerencias')
+      return 'Buzón de Sugerencias';
 
     return 'Proyecto USO';
   };
