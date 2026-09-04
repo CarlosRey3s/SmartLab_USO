@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { Search, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, Printer, X, User, Users, Wrench, FileText, Edit2, Trash2, Filter, Info, Monitor, Beaker } from 'lucide-react';
+import { Search, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, Printer, X, User, Users, Wrench, FileText, Edit2, Trash2, Filter, Monitor, Beaker } from 'lucide-react';
 import { Calendar, dateFnsLocalizer, type ToolbarProps, type View } from 'react-big-calendar';
 import { es } from 'date-fns/locale/es';
 import { PanelSolicitudes } from './PanelSolicitudes.tsx';

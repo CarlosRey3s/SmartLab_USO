@@ -2,7 +2,7 @@ import { BASE_URL } from "../config/api";
 
 const API_URL = `${BASE_URL}/api`;
 
-const getAuthHeaders = () => {
+const getAuthHeaders = (): Record<string, string> => {
   const token = localStorage.getItem('uso_token');
   return token ? { 'Authorization': `Bearer ${token}` } : {};
 };
