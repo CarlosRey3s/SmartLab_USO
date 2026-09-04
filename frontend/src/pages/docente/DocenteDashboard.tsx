@@ -18,7 +18,7 @@ import type {
 
 
 
-export default function DocenteDashboard(){
+export default function DocenteDashboard() {
 
 
     const [
@@ -28,25 +28,25 @@ export default function DocenteDashboard(){
 
 
 
-    useEffect(()=>{
+    useEffect(() => {
 
 
         cargarDashboard();
 
 
-    },[]);
+    }, []);
 
 
 
 
-    const cargarDashboard = async()=>{
+    const cargarDashboard = async () => {
 
 
-        try{
+        try {
 
 
             const data =
-            await obtenerDashboardDocente();
+                await obtenerDashboardDocente();
 
 
             console.log(
@@ -59,7 +59,7 @@ export default function DocenteDashboard(){
 
 
 
-        }catch(error){
+        } catch (error) {
 
 
             console.error(
@@ -77,7 +77,7 @@ export default function DocenteDashboard(){
 
 
 
-    if(!dashboard){
+    if (!dashboard) {
 
 
         return (
@@ -127,59 +127,59 @@ export default function DocenteDashboard(){
 
 
 
-                <div className="docente-card panel">
+                <div className="docente-card docente-panel">
 
 
                     <h3>
                         Mis Laboratorios
                     </h3>
 
+                    <div className="docente-panel-body">
+                        {
+                            dashboard.laboratorios.map((lab) => (
 
 
-                    {
-                        dashboard.laboratorios.map((lab)=>(
+                                <div
+                                    className="docente-item docente-highlight"
+                                    key={lab.id}
+                                >
 
 
-                            <div
-                            className="item highlight"
-                            key={lab.id}
-                            >
+                                    <strong>
+                                        {lab.nombre}
+                                    </strong>
 
 
-                                <strong>
-                                    {lab.nombre}
-                                </strong>
+                                    <p>
+                                        Edificio: {lab.edificio}
+                                    </p>
 
 
-                                <p>
-                                    Edificio: {lab.edificio}
-                                </p>
+                                    <p>
+                                        Aula: {lab.aula}
+                                    </p>
 
 
-                                <p>
-                                    Aula: {lab.aula}
-                                </p>
+                                    <p>
+                                        Capacidad:
+                                        {" "}
+                                        {lab.capacidad_maxima}
+                                    </p>
 
 
-                                <p>
-                                    Capacidad:
-                                    {" "}
-                                    {lab.capacidad_maxima}
-                                </p>
+                                    <p>
+                                        Estado:
+                                        {" "}
+                                        {lab.estado}
+                                    </p>
 
 
-                                <p>
-                                    Estado:
-                                    {" "}
-                                    {lab.estado}
-                                </p>
+                                </div>
 
 
-                            </div>
-
-
-                        ))
-                    }
+                            ))
+                        }
+                    </div>
 
 
 
@@ -191,62 +191,62 @@ export default function DocenteDashboard(){
 
 
 
-                <div className="docente-card panel">
+                <div className="docente-card docente-panel">
 
 
                     <h3>
                         Agenda Académica
                     </h3>
 
+                    <div className="docente-panel-body">
+                        {
+                            dashboard.agenda.map((item) => (
 
 
-                    {
-                        dashboard.agenda.map((item)=>(
+                                <div
+                                    className="docente-item"
+                                    key={item.id}
+                                >
 
 
-                            <div
-                            className="item"
-                            key={item.id}
-                            >
+                                    <span className="docente-time">
+
+                                        {item.inicio}
+                                        {" - "}
+                                        {item.fin}
+
+                                    </span>
 
 
-                                <span className="time">
+                                    <strong>
 
-                                    {item.inicio}
-                                    {" - "}
-                                    {item.fin}
+                                        {item.materia}
 
-                                </span>
+                                    </strong>
 
 
-                                <strong>
+                                    <p>
 
-                                    {item.materia}
+                                        {item.laboratorio}
 
-                                </strong>
-
-
-                                <p>
-
-                                    {item.laboratorio}
-
-                                </p>
+                                    </p>
 
 
-                                <p>
+                                    <p>
 
-                                    {item.num_estudiantes}
-                                    {" estudiantes"}
+                                        {item.num_estudiantes}
+                                        {" estudiantes"}
 
-                                </p>
+                                    </p>
 
 
 
-                            </div>
+                                </div>
 
 
-                        ))
-                    }
+                            ))
+                        }
+                    </div>
 
 
 
@@ -258,72 +258,72 @@ export default function DocenteDashboard(){
 
 
 
-                <div className="docente-card panel">
+                <div className="docente-card docente-panel">
 
 
                     <h3>
                         Reservas y Notificaciones
                     </h3>
 
+                    <div className="docente-panel-body">
+                        {
+                            dashboard.reservas.length === 0 &&
+
+                            <p>
+                                No hay reservas.
+                            </p>
+
+                        }
 
 
-                    {
-                        dashboard.reservas.length === 0 &&
 
-                        <p>
-                            No hay reservas.
-                        </p>
-
-                    }
+                        {
+                            dashboard.reservas.map((reserva) => (
 
 
-
-                    {
-                        dashboard.reservas.map((reserva)=>(
-
-
-                            <div
-                            className="item warning"
-                            key={reserva.actividad_id}
-                            >
+                                <div
+                                    className="docente-item docente-warning"
+                                    key={reserva.actividad_id}
+                                >
 
 
-                                <strong>
-                                    {reserva.titulo}
-                                </strong>
+                                    <strong>
+                                        {reserva.titulo}
+                                    </strong>
 
-
-                                <p>
-                                    {reserva.laboratorio}
-                                </p>
-
-
-                                <span>
-
-                                    {reserva.inicio}
-                                    {" - "}
-                                    {reserva.fin}
-
-                                </span>
-
-
-                                {
-                                    reserva.nota_adicional &&
 
                                     <p>
-                                        Nota:
-                                        {" "}
-                                        {reserva.nota_adicional}
+                                        {reserva.laboratorio}
                                     </p>
 
-                                }
+
+                                    <span>
+
+                                        {reserva.inicio}
+                                        {" - "}
+                                        {reserva.fin}
+
+                                    </span>
 
 
-                            </div>
+                                    {
+                                        reserva.nota_adicional &&
+
+                                        <p>
+                                            Nota:
+                                            {" "}
+                                            {reserva.nota_adicional}
+                                        </p>
+
+                                    }
 
 
-                        ))
-                    }
+                                </div>
+
+
+                            ))
+                        }
+                    </div>
 
 
 
